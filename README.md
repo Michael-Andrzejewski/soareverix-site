@@ -1,0 +1,33 @@
+# soareverix.com
+
+Personal website for Soareverix (Michael Andrzejewski).
+
+The intro is a polygonal blue eye rendered in three.js: faceted iris split three blue, one amber, with rotating geometric line work. The camera dives into the pupil and the site fades in over a low-poly night landscape.
+
+## Run locally
+
+Any static server works:
+
+```
+python -m http.server 5502
+```
+
+Then open http://localhost:5502.
+
+## Testing hooks
+
+Query params used for automated screenshots:
+
+- `?ff=N` fast-forwards the intro timeline N seconds deterministically and skips the reveal animations.
+- `&compact=1` (with `ff`) shrinks the hero so all sections fit one viewport.
+- `&go=projects` (with `ff`) or a `#projects` hash jumps to a section after the intro.
+
+Click, Enter, or Space skips the intro. `prefers-reduced-motion` skips it automatically.
+
+## Deploy (Cloudflare Pages)
+
+1. Cloudflare dashboard: Workers and Pages, Create, Pages, Connect to Git, pick this repo.
+2. Framework preset: None. Build command: empty. Output directory: `/`.
+3. Add `soareverix.com` as a custom domain on the project once DNS is on Cloudflare.
+
+Every push to main deploys automatically.

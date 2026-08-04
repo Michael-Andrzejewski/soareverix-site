@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soareverix</title>
+<meta name="description" content="Soareverix. Michael Andrzejewski. Games, mods, and simulations.">
+<style>
+  :root {
+    --ink: #dbe7f5;
+    --dim: #8fa8c4;
+    --blue: #7cc4ff;
+    --amber: #ffbe6a;
+    --panel: rgba(10, 16, 26, 0.72);
+    --border: rgba(124, 196, 255, 0.22);
+  }
+  html, body { margin: 0; background: #06090f; color: var(--ink); }
+  html.intro, html.intro body { height: 100%; overflow: hidden; }
+  body {
+    font: 16px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app { position: fixed; inset: 0; z-index: 0; }
+  #fade {
+    position: fixed; inset: 0; z-index: 3; background: #030508;
+    opacity: 0; pointer-events: none; transition: none;
+  }
+  #hint {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    z-index: 2; color: rgba(143, 168, 196, 0.75);
+    font: 12px/1 Consolas, "Cascadia Mono", monospace; letter-spacing: 3px;
+    opacity: 0; transition: opacity 1.2s; pointer-events: none;
+    text-transform: uppercase;
+  }
+  #hint.show { opacity: 1; }
+
+  /* ------------------------------------------------ site content */
+  #site { position: relative; z-index: 1; display: none; }
+  html.site-mode #site { display: block; }
+  #site .inner { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+  .hero {
+    min-height: 92vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center;
+  }
+  .hero h1 {
+    margin: 0; font-size: clamp(40px, 9vw, 96px); font-weight: 200;
+    letter-spacing: clamp(8px, 2.2vw, 26px); text-indent: clamp(8px, 2.2vw, 26px);
+    color: #eaf3ff; text-shadow: 0 0 40px rgba(124, 196, 255, 0.35);
+  }
+  .hero p {
+    margin: 18px 0 0; max-width: 560px; color: var(--dim);
+    font-size: clamp(15px, 2vw, 18px);
+  }
+  .hero .cue {
+    margin-top: 8vh; color: rgba(124, 196, 255, 0.6);
+    font: 12px Consolas, monospace; letter-spacing: 3px;
+    animation: bob 2.6s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+
+  section { padding: 9vh 0; }
+  h2 {
+    font-size: 13px; font-weight: 600; letter-spacing: 5px; text-transform: uppercase;
+    color: var(--blue); margin: 0 0 28px;
+  }
+  h2::before { content: "\25C6\00a0\00a0"; color: var(--amber); font-size: 10px; }
+  .about p { max-width: 640px; color: var(--ink); font-size: 17px; }
+  .about .quiet { color: var(--dim); }
+
+  .grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px 22px; backdrop-filter: blur(4px);
+    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+  }
+  .card:hover {
+    border-color: rgba(124, 196, 255, 0.55); transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(20, 60, 120, 0.25);
+  }
+  .card .tag {
+    font: 11px Consolas, monospace; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--amber);
+  }
+  .card h3 { margin: 6px 0 8px; font-size: 19px; font-weight: 600; color: #eaf3ff; }
+  .card p { margin: 0; color: var(--dim); font-size: 14.5px; }
+  .card a.more {
+    display: inline-block; margin-top: 12px; color: var(--blue); text-decoration: none;
+    font: 12px Consolas, monospace; letter-spacing: 1px; border-bottom: 1px solid rgba(124,196,255,0.35);
+  }
+  .card a.more:hover { color: #b8ddff; border-color: #b8ddff; }
+
+  footer {
+    padding: 8vh 0 10vh; border-top: 1px solid rgba(124, 196, 255, 0.12);
+    color: var(--dim); font-size: 14px;
+  }
+  footer a { color: var(--blue); text-decoration: none; }
+  footer a:hover { color: #b8ddff; }
+  footer .note { margin-top: 10px; font: 12px Consolas, monospace; color: rgba(143,168,196,0.6); }
+  footer .replay { cursor: pointer; }
+
+  html.site-mode #site .reveal {
+    opacity: 0; transform: translateY(18px);
+    animation: rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="fade"></div>
+<div id="hint">click to enter</div>
+
+<main id="site">
+  <div class="inner">
+    <div class="hero reveal">
+      <h1>SOAREVERIX</h1>
+      <p>Michael Andrzejewski. I make games, mods, and simulations that take on a life of their own.</p>
+      <div class="cue">&#9662; scroll</div>
+    </div>
+
+    <section id="about" class="about reveal">
+      <h2>About</h2>
+      <p>Most of what I build starts as a question that sounds like "what would happen if..."</p>
+      <p class="quiet">Lately that means new creatures and world generators for Vintage Story, Balatro decks that bend the rules politely, VR spellcraft, and long-running simulated worlds with their own histories.</p>
+    </section>
+
+    <section id="projects" class="reveal">
+      <h2>Projects</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="tag">Vintage Story</span>
+          <h3>Seraph Leveling</h3>
+          <p>Trait progression for long lives. Level the skills you actually use, and carry them between worlds.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Vintage Story</span>
+          <h3>Underwater Horrors</h3>
+          <p>Sea serpents and a kraken beneath calm water. The deep is no longer empty.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Vintage Story</span>
+          <h3>Building Commands</h3>
+          <p>Minecraft style building commands for creative work: /fill, /setblock, /clone, /blockcode.</p>
+          <a class="more" href="https://github.com/Michael-Andrzejewski/VS-Building-Commands" target="_blank" rel="noopener">source &#8599;</a>
+        </div>
+        <div class="card">
+          <span class="tag">Balatro</span>
+          <h3>Reinforcement</h3>
+          <p>A jokerless deck about stacking cards into monsters. Played live on stream by Bean.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Balatro</span>
+          <h3>Progression</h3>
+          <p>A roguelite deck where every win carries forward: keep cards, jokers, and vouchers between runs.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Beyond All Reason</span>
+          <h3>Micro Wars</h3>
+          <p>Tiny units, huge swarms. A custom game mode built on the BAR engine.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="reveal">
+      <div><a href="https://github.com/Michael-Andrzejewski" target="_blank" rel="noopener">github.com/Michael-Andrzejewski</a></div>
+      <div class="note">soareverix.com &middot; the intro is a polygonal eye rendered in three.js &middot; <a class="replay" onclick="location.reload()">replay it</a></div>
+    </footer>
+  </div>
+</main>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+document.documentElement.classList.add('intro');
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------------------------------------------------------------- renderer
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (e) {
+  enterSiteInstant();
+  throw e;
+}
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.getElementById('app').appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.05, 200);
+camera.position.set(0, 0, 9.6);
+
+const eyeScene = new THREE.Scene();
+eyeScene.background = new THREE.Color(0x06090f);
+
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(eyeScene, camera);
+composer.addPass(renderPass);
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.45, 0.55);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// ---------------------------------------------------------------- helpers
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const smooth = t => t * t * (3 - 2 * t);
+const TAU = Math.PI * 2;
+
+function radialTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex = radialTexture();
+
+// ---------------------------------------------------------------- shaders
+// Facet mesh: triangles assemble from their centroids, then shimmer gently.
+const facetVert = `
+  attribute vec3 aColor; attribute vec3 aCentroid;
+  attribute float aDelay; attribute float aPhase;
+  uniform float uProg; uniform float uTime;
+  varying vec3 vColor;
+  void main() {
+    float t = clamp((uProg - aDelay) / 0.55, 0.0, 1.0);
+    float e = 1.0 - pow(1.0 - t, 3.0);
+    vec3 p = mix(aCentroid, position, e);
+    float shimmer = 1.0 + 0.07 * sin(uTime * 1.6 + aPhase);
+    vColor = aColor * e * shimmer;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }`;
+const facetFrag = `
+  varying vec3 vColor;
+  void main() { gl_FragColor = vec4(vColor, 1.0); }`;
+const facetFragAdd = `
+  varying vec3 vColor;
+  void main() { gl_FragColor = vec4(vColor, 1.0); }`;
+
+// Glow lines: same pulse language as the RSI holo scene.
+const lineVert = `
+  attribute float aPhase; attribute vec3 aColor;
+  varying vec3 vColor; varying float vPhase;
+  void main() {
+    vColor = aColor; vPhase = aPhase;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }`;
+const lineFrag = `
+  uniform float uTime; uniform float uDim; uniform float uProg;
+  varying vec3 vColor; varying float vPhase;
+  void main() {
+    float p = 0.5 + 0.5 * sin(uTime * 2.1 + vPhase);
+    float i = (0.20 + 0.80 * pow(p, 2.4)) * uDim * uProg;
+    gl_FragColor = vec4(vColor * i, 1.0);
+  }`;
+
+const starVert = `
+  attribute float aSize; attribute float aPhase; attribute vec3 aColor;
+  varying vec3 vColor; varying float vPhase;
+  void main() {
+    vColor = aColor; vPhase = aPhase;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = aSize * 130.0 / -mv.z;
+    gl_Position = projectionMatrix * mv;
+  }`;
+const starFrag = `
+  uniform float uTime;
+  varying vec3 vColor; varying float vPhase;
+  void main() {
+    float d = length(gl_PointCoord - 0.5) * 2.0;
+    float a = smoothstep(1.0, 0.0, d); a *= a;
+    float tw = 0.55 + 0.45 * sin(uTime * 2.4 + vPhase);
+    gl_FragColor = vec4(vColor * (0.4 + tw) * a, a);
+  }`;
+
+// Ridge mesh: ridge vertices bob slowly, baseline stays put.
+const ridgeVert = `
+  attribute vec3 aColor; attribute float aAmp; attribute float aPhase;
+  uniform float uTime;
+  varying vec3 vColor;
+  void main() {
+    vec3 p = position;
+    p.y += sin(uTime * 0.45 + aPhase) * aAmp;
+    vColor = aColor;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  }`;
+
+const timeMats = [];   // every material with a uTime uniform
+function trackTime(mat) { timeMats.push(mat); return mat; }
+
+// ---------------------------------------------------------------- facet builder
+function makeFacetBucket() {
+  return { pos: [], col: [], cen: [], del: [], pha: [] };
+}
+function pushTri(B, a, b, c, color, delay) {
+  const cx = (a[0] + b[0] + c[0]) / 3, cy = (a[1] + b[1] + c[1]) / 3;
+  const ph = rand(0, TAU);
+  for (const v of [a, b, c]) {
+    B.pos.push(v[0], v[1], 0);
+    B.col.push(color.r, color.g, color.b);
+    B.cen.push(cx, cy, 0);
+    B.del.push(delay);
+    B.pha.push(ph);
+  }
+}
+function bucketToMesh(B, additive) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(B.pos, 3));
+  g.setAttribute('aColor', new THREE.Float32BufferAttribute(B.col, 3));
+  g.setAttribute('aCentroid', new THREE.Float32BufferAttribute(B.cen, 3));
+  g.setAttribute('aDelay', new THREE.Float32BufferAttribute(B.del, 1));
+  g.setAttribute('aPhase', new THREE.Float32BufferAttribute(B.pha, 1));
+  const mat = trackTime(new THREE.ShaderMaterial({
+    uniforms: { uProg: { value: 0 }, uTime: { value: 0 } },
+    vertexShader: facetVert,
+    fragmentShader: additive ? facetFragAdd : facetFrag,
+    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    depthWrite: !additive,
+    transparent: !!additive,
+    side: THREE.DoubleSide,
+  }));
+  return new THREE.Mesh(g, mat);
+}
+
+// ---------------------------------------------------------------- line builder
+function makeLineBucket() { return { pos: [], col: [], pha: [] }; }
+function pushPolyline(B, pts, color, brightness = 1) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    const ph = rand(0, TAU);
+    for (const p of [pts[i], pts[i + 1]]) {
+      B.pos.push(p[0], p[1], p.length > 2 ? p[2] : 0);
+      B.col.push(color.r * brightness, color.g * brightness, color.b * brightness);
+      B.pha.push(ph);
+    }
+  }
+}
+function bucketToLines(B, dim = 1) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(B.pos, 3));
+  g.setAttribute('aColor', new THREE.Float32BufferAttribute(B.col, 3));
+  g.setAttribute('aPhase', new THREE.Float32BufferAttribute(B.pha, 1));
+  const mat = trackTime(new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uDim: { value: dim }, uProg: { value: 0 } },
+    vertexShader: lineVert, fragmentShader: lineFrag,
+    blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+  }));
+  return new THREE.LineSegments(g, mat);
+}
+const circlePts = (r, n = 96, cx = 0, cy = 0) => {
+  const pts = [];
+  for (let i = 0; i <= n; i++) { const a = i / n * TAU; pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+  return pts;
+};
+const polygonPts = (r, sides) => circlePts(r, sides);
+
+// ================================================================ THE EYE
+const eyeRoot = new THREE.Group();
+eyeScene.add(eyeRoot);
+const irisGroup = new THREE.Group();   // rotates slowly; tracks the cursor a little
+eyeRoot.add(irisGroup);
+
+const PUPIL_R = 0.55, IRIS_R = 1.7;
+
+// Almond outline: a lens made of two circular arcs meeting at sharp corners.
+// Solved in polar form so the sclera can be filled with radial shards.
+const EYE_W = 4.0, EYE_HT = 2.1, EYE_HB = 1.7;
+function almondR(theta) {
+  const s = Math.sin(theta);
+  const H = s >= 0 ? EYE_HT : EYE_HB;
+  const d = (EYE_W * EYE_W - H * H) / (2 * H);        // arc center offset
+  const ds = d * Math.abs(s);
+  return -ds + Math.sqrt(ds * ds + EYE_W * EYE_W);
+}
+
+// ---- shared jittered rings -------------------------------------------------
+const SEG = 72;
+function ringPoints(radiusFn, jitterR, jitterA) {
+  const pts = [];
+  for (let s = 0; s < SEG; s++) {
+    const a = s / SEG * TAU + rand(-jitterA, jitterA);
+    const r = radiusFn(a) + rand(-jitterR, jitterR);
+    pts.push([r * Math.cos(a), r * Math.sin(a)]);
+  }
+  return pts;
+}
+function quadFill(B, ringIn, ringOut, colorFn, delayFn) {
+  for (let s = 0; s < SEG; s++) {
+    const s2 = (s + 1) % SEG;
+    const a = ringIn[s], b = ringIn[s2], c = ringOut[s], d = ringOut[s2];
+    const mk = (p, q, r) => {
+      const cx = (p[0] + q[0] + r[0]) / 3, cy = (p[1] + q[1] + r[1]) / 3;
+      pushTri(B, p, q, r, colorFn(cx, cy), delayFn(cx, cy));
+    };
+    if (s % 2) { mk(a, b, c); mk(b, d, c); } else { mk(a, b, d); mk(a, d, c); }
+  }
+}
+const angOf = (x, y) => (Math.atan2(y, x) + TAU) % TAU;
+const distOf = (x, y) => Math.hypot(x, y);
+
+// Assembly delays radiate outward from the pupil.
+const delayByDist = (x, y) => clamp(distOf(x, y) / 4.6, 0, 1) * 0.9 + rand(0, 0.25);
+
+// ---- iris: three blue lobes and one amber lobe, like a certain eye --------
+const SECTOR_STARTS = [0.35, 0.35 + TAU * 0.25, 0.35 + TAU * 0.5, 0.35 + TAU * 0.75];
+const SECTOR_COLORS = [
+  new THREE.Color(0x1e63ff),  // deep electric blue
+  new THREE.Color(0x1fb4ff),  // cyan blue
+  new THREE.Color(0x4a3ff0),  // indigo blue
+  new THREE.Color(0xe8a53c),  // the one amber lobe
+];
+function sectorOf(ang) {
+  const rel = ((ang - SECTOR_STARTS[0]) % TAU + TAU) % TAU;
+  return Math.floor(rel / (TAU / 4));
+}
+const irisBucket = makeFacetBucket();
+{
+  const RINGS = 6;
+  const rings = [];
+  for (let r = 0; r <= RINGS; r++) {
+    const frac = r / RINGS;
+    const rad = PUPIL_R + (IRIS_R - PUPIL_R) * Math.pow(frac, 0.9);
+    const jr = (r === 0 || r === RINGS) ? 0.012 : 0.05;
+    rings.push(ringPoints(() => rad, jr, 0.02));
+  }
+  const white = new THREE.Color(0xeaf6ff);
+  const irisColor = (x, y) => {
+    const sec = sectorOf(angOf(x, y));
+    const frac = clamp((distOf(x, y) - PUPIL_R) / (IRIS_R - PUPIL_R), 0, 1);
+    const c = SECTOR_COLORS[sec].clone();
+    c.lerp(white, 0.16 * (1 - frac));            // brighter near the pupil
+    c.multiplyScalar(rand(0.60, 0.92));
+    if (Math.random() < 0.06) c.multiplyScalar(1.35);  // occasional hot shard
+    return c;
+  };
+  for (let r = 0; r < RINGS; r++) quadFill(irisBucket, rings[r], rings[r + 1], irisColor, delayByDist);
+
+  // pupil: near black facets sharing the iris inner ring
+  const pupilColor = () => new THREE.Color(0x05070c).multiplyScalar(rand(0.7, 1.3));
+  const midRing = ringPoints(() => PUPIL_R * 0.5, 0.03, 0.03);
+  quadFill(irisBucket, midRing, rings[0], pupilColor, delayByDist);
+  for (let s = 0; s < SEG; s++) {
+    const s2 = (s + 1) % SEG;
+    pushTri(irisBucket, [0, 0], midRing[s], midRing[s2], pupilColor(), rand(0, 0.15));
+  }
+}
+irisGroup.add(bucketToMesh(irisBucket, false));
+
+// specular glint: a small cluster of bright facets, upper left of the iris
+{
+  const glint = makeFacetBucket();
+  const gc = new THREE.Color(0xcfe9ff);
+  const gx = -0.62, gy = 0.72;
+  for (let i = 0; i < 5; i++) {
+    const s = rand(0.10, 0.22), ox = gx + rand(-0.16, 0.16), oy = gy + rand(-0.12, 0.12);
+    const a0 = rand(0, TAU);
+    const tri = [0, 1, 2].map(k => [ox + s * Math.cos(a0 + k * 2.1), oy + s * Math.sin(a0 + k * 2.1)]);
+    pushTri(glint, tri[0], tri[1], tri[2], gc.clone().multiplyScalar(rand(0.5, 1.0)), 0.9 + rand(0, 0.2));
+  }
+  irisGroup.add(bucketToMesh(glint, true));
+}
+
+// ---- sclera: cool navy shards out to the almond outline -------------------
+const scleraBucket = makeFacetBucket();
+{
+  const inner = ringPoints(() => IRIS_R, 0.012, 0.02);
+  const rings = [inner];
+  for (let r = 1; r <= 3; r++) {
+    const frac = r / 3;
+    rings.push(ringPoints(
+      a => IRIS_R + (almondR(a) - IRIS_R) * frac,
+      r === 3 ? 0.015 : 0.16, r === 3 ? 0.004 : 0.02
+    ));
+  }
+  const nearC = new THREE.Color(0x1b3350), farC = new THREE.Color(0x0c1626);
+  const scleraColor = (x, y) => {
+    const a = angOf(x, y);
+    const frac = clamp((distOf(x, y) - IRIS_R) / Math.max(0.001, almondR(a) - IRIS_R), 0, 1);
+    const c = nearC.clone().lerp(farC, Math.pow(frac, 0.8));
+    c.multiplyScalar(rand(0.75, 1.25));
+    if (Math.random() < 0.05) c.lerp(new THREE.Color(0x3a6ea8), 0.5);
+    return c;
+  };
+  for (let r = 0; r < 3; r++) quadFill(scleraBucket, rings[r], rings[r + 1], scleraColor, delayByDist);
+}
+eyeRoot.add(bucketToMesh(scleraBucket, false));
+
+// ---- glow line work -------------------------------------------------------
+const BLUE_LINE = new THREE.Color(0x7cc4ff);
+const AMBER_LINE = new THREE.Color(0xffbe6a);
+const DEEP_LINE = new THREE.Color(0x3a78c8);
+
+// static lines: almond outline, corner ticks
+const staticLines = (() => {
+  const B = makeLineBucket();
+  const outline = [];
+  for (let i = 0; i <= 200; i++) {
+    const a = i / 200 * TAU;
+    outline.push([almondR(a) * Math.cos(a), almondR(a) * Math.sin(a)]);
+  }
+  pushPolyline(B, outline, DEEP_LINE, 0.9);
+  for (const sx of [-1, 1]) {
+    const cx = sx * EYE_W;
+    pushPolyline(B, [[cx, 0], [cx + sx * 0.5, 0]], AMBER_LINE, 0.8);
+    pushPolyline(B, [[cx + sx * 0.18, 0.22], [cx + sx * 0.42, 0.30]], DEEP_LINE, 0.6);
+    pushPolyline(B, [[cx + sx * 0.18, -0.22], [cx + sx * 0.42, -0.30]], DEEP_LINE, 0.6);
+  }
+  return bucketToLines(B, 0.55);
+})();
+eyeRoot.add(staticLines);
+
+// iris lines: limbal ring, pupil ring, sector dividers, radial ticks (rotate with iris)
+const irisLines = (() => {
+  const B = makeLineBucket();
+  pushPolyline(B, circlePts(IRIS_R, 120), BLUE_LINE, 1.0);
+  pushPolyline(B, circlePts(IRIS_R * 0.985, 120), BLUE_LINE, 0.4);
+  pushPolyline(B, circlePts(PUPIL_R, 96), BLUE_LINE, 0.85);
+  for (let i = 0; i < 4; i++) {
+    const a = SECTOR_STARTS[i];
+    const col = i === 3 || (i + 3) % 4 === 3 ? AMBER_LINE : BLUE_LINE;
+    pushPolyline(B, [
+      [PUPIL_R * Math.cos(a), PUPIL_R * Math.sin(a)],
+      [IRIS_R * Math.cos(a), IRIS_R * Math.sin(a)],
+    ], i === 3 ? AMBER_LINE : BLUE_LINE, 0.9);
+  }
+  for (let i = 0; i < 36; i++) {
+    const a = i / 36 * TAU;
+    const r0 = IRIS_R * 0.90, r1 = IRIS_R * 0.965;
+    pushPolyline(B, [
+      [r0 * Math.cos(a), r0 * Math.sin(a)],
+      [r1 * Math.cos(a), r1 * Math.sin(a)],
+    ], sectorOf(a) === 3 ? AMBER_LINE : BLUE_LINE, 0.55);
+  }
+  return bucketToLines(B, 1.0);
+})();
+irisGroup.add(irisLines);
+
+// geometric rings: a hexagon and a triangle counter-rotating inside the iris
+const geoA = new THREE.Group(), geoB = new THREE.Group();
+irisGroup.add(geoA); irisGroup.add(geoB);
+const geoALines = (() => {
+  const B = makeLineBucket();
+  pushPolyline(B, polygonPts(IRIS_R * 0.72, 6), BLUE_LINE, 0.8);
+  pushPolyline(B, polygonPts(IRIS_R * 0.72, 6).map(p => [p[0] * 0.86, p[1] * 0.86]), DEEP_LINE, 0.5);
+  return bucketToLines(B, 0.9);
+})();
+geoA.add(geoALines);
+const geoBLines = (() => {
+  const B = makeLineBucket();
+  pushPolyline(B, polygonPts(PUPIL_R * 1.42, 3), AMBER_LINE, 0.85);
+  pushPolyline(B, circlePts(PUPIL_R * 1.18, 64), BLUE_LINE, 0.4);
+  return bucketToLines(B, 0.9);
+})();
+geoB.add(geoBLines);
+
+const eyeLineMats = [staticLines, irisLines, geoALines, geoBLines].map(l => l.material);
+
+// ambient halo behind the iris
+{
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTex, color: 0x143a72, transparent: true, opacity: 0.22,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  halo.scale.set(7.5, 7.5, 1);
+  halo.position.z = -0.4;
+  eyeRoot.add(halo);
+}
+
+// fit the eye to narrow screens
+function fitEye() {
+  const halfH = Math.tan(THREE.MathUtils.degToRad(20)) * 9.6;
+  const halfW = halfH * camera.aspect;
+  const s = Math.min(1, (halfW * 0.92) / 4.8, (halfH * 0.9) / 2.6);
+  eyeRoot.scale.setScalar(s);
+  return s;
+}
+let eyeScale = fitEye();
+
+// ================================================================ SITE SCENE
+let siteScene = null, siteLayers = [];
+function buildSiteScene() {
+  siteScene = new THREE.Scene();
+  siteScene.background = new THREE.Color(0x06090f);
+  siteScene.fog = new THREE.FogExp2(0x06090f, 0.028);
+
+  // stars
+  {
+    const N = 900;
+    const pos = [], col = [], size = [], pha = [];
+    const c1 = new THREE.Color(0x9ecfff), c2 = new THREE.Color(0xffd9a0);
+    for (let i = 0; i < N; i++) {
+      pos.push(rand(-34, 34), rand(-1, 18), rand(-24, -6));
+      const c = (Math.random() < 0.12 ? c2 : c1).clone().multiplyScalar(rand(0.4, 1.0));
+      col.push(c.r, c.g, c.b);
+      size.push(rand(0.03, 0.10));
+      pha.push(rand(0, TAU));
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aColor', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('aSize', new THREE.Float32BufferAttribute(size, 1));
+    g.setAttribute('aPhase', new THREE.Float32BufferAttribute(pha, 1));
+    const mat = trackTime(new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: starVert, fragmentShader: starFrag,
+      blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+    }));
+    siteScene.add(new THREE.Points(g, mat));
+  }
+
+  // low poly amber sun with halo ring: the one warm thing in a blue sky
+  {
+    const B = makeFacetBucket();
+    const cx = 5.2, cy = 4.1, R = 0.85, N = 14;
+    const inner = new THREE.Color(0xffc878), outer = new THREE.Color(0xe8842a);
+    for (let i = 0; i < N; i++) {
+      const a0 = i / N * TAU, a1 = (i + 1) / N * TAU;
+      const r0 = R * rand(0.93, 1.05), r1 = R * rand(0.93, 1.05);
+      pushTri(B,
+        [cx, cy],
+        [cx + r0 * Math.cos(a0), cy + r0 * Math.sin(a0)],
+        [cx + r1 * Math.cos(a1), cy + r1 * Math.sin(a1)],
+        inner.clone().lerp(outer, rand(0.3, 1)).multiplyScalar(rand(0.85, 1.1)), 0);
+    }
+    const sun = bucketToMesh(B, false);
+    sun.material.uniforms.uProg.value = 10;
+    sun.position.z = -12;
+    siteScene.add(sun);
+
+    const LB = makeLineBucket();
+    pushPolyline(LB, circlePts(R * 1.45, 40, cx, cy), AMBER_LINE, 0.8);
+    const ring = bucketToLines(LB, 0.7);
+    ring.material.uniforms.uProg.value = 1;
+    ring.position.z = -12;
+    siteScene.add(ring);
+
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex, color: 0xb06a20, transparent: true, opacity: 0.5,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    halo.scale.set(6, 6, 1);
+    halo.position.set(cx, cy, -12.5);
+    siteScene.add(halo);
+  }
+
+  // aurora ribbons
+  {
+    const LB = makeLineBucket();
+    for (let k = 0; k < 3; k++) {
+      const pts = [];
+      const y0 = 5.4 + k * 0.9, ph = rand(0, TAU);
+      for (let i = 0; i <= 80; i++) {
+        const x = -16 + 32 * i / 80;
+        pts.push([x, y0 + Math.sin(x * 0.35 + ph) * 0.8 + Math.sin(x * 0.13 + ph * 2) * 1.2, -14]);
+      }
+      pushPolyline(LB, pts, k === 1 ? new THREE.Color(0x66e0c8) : BLUE_LINE, 0.5 - k * 0.1);
+    }
+    const aurora = bucketToLines(LB, 0.8);
+    aurora.material.uniforms.uProg.value = 1;
+    siteScene.add(aurora);
+  }
+
+  // layered low poly ridges
+  const ridgePalettes = [
+    [0x24375e, 0x2e4a7a], [0x1a2949, 0x223a63], [0x111d38, 0x18294c], [0x0a1224, 0x0e1930],
+  ];
+  for (let L = 0; L < 4; L++) {
+    const N = 70;
+    const zs = -9 + L * 2.6;
+    const baseY = -6.5;
+    const topBase = 1.6 - L * 1.05;
+    const phs = [rand(0, TAU), rand(0, TAU), rand(0, TAU)];
+    const ridgeY = x =>
+      topBase +
+      Math.sin(x * 0.24 + phs[0]) * 0.9 +
+      Math.sin(x * 0.53 + phs[1]) * 0.45 +
+      Math.sin(x * 1.31 + phs[2]) * 0.22;
+    const pos = [], col = [], amp = [], pha = [];
+    const cA = new THREE.Color(ridgePalettes[L][0]), cB = new THREE.Color(ridgePalettes[L][1]);
+    const top = [];
+    for (let i = 0; i <= N; i++) {
+      const x = -22 + 44 * i / N;
+      top.push([x, ridgeY(x) + rand(-0.12, 0.12)]);
+    }
+    // jittered mid row breaks the strip into balanced low poly facets
+    const mid = top.map(([x, y]) => [x + rand(-0.25, 0.25), baseY + (y - baseY) * rand(0.42, 0.62)]);
+    const c = () => cA.clone().lerp(cB, Math.random()).multiplyScalar(rand(0.8, 1.15));
+    const emit = (p, q, r) => {
+      const cc = c();
+      for (const v of [p, q, r]) {
+        pos.push(v[0], v[1], zs);
+        col.push(cc.r, cc.g, cc.b);
+        const onRidge = v[1] > baseY + 0.01;
+        amp.push(onRidge ? 0.05 + 0.04 * (3 - L) * 0.33 : 0);
+        pha.push(v[0] * 0.4 + L * 2.1);
+      }
+    };
+    for (let i = 0; i < N; i++) {
+      const rows = [
+        [top[i], top[i + 1]],
+        [mid[i], mid[i + 1]],
+        [[top[i][0], baseY], [top[i + 1][0], baseY]],
+      ];
+      for (let r = 0; r < 2; r++) {
+        const [a, b] = rows[r], [cc2, d] = rows[r + 1];
+        if ((i + r) % 2) { emit(a, b, cc2); emit(b, d, cc2); }
+        else { emit(a, b, d); emit(a, d, cc2); }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aColor', new THREE.Float32BufferAttribute(col, 3));
+    g.setAttribute('aAmp', new THREE.Float32BufferAttribute(amp, 1));
+    g.setAttribute('aPhase', new THREE.Float32BufferAttribute(pha, 1));
+    const mat = trackTime(new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: ridgeVert,
+      fragmentShader: `varying vec3 vColor; void main(){ gl_FragColor = vec4(vColor, 1.0); }`,
+      side: THREE.DoubleSide,
+    }));
+    const mesh = new THREE.Mesh(g, mat);
+    siteScene.add(mesh);
+    siteLayers.push(mesh);
+
+    // faint glow crest line on the nearest two ridges
+    if (L < 2) {
+      const LB = makeLineBucket();
+      pushPolyline(LB, top.map(p => [p[0], p[1], zs + 0.01]), L === 0 ? BLUE_LINE : DEEP_LINE, 0.35);
+      const crest = bucketToLines(LB, 0.6);
+      crest.material.uniforms.uProg.value = 1;
+      siteScene.add(crest);
+    }
+  }
+}
+
+// ================================================================ state machine
+let state = reduceMotion ? 'skip' : 'assemble';
+let stateT = 0;
+let uProg = 0;
+let ffMode = false;
+const fadeEl = document.getElementById('fade');
+const hintEl = document.getElementById('hint');
+const mouse = { x: 0, y: 0 };
+addEventListener('pointermove', e => {
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = (e.clientY / innerHeight) * 2 - 1;
+});
+
+const DIVE_LEN = 2.3;
+function startDive() {
+  if (state !== 'idle' && state !== 'assemble') return;
+  state = 'dive'; stateT = 0;
+  hintEl.classList.remove('show');
+}
+addEventListener('pointerdown', () => { if (state === 'idle' || state === 'assemble') startDive(); });
+addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') startDive(); });
+
+function enterSiteInstant() {
+  document.documentElement.classList.remove('intro');
+  document.documentElement.classList.add('site-mode');
+}
+function switchToSite() {
+  buildSiteScene();
+  renderPass.scene = siteScene;
+  bloom.strength = 0.55;
+  camera.position.set(0, 0.8, 11);
+  camera.lookAt(0, 0.6, -6);
+  enterSiteInstant();
+  // stagger the content reveal
+  document.querySelectorAll('#site .reveal').forEach((el, i) => {
+    if (ffMode) { el.style.animation = 'none'; el.style.opacity = '1'; el.style.transform = 'none'; }
+    else el.style.animationDelay = (0.15 + i * 0.12) + 's';
+  });
+  if (ffMode) fadeEl.style.display = 'none';
+  state = 'site'; stateT = 0;
+  fadeEl.style.opacity = '1';
+  const target = new URLSearchParams(location.search).get('go') || location.hash;
+  if (target) {
+    try { document.querySelector(target.startsWith('#') ? target : '#' + target)?.scrollIntoView(); } catch (e) {}
+  }
+}
+
+if (reduceMotion) {
+  switchToSite();
+  fadeEl.style.opacity = '0';
+}
+
+// ================================================================ loop
+const clock = new THREE.Clock();
+let elapsed = 0;
+
+function step(dt) {
+  elapsed += dt;
+  stateT += dt;
+  for (const m of timeMats) m.uniforms.uTime.value = elapsed;
+
+  if (state === 'assemble' || state === 'idle' || state === 'dive') {
+    // assembly progress: triangles first, lines chase behind
+    uProg = Math.min(uProg + dt / 1.45, 2.0);
+    for (const obj of eyeScene.children) {
+      obj.traverse?.(o => {
+        if (o.material?.uniforms?.uProg && o.material.vertexShader === facetVert)
+          o.material.uniforms.uProg.value = uProg;
+      });
+    }
+    eyeScene.traverse(o => {
+      if (o.material?.uniforms?.uProg !== undefined && o.isLineSegments)
+        o.material.uniforms.uProg.value = smooth(clamp((uProg - 0.7) / 0.7, 0, 1));
+      if (o.material?.uniforms?.uProg !== undefined && o.isMesh)
+        o.material.uniforms.uProg.value = uProg;
+    });
+
+    if (state === 'assemble' && uProg >= 1.6) {
+      state = 'idle'; stateT = 0;
+      setTimeout(() => { if (state === 'idle') hintEl.classList.add('show'); }, 600);
+    }
+    if (state === 'idle' && stateT > 3.2) startDive();
+
+    // idle motion: iris slowly rotates, geometry counter-rotates, eye watches the cursor
+    let speed = 1, diveT = 0;
+    if (state === 'dive') {
+      diveT = clamp(stateT / DIVE_LEN, 0, 1);
+      speed = 1 + diveT * 6;
+    }
+    irisGroup.rotation.z += dt * 0.05 * speed;
+    geoA.rotation.z -= dt * 0.14 * speed;
+    geoB.rotation.z += dt * 0.22 * speed;
+
+    const track = 1 - (state === 'dive' ? smooth(clamp(diveT * 1.6, 0, 1)) : 0);
+    irisGroup.position.x += ((mouse.x * 0.16 * track) - irisGroup.position.x) * Math.min(1, dt * 3);
+    irisGroup.position.y += ((-mouse.y * 0.11 * track) - irisGroup.position.y) * Math.min(1, dt * 3);
+    eyeRoot.rotation.y = mouse.x * 0.05 * track;
+    eyeRoot.rotation.x = -mouse.y * 0.03 * track;
+
+    if (state === 'dive') {
+      const e = diveT * diveT * diveT;   // slow approach, fast plunge
+      camera.position.z = 9.6 - (9.6 - 0.55 * eyeScale) * e;
+      const px = irisGroup.position.x * eyeScale, py = irisGroup.position.y * eyeScale;
+      camera.position.x = px * e; camera.position.y = py * e;
+      bloom.strength = 0.7 + diveT * 0.8;
+      for (const m of eyeLineMats) m.uniforms.uDim.value = 1 + diveT * 1.2;
+      const f = clamp((diveT - 0.68) / 0.30, 0, 1);
+      fadeEl.style.opacity = String(f * f);
+      if (diveT >= 1) { switchToSite(); }
+    }
+  } else if (state === 'site') {
+    const f = clamp(1 - stateT / 0.9, 0, 1);
+    fadeEl.style.opacity = String(f);
+    // gentle parallax
+    camera.position.x += ((mouse.x * 0.5) - camera.position.x) * Math.min(1, dt * 1.5);
+    camera.position.y += ((0.8 - mouse.y * 0.3) - camera.position.y) * Math.min(1, dt * 1.5);
+    camera.lookAt(0, 0.6, -6);
+    for (let i = 0; i < siteLayers.length; i++) {
+      siteLayers[i].position.x = mouse.x * (0.5 - i * 0.12) * -0.6;
+    }
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  step(Math.min(clock.getDelta(), 0.05));
+  composer.render();
+}
+
+// ?ff=N fast-forwards the whole timeline N seconds (used for automated screenshots)
+{
+  const ff = parseFloat(new URLSearchParams(location.search).get('ff'));
+  if (ff > 0) {
+    ffMode = true;
+    if (new URLSearchParams(location.search).has('compact')) {
+      const st = document.createElement('style');
+      st.textContent = '.hero{min-height:22vh} section{padding:3vh 0} footer{padding:3vh 0}';
+      document.head.appendChild(st);
+    }
+    for (let i = 0; i < Math.min(ff, 30) * 60; i++) step(1 / 60);
+  }
+}
+animate();
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  eyeScale = fitEye();
+});
+</script>
+</body>
+</html>
