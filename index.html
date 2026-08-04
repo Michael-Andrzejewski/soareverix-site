@@ -171,6 +171,10 @@
             <stop offset="0" stop-color="#2a3f78" stop-opacity="0.55"/>
             <stop offset="1" stop-color="#2a3f78" stop-opacity="0"/>
           </radialGradient>
+          <radialGradient id="kidGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#ffbe6a" stop-opacity="0.11"/>
+            <stop offset="1" stop-color="#ffbe6a" stop-opacity="0"/>
+          </radialGradient>
           <g id="rayRingG">
             <line x1="0" y1="-34" x2="0" y2="-160" stroke="url(#rayGold)" stroke-width="3.4" stroke-linecap="round"/>
           </g>
@@ -274,7 +278,8 @@
         <!-- meadow -->
         <path d="M 0 700 Q 300 660 620 690 T 1600 672 L 1600 900 L 0 900 Z" fill="#0a1122"/>
         <path d="M 0 760 Q 400 716 860 748 T 1600 738 L 1600 900 L 0 900 Z" fill="#070c19"/>
-        <ellipse cx="1050" cy="740" rx="330" ry="90" fill="url(#groundGlow)"/>
+        <ellipse cx="1080" cy="726" rx="340" ry="90" fill="url(#groundGlow)"/>
+        <ellipse cx="1104" cy="712" rx="120" ry="26" fill="url(#kidGlow)"/>
 
         <!-- grass tufts -->
         <g stroke="#12203e" stroke-width="2" stroke-linecap="round" opacity="0.9">
@@ -291,9 +296,10 @@
           <circle cx="720" cy="712" r="1.5" class="firefly" style="animation-delay:3s"/>
         </g>
 
-        <!-- the kid, back view, looking up -->
-        <g transform="translate(1090, 792)" filter="url(#soft)">
-          <g fill="#060a13">
+        <!-- the kid, back view, looking up, lit by the distant burst -->
+        <g transform="translate(1104, 706) scale(1.25)" filter="url(#soft)">
+          <ellipse cx="4" cy="-84" rx="64" ry="112" fill="url(#kidGlow)"/>
+          <g fill="#0b1020">
             <!-- legs -->
             <path d="M -13 0 L -11 -52 L -3 -52 L -4 0 Z"/>
             <path d="M 12 0 L 10 -52 L 2 -52 L 3 0 Z"/>
@@ -306,8 +312,13 @@
             <circle cx="1" cy="-126" r="15"/>
             <path d="M -13 -132 Q -6 -142 4 -141 Q 13 -140 15 -130 Q 6 -136 -2 -135 Q -9 -135 -13 -132 Z"/>
           </g>
-          <!-- rim light from the gold burst -->
-          <path d="M 15 -130 Q 17 -122 14 -114 M 16 -98 Q 19 -76 17 -54" stroke="#ffbe6a" stroke-width="1.6" fill="none" opacity="0.55" stroke-linecap="round"/>
+          <!-- rim light from the gold burst, tracing his edge -->
+          <g stroke="#ffbe6a" fill="none" stroke-linecap="round">
+            <path d="M 8 -140 A 15 15 0 0 1 15 -125 Q 16 -119 13 -114" stroke-width="2.2" opacity="0.9"/>
+            <path d="M 15 -102 Q 18 -80 16 -52" stroke-width="2" opacity="0.8"/>
+            <path d="M 20 -96 Q 25 -82 24 -60" stroke-width="1.6" opacity="0.6"/>
+            <path d="M 11 -50 L 12 -4 M 10 -2 L 13 -2" stroke-width="1.8" opacity="0.65"/>
+          </g>
         </g>
       </svg>
     </div>
@@ -340,6 +351,10 @@
               <stop offset="0.5" stop-color="#ffd9a0"/>
               <stop offset="1" stop-color="#ff9a4d" stop-opacity="0.3"/>
             </linearGradient>
+            <radialGradient id="firePool" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#ff7a3d" stop-opacity="0.22"/>
+              <stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/>
+            </radialGradient>
             <filter id="fireGlow" x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur stdDeviation="5" result="b"/>
               <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -414,8 +429,13 @@
             <circle cx="760" cy="452" r="1.8" class="tw" style="animation-delay:0.9s"/>
           </g>
 
+          <!-- light pools cast by the fire -->
+          <ellipse cx="720" cy="516" rx="340" ry="46" fill="url(#firePool)"/>
+          <ellipse cx="390" cy="540" rx="170" ry="34" fill="url(#firePool)"/>
+          <circle cx="424" cy="392" r="34" fill="#ffd9a0" opacity="0.3" filter="url(#fireGlow)"/>
+
           <!-- the caster: lunging, hand thrown -->
-          <g transform="translate(300, 540)" fill="#0a0509" filter="url(#fireGlow)">
+          <g transform="translate(300, 540)" fill="#170b10" filter="url(#fireGlow)">
             <!-- back leg lunging -->
             <path d="M -74 4 L -68 -6 L -34 -16 L -8 -66 L 12 -56 L -28 -8 L -62 10 Z"/>
             <!-- front leg planted -->
@@ -435,8 +455,15 @@
             <!-- head, looking along the throw -->
             <circle cx="32" cy="-150" r="15"/>
             <path d="M 20 -161 Q 32 -170 46 -162 L 50 -151 Q 38 -159 22 -156 Z"/>
-            <!-- rim light -->
-            <path d="M 44 -130 Q 52 -110 44 -86 M 114 -146 Q 92 -138 58 -122 M 46 -160 Q 50 -154 50 -148" stroke="#ff9a4d" stroke-width="1.8" fill="none" opacity="0.75" stroke-linecap="round"/>
+            <!-- fire-side rim light tracing his whole edge -->
+            <g stroke="#ff9a4d" fill="none" stroke-linecap="round">
+              <path d="M 40 -162 A 15 15 0 0 1 47 -148" stroke-width="2.4" opacity="0.95"/>
+              <path d="M 46 -128 Q 52 -110 44 -86" stroke-width="2.4" opacity="0.9"/>
+              <path d="M 36 -122 L 92 -140 L 114 -147" stroke-width="2.2" opacity="0.85"/>
+              <path d="M 33 -74 L 45 -36 L 51 -4" stroke-width="2" opacity="0.7"/>
+              <path d="M -6 -64 L 10 -57" stroke-width="1.8" opacity="0.6"/>
+              <path d="M 44 -84 Q 34 -68 14 -61" stroke-width="1.6" opacity="0.55"/>
+            </g>
           </g>
         </svg>
       </div>
@@ -507,6 +534,8 @@
             <!-- hollow with the gear -->
             <ellipse cx="877" cy="420" rx="52" ry="62" fill="#04070d"/>
             <circle cx="874" cy="420" r="66" fill="url(#gearGlow)" class="flicker"/>
+            <ellipse cx="874" cy="430" rx="105" ry="130" fill="url(#gearGlow)" opacity="0.4"/>
+            <ellipse cx="870" cy="562" rx="150" ry="24" fill="url(#gearGlow)" opacity="0.35"/>
             <g class="gearspin" filter="url(#vsSoft)">
               <g transform="translate(874, 420)">
                 <g fill="#ffbe6a">
@@ -528,7 +557,7 @@
           </g>
 
           <!-- the snoozer, propped against the roots -->
-          <g transform="translate(752, 558) scale(1.2)" fill="#1c2a46">
+          <g transform="translate(752, 558) scale(1.2)" fill="#2a3c60">
             <!-- legs stretched left, ankles crossed -->
             <path d="M 0 -22 L -48 -26 L -90 -10 L -87 -2 L -46 -16 L 2 -12 Z"/>
             <path d="M 2 -16 L -42 -14 L -78 2 L -74 9 L -38 -4 L 4 -6 Z"/>
@@ -542,12 +571,17 @@
             <!-- head dropped forward -->
             <circle cx="28" cy="-86" r="12"/>
             <!-- wide hat tipped over the face -->
-            <g fill="#31415f">
+            <g fill="#48597e">
               <ellipse cx="24" cy="-93" rx="21" ry="5.5" transform="rotate(-22 24 -93)"/>
               <path d="M 14 -102 Q 24 -110 36 -102 L 34 -90 L 14 -94 Z"/>
             </g>
-            <!-- moonlit rim -->
-            <path d="M 2 -14 Q -5 -46 10 -70" stroke="#7ca0cc" stroke-width="1.5" fill="none" opacity="0.5" stroke-linecap="round"/>
+            <!-- moonlit rim on his left, gear-warmth on his right -->
+            <path d="M 2 -14 Q -5 -46 10 -70" stroke="#7ca0cc" stroke-width="1.6" fill="none" opacity="0.55" stroke-linecap="round"/>
+            <g stroke="#ffbe6a" fill="none" stroke-linecap="round">
+              <path d="M 36 -80 Q 44 -58 40 -28" stroke-width="2" opacity="0.75"/>
+              <path d="M 38 -97 Q 40 -92 39 -88" stroke-width="1.8" opacity="0.8"/>
+              <path d="M 34 -50 Q 20 -18 4 -10" stroke-width="1.4" opacity="0.45"/>
+            </g>
           </g>
           <!-- z z z -->
           <g font-family="Consolas, monospace" fill="#9ecfff" font-size="20">
@@ -626,13 +660,15 @@
 
           <!-- workbench -->
           <rect x="120" y="440" width="960" height="26" rx="6" fill="url(#benchTop)"/>
+          <rect x="330" y="440" width="500" height="4" rx="2" fill="#ffd9a0" opacity="0.22"/>
+          <rect x="240" y="440" width="700" height="9" rx="4" fill="#ffd9a0" opacity="0.08"/>
           <rect x="150" y="466" width="20" height="130" fill="#120d1c"/>
           <rect x="1030" y="466" width="20" height="130" fill="#120d1c"/>
           <rect x="120" y="466" width="960" height="8" fill="#0b0813"/>
 
           <!-- the boy tipping the box -->
           <g transform="translate(380, 440)" filter="url(#alSoft)">
-            <g fill="#0a0714">
+            <g fill="#181022">
               <!-- torso leaning toward the box -->
               <path d="M -124 0 Q -134 -70 -108 -112 Q -90 -136 -60 -130 Q -40 -120 -44 -88 Q -48 -44 -62 0 Z"/>
               <!-- neck and head, tilted toward the spill -->
@@ -643,6 +679,13 @@
               <path d="M -86 -122 Q -20 -124 36 -108 L 33 -93 Q -20 -110 -88 -105 Z"/>
               <!-- near arm angled down to the box mouth -->
               <path d="M -76 -104 Q -28 -98 14 -78 L 5 -58 Q -32 -80 -80 -82 Z"/>
+            </g>
+            <!-- lamplight rim from above, cool spill from the matrices below -->
+            <g fill="none" stroke-linecap="round">
+              <path d="M -95 -155 Q -84 -172 -62 -162" stroke="#ffd9a0" stroke-width="2.4" opacity="0.8"/>
+              <path d="M -106 -110 Q -92 -134 -64 -130" stroke="#ffd9a0" stroke-width="2.2" opacity="0.65"/>
+              <path d="M -80 -120 Q -20 -122 34 -108" stroke="#ffd9a0" stroke-width="1.8" opacity="0.55"/>
+              <path d="M -66 -82 Q -28 -80 4 -62" stroke="#7ce4ff" stroke-width="1.6" opacity="0.4"/>
             </g>
             <!-- the box, tipped -->
             <g transform="translate(64, -104) rotate(24)">
@@ -811,10 +854,11 @@
           </g>
 
           <!-- hill and observer -->
-          <path d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540 L 1200 620 L 0 620 Z" fill="#070b16"/>
-          <g transform="translate(330, 528)" fill="#060a13" filter="url(#cvSoft)">
+          <path d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540 L 1200 620 L 0 620 Z" fill="#0b1122"/>
+          <path d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540" stroke="#1c2a4a" stroke-width="2" fill="none" opacity="0.8"/>
+          <g transform="translate(330, 528)" fill="#141f38">
             <!-- tripod -->
-            <g stroke="#060a13" stroke-width="6" stroke-linecap="round">
+            <g stroke="#141f38" stroke-width="6" stroke-linecap="round">
               <line x1="64" y1="-58" x2="46" y2="0"/>
               <line x1="64" y1="-58" x2="76" y2="0"/>
               <line x1="64" y1="-58" x2="62" y2="-6"/>
@@ -823,6 +867,7 @@
             <g transform="rotate(-31 64 -62)">
               <rect x="30" y="-74" width="92" height="20" rx="9"/>
               <rect x="116" y="-77" width="14" height="26" rx="5"/>
+              <line x1="36" y1="-70" x2="118" y2="-70" stroke="#e8d9b0" stroke-width="2" opacity="0.75" stroke-linecap="round"/>
             </g>
             <!-- figure leaning to the eyepiece -->
             <path d="M -14 0 L -10 -48 L 0 -48 L 0 0 Z"/>
@@ -831,6 +876,14 @@
             <path d="M 16 -92 Q 30 -84 40 -72 L 32 -64 Q 24 -76 10 -82 Z"/>
             <circle cx="34" cy="-96" r="13"/>
             <path d="M 22 -104 Q 32 -112 44 -106 L 46 -96 Q 36 -104 24 -100 Z"/>
+            <!-- starlight rim from the galaxy, upper right -->
+            <g stroke="#e8d9b0" fill="none" stroke-linecap="round">
+              <path d="M 27 -108 Q 40 -110 45 -100" stroke-width="2.2" opacity="0.85"/>
+              <path d="M 31 -86 Q 34 -66 27 -48" stroke-width="2" opacity="0.7"/>
+              <path d="M 18 -92 Q 32 -83 39 -72" stroke-width="1.6" opacity="0.6"/>
+              <path d="M 21 -46 L 22 -4" stroke-width="1.5" opacity="0.5"/>
+              <path d="M 64 -60 L 74 -4" stroke-width="1.3" opacity="0.4"/>
+            </g>
           </g>
         </svg>
       </div>
@@ -908,7 +961,7 @@
           <g transform="translate(566, 560)" filter="url(#rmSoft)">
             <!-- boy, left, blond -->
             <g>
-              <g fill="#2c2438">
+              <g fill="#3a3050">
                 <path d="M -34 0 L -31 -58 L -22 -58 L -22 0 Z"/>
                 <path d="M -16 0 L -17 -58 L -8 -58 L -6 0 Z"/>
                 <path d="M -36 -54 Q -40 -102 -20 -114 Q -2 -118 4 -104 Q 8 -78 2 -54 Q -18 -62 -36 -54 Z"/>
@@ -919,11 +972,17 @@
               </g>
               <!-- blond head, seen from behind -->
               <circle cx="-15" cy="-126" r="14.5" fill="#e8c86a"/>
-              <path d="M -27 -117 Q -15 -110 -3 -117 L -3 -112 Q -15 -106 -27 -112 Z" fill="#2c2438"/>
+              <path d="M -27 -117 Q -15 -110 -3 -117 L -3 -112 Q -15 -106 -27 -112 Z" fill="#3a3050"/>
+              <!-- sun rim on his silhouette -->
+              <g stroke="#ffd9a0" fill="none" stroke-linecap="round">
+                <path d="M -34 -100 Q -38 -84 -37 -60" stroke-width="2" opacity="0.7"/>
+                <path d="M 2 -102 Q 7 -84 9 -60" stroke-width="2" opacity="0.75"/>
+                <path d="M -29 -56 L -30 -4 M -22 -56 L -22 -4" stroke-width="1.4" opacity="0.45"/>
+              </g>
             </g>
             <!-- girl, right, short dark hair -->
             <g transform="translate(42, 6)">
-              <g fill="#3c2a34">
+              <g fill="#4c3846">
                 <path d="M -12 0 L -10 -50 L -2 -50 L -2 0 Z"/>
                 <path d="M 4 0 L 3 -50 L 11 -50 L 13 0 Z"/>
                 <!-- skirt + torso -->
@@ -934,11 +993,18 @@
                 <path d="M -10 -86 Q -22 -70 -28 -52 L -20 -47 Q -14 -66 -4 -80 Z"/>
               </g>
               <!-- short dark bob, seen from behind -->
-              <circle cx="0" cy="-104" r="13" fill="#1c1420"/>
-              <path d="M -13 -100 Q -14 -94 -10 -90 L -6 -95 Q -10 -97 -10 -102 Z M 13 -100 Q 14 -94 10 -90 L 6 -95 Q 10 -97 10 -102 Z" fill="#1c1420"/>
+              <circle cx="0" cy="-104" r="13" fill="#241a2c"/>
+              <path d="M -13 -100 Q -14 -94 -10 -90 L -6 -95 Q -10 -97 -10 -102 Z M 13 -100 Q 14 -94 10 -90 L 6 -95 Q 10 -97 10 -102 Z" fill="#241a2c"/>
+              <!-- sun rim on her silhouette -->
+              <g stroke="#ffd9a0" fill="none" stroke-linecap="round">
+                <path d="M -10 -114 A 13 13 0 0 1 11 -110" stroke-width="2" opacity="0.8"/>
+                <path d="M 17 -88 Q 21 -70 19 -50" stroke-width="1.8" opacity="0.7"/>
+                <path d="M -15 -88 Q -19 -70 -18 -52" stroke-width="1.8" opacity="0.6"/>
+                <path d="M 6 -48 L 8 -4" stroke-width="1.3" opacity="0.45"/>
+              </g>
             </g>
             <!-- held hands -->
-            <circle cx="20" cy="-49" r="5" fill="#33283a"/>
+            <circle cx="20" cy="-49" r="5" fill="#463a52"/>
           </g>
 
           <!-- grass sway foreground -->
