@@ -103,8 +103,24 @@
   .petal { animation: petalDrift 9s linear infinite; opacity: 0; }
   @keyframes petalDrift { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 0.8; } 100% { transform: translate(-150px, 90px); opacity: 0; } }
   .firefly { animation: twinkle 4.6s ease-in-out infinite; }
+
+  /* faceted shards assemble like the eye */
+  .fct {
+    opacity: 0;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .play .fct { animation: fctIn 0.55s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+  @keyframes fctIn {
+    from { opacity: 0; transform: scale(0.12) rotate(8deg); }
+    to { opacity: 1; transform: none; }
+  }
+  .fireFct { opacity: 0; transition: opacity 0.35s ease-out; }
+  html.ffmode .fct {
+    opacity: 1 !important; animation: none !important; transform: none !important;
+  }
   @media (prefers-reduced-motion: reduce) {
     .breathe, .tw, .flicker, .gearspin, .zfloat, .bob, .galaxyturn, .petal, .firefly { animation: none; opacity: 1; }
+    .fct, .fireFct { opacity: 1 !important; animation: none !important; }
   }
 
   footer {
@@ -216,13 +232,13 @@
         <g transform="translate(1050, 275)">
           <circle r="150" fill="url(#burstCore)" opacity="0.35"/>
           <g class="breathe" filter="url(#soft)">
-            <g>
+            <g data-poly="burst-gold">
               <use href="#rayRingG"/><use href="#rayRingG" transform="rotate(30)"/><use href="#rayRingG" transform="rotate(60)"/>
               <use href="#rayRingG" transform="rotate(90)"/><use href="#rayRingG" transform="rotate(120)"/><use href="#rayRingG" transform="rotate(150)"/>
               <use href="#rayRingG" transform="rotate(180)"/><use href="#rayRingG" transform="rotate(210)"/><use href="#rayRingG" transform="rotate(240)"/>
               <use href="#rayRingG" transform="rotate(270)"/><use href="#rayRingG" transform="rotate(300)"/><use href="#rayRingG" transform="rotate(330)"/>
             </g>
-            <g transform="rotate(15) scale(0.72)" opacity="0.8">
+            <g data-poly="hide" transform="rotate(15) scale(0.72)" opacity="0.8">
               <use href="#rayRingG"/><use href="#rayRingG" transform="rotate(30)"/><use href="#rayRingG" transform="rotate(60)"/>
               <use href="#rayRingG" transform="rotate(90)"/><use href="#rayRingG" transform="rotate(120)"/><use href="#rayRingG" transform="rotate(150)"/>
               <use href="#rayRingG" transform="rotate(180)"/><use href="#rayRingG" transform="rotate(210)"/><use href="#rayRingG" transform="rotate(240)"/>
@@ -242,13 +258,13 @@
         <g transform="translate(500, 240) scale(0.82)">
           <circle r="150" fill="url(#burstCore)" opacity="0.2"/>
           <g class="breathe" style="animation-delay:1.6s" filter="url(#soft)">
-            <g>
+            <g data-poly="burst-blue">
               <use href="#rayRingB"/><use href="#rayRingB" transform="rotate(30)"/><use href="#rayRingB" transform="rotate(60)"/>
               <use href="#rayRingB" transform="rotate(90)"/><use href="#rayRingB" transform="rotate(120)"/><use href="#rayRingB" transform="rotate(150)"/>
               <use href="#rayRingB" transform="rotate(180)"/><use href="#rayRingB" transform="rotate(210)"/><use href="#rayRingB" transform="rotate(240)"/>
               <use href="#rayRingB" transform="rotate(270)"/><use href="#rayRingB" transform="rotate(300)"/><use href="#rayRingB" transform="rotate(330)"/>
             </g>
-            <g transform="rotate(15) scale(0.7)" opacity="0.75">
+            <g data-poly="hide" transform="rotate(15) scale(0.7)" opacity="0.75">
               <use href="#rayRingB"/><use href="#rayRingB" transform="rotate(45)"/><use href="#rayRingB" transform="rotate(90)"/>
               <use href="#rayRingB" transform="rotate(135)"/><use href="#rayRingB" transform="rotate(180)"/><use href="#rayRingB" transform="rotate(225)"/>
               <use href="#rayRingB" transform="rotate(270)"/><use href="#rayRingB" transform="rotate(315)"/>
@@ -265,7 +281,7 @@
         <!-- violet burst -->
         <g transform="translate(1305, 430) scale(0.5)">
           <g class="breathe" style="animation-delay:3s" filter="url(#soft)">
-            <g>
+            <g data-poly="burst-violet">
               <use href="#rayRingV"/><use href="#rayRingV" transform="rotate(36)"/><use href="#rayRingV" transform="rotate(72)"/>
               <use href="#rayRingV" transform="rotate(108)"/><use href="#rayRingV" transform="rotate(144)"/><use href="#rayRingV" transform="rotate(180)"/>
               <use href="#rayRingV" transform="rotate(216)"/><use href="#rayRingV" transform="rotate(252)"/><use href="#rayRingV" transform="rotate(288)"/>
@@ -276,8 +292,8 @@
         </g>
 
         <!-- meadow -->
-        <path d="M 0 700 Q 300 660 620 690 T 1600 672 L 1600 900 L 0 900 Z" fill="#0a1122"/>
-        <path d="M 0 760 Q 400 716 860 748 T 1600 738 L 1600 900 L 0 900 Z" fill="#070c19"/>
+        <path data-poly="h-meadow1" d="M 0 700 Q 300 660 620 690 T 1600 672 L 1600 900 L 0 900 Z" fill="#0a1122"/>
+        <path data-poly="h-meadow2" d="M 0 760 Q 400 716 860 748 T 1600 738 L 1600 900 L 0 900 Z" fill="#070c19"/>
         <ellipse cx="1080" cy="726" rx="340" ry="90" fill="url(#groundGlow)"/>
         <ellipse cx="1104" cy="712" rx="120" ry="26" fill="url(#kidGlow)"/>
 
@@ -297,9 +313,9 @@
         </g>
 
         <!-- the kid, back view, looking up, lit by the distant burst -->
-        <g transform="translate(1104, 706) scale(1.25)" filter="url(#soft)">
+        <g transform="translate(1104, 706) scale(1.25)">
           <ellipse cx="4" cy="-84" rx="64" ry="112" fill="url(#kidGlow)"/>
-          <g fill="#0b1020">
+          <g data-poly="h-kid" fill="#0b1020">
             <!-- legs -->
             <path d="M -13 0 L -11 -52 L -3 -52 L -4 0 Z"/>
             <path d="M 12 0 L 10 -52 L 2 -52 L 3 0 Z"/>
@@ -368,7 +384,7 @@
             <circle cx="600" cy="180" r="1.4" class="tw" style="animation-delay:1.6s"/>
           </g>
           <!-- ground -->
-          <path d="M 0 540 Q 260 512 520 532 T 1200 520 L 1200 620 L 0 620 Z" fill="#120a10"/>
+          <path data-poly="sv-ground" d="M 0 540 Q 260 512 520 532 T 1200 520 L 1200 620 L 0 620 Z" fill="#120a10"/>
           <path d="M 0 542 Q 260 514 520 534 T 1200 522" stroke="#2a1418" stroke-width="2" fill="none" opacity="0.8"/>
           <g fill="#1a0d12">
             <path d="M 560 538 l 14 -10 l 16 8 l -4 8 l -22 0 Z"/>
@@ -387,9 +403,9 @@
           </g>
 
           <!-- fire: a wavy stream with flame peaks along its back -->
-          <g class="flicker" filter="url(#fireGlow)">
+          <g id="svFire" class="flicker" filter="url(#fireGlow)">
             <!-- outer flame: top edge rises into dragged tongues, bottom edge waves home -->
-            <path d="M 424 388
+            <path data-poly="sv-fire" d="M 424 388
                      C 462 374 496 366 522 354
                      C 514 322 524 292 556 274
                      C 550 304 562 322 590 330
@@ -408,7 +424,7 @@
                      C 464 398 440 396 424 396 Z"
                   fill="url(#fireA)" opacity="0.9"/>
             <!-- inner bright core, narrower, echoing the waves -->
-            <path d="M 424 390
+            <path data-poly="hide" d="M 424 390
                      C 490 374 550 362 620 352
                      C 700 340 780 330 860 322
                      C 930 314 1000 306 1060 288
@@ -417,7 +433,7 @@
                      C 530 380 464 392 424 394 Z"
                   fill="url(#fireB)" opacity="0.85"/>
             <!-- flickering highlight thread -->
-            <path d="M 428 391 C 500 376 560 368 640 356 C 730 342 820 336 900 326 C 970 318 1030 304 1080 284"
+            <path id="svFireThread" d="M 428 391 C 500 376 560 368 640 356 C 730 342 820 336 900 326 C 970 318 1030 304 1080 284"
                   stroke="#fff3d6" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.65"/>
           </g>
           <!-- drifting embers -->
@@ -435,7 +451,8 @@
           <circle cx="424" cy="392" r="34" fill="#ffd9a0" opacity="0.3" filter="url(#fireGlow)"/>
 
           <!-- the caster: lunging, hand thrown -->
-          <g transform="translate(300, 540)" fill="#170b10" filter="url(#fireGlow)">
+          <g transform="translate(300, 540)" fill="#170b10">
+            <g data-poly="sv-caster">
             <!-- back leg lunging -->
             <path d="M -74 4 L -68 -6 L -34 -16 L -8 -66 L 12 -56 L -28 -8 L -62 10 Z"/>
             <!-- front leg planted -->
@@ -446,6 +463,7 @@
             <path d="M 6 -122 Q -30 -122 -56 -104 Q -64 -96 -58 -88 Q -30 -104 8 -108 Z"/>
             <!-- throwing arm, full and extended to the palm -->
             <path d="M 34 -124 L 92 -142 L 116 -148 L 120 -134 L 96 -128 L 40 -108 Z"/>
+            </g>
             <!-- open palm and fingers -->
             <g stroke="#0a0509" stroke-width="5" stroke-linecap="round">
               <path d="M 117 -150 l 15 -9"/>
@@ -453,8 +471,8 @@
               <path d="M 120 -136 l 15 3"/>
             </g>
             <!-- head, looking along the throw -->
-            <circle cx="32" cy="-150" r="15"/>
-            <path d="M 20 -161 Q 32 -170 46 -162 L 50 -151 Q 38 -159 22 -156 Z"/>
+            <circle data-poly="sv-head" cx="32" cy="-150" r="15"/>
+            <path data-poly="hide" d="M 20 -161 Q 32 -170 46 -162 L 50 -151 Q 38 -159 22 -156 Z"/>
             <!-- fire-side rim light tracing his whole edge -->
             <g stroke="#ff9a4d" fill="none" stroke-linecap="round">
               <path d="M 40 -162 A 15 15 0 0 1 47 -148" stroke-width="2.4" opacity="0.95"/>
@@ -493,8 +511,8 @@
           </defs>
           <rect width="1200" height="620" fill="url(#vsSky)"/>
           <!-- moon and stars -->
-          <circle cx="180" cy="110" r="38" fill="#dbe7f5" opacity="0.85"/>
-          <circle cx="196" cy="102" r="34" fill="#0a1526"/>
+          <path d="M 218,110 215.1,124.6 206.9,136.9 194.6,145.1 180,148 165.4,145.1 153.1,136.9 144.9,124.6 142,110 144.9,95.4 153.1,83.1 165.4,74.9 180,72 194.6,74.9 206.9,83.1 215.1,95.4 Z" fill="#dbe7f5" opacity="0.85"/>
+          <path d="M 230,102 227.4,115 220,126 209,133.4 196,136 183,133.4 172,126 164.6,115 162,102 164.6,89 172,78 183,70.6 196,68 209,70.6 220,78 227.4,89 Z" fill="#0a1526"/>
           <g fill="#cfe4ff">
             <circle cx="90" cy="220" r="1.4" opacity="0.6"/><circle cx="320" cy="80" r="1.2" opacity="0.5"/>
             <circle cx="480" cy="150" r="1.3" class="tw"/><circle cx="600" cy="70" r="1.1" opacity="0.5"/>
@@ -503,24 +521,24 @@
           <!-- distant treeline -->
           <path d="M 0 470 Q 80 430 160 462 Q 240 420 330 458 Q 420 426 500 460 L 500 620 L 0 620 Z" fill="#081020" opacity="0.9"/>
           <!-- ground -->
-          <path d="M 0 520 Q 300 490 620 512 T 1200 500 L 1200 620 L 0 620 Z" fill="#0a1322"/>
+          <path data-poly="vs-ground" d="M 0 520 Q 300 490 620 512 T 1200 500 L 1200 620 L 0 620 Z" fill="#0a1322"/>
           <path d="M 0 570 Q 400 544 800 562 T 1200 556 L 1200 620 L 0 620 Z" fill="#070d18"/>
 
           <!-- the big tree -->
           <g>
             <!-- canopy -->
-            <g fill="#081222">
+            <g data-poly="vs-canopy" fill="#081222">
               <ellipse cx="860" cy="180" rx="260" ry="125"/>
               <ellipse cx="690" cy="245" rx="165" ry="92"/>
               <ellipse cx="1035" cy="250" rx="175" ry="96"/>
               <ellipse cx="880" cy="115" rx="155" ry="82"/>
             </g>
-            <g fill="#0d1b30" opacity="0.6">
+            <g data-poly="hide" fill="#0d1b30" opacity="0.6">
               <ellipse cx="795" cy="165" rx="105" ry="50"/>
               <ellipse cx="985" cy="215" rx="95" ry="46"/>
             </g>
             <!-- leaf clumps along the canopy underside -->
-            <g fill="#081222">
+            <g data-poly="hide" fill="#081222">
               <ellipse cx="640" cy="300" rx="52" ry="24"/>
               <ellipse cx="760" cy="330" rx="44" ry="20"/>
               <ellipse cx="1005" cy="330" rx="50" ry="22"/>
@@ -528,7 +546,7 @@
               <ellipse cx="880" cy="345" rx="36" ry="16"/>
             </g>
             <!-- trunk -->
-            <path d="M 812 566 Q 824 470 830 400 Q 812 330 838 284 L 916 284 Q 944 330 924 400 Q 930 470 942 566 L 986 578 L 770 578 Z" fill="#0a1322"/>
+            <path data-poly="vs-trunk" d="M 812 566 Q 824 470 830 400 Q 812 330 838 284 L 916 284 Q 944 330 924 400 Q 930 470 942 566 L 986 578 L 770 578 Z" fill="#0a1322"/>
             <path d="M 840 286 Q 810 246 762 230 M 914 286 Q 946 248 992 234 M 876 288 Q 876 244 884 218"
                   stroke="#0a1322" stroke-width="20" fill="none" stroke-linecap="round"/>
             <!-- hollow with the gear -->
@@ -548,8 +566,8 @@
                   <rect x="-40" y="-5" width="13" height="10" rx="2" transform="rotate(45)"/>
                   <rect x="27" y="-5" width="13" height="10" rx="2" transform="rotate(45)"/>
                 </g>
-                <circle r="30" fill="none" stroke="#ffd9a0" stroke-width="9"/>
-                <circle r="9" fill="none" stroke="#ffd9a0" stroke-width="5"/>
+                <circle data-poly="vs-gear-ring" r="30" fill="none" stroke="#ffd9a0" stroke-width="9"/>
+                <circle data-poly="vs-gear-hub" r="9" fill="none" stroke="#ffd9a0" stroke-width="5"/>
               </g>
             </g>
             <!-- roots -->
@@ -558,6 +576,7 @@
 
           <!-- the snoozer, propped against the roots -->
           <g transform="translate(752, 558) scale(1.2)" fill="#2a3c60">
+            <g data-poly="vs-sleeper">
             <!-- legs stretched left, ankles crossed -->
             <path d="M 0 -22 L -48 -26 L -90 -10 L -87 -2 L -46 -16 L 2 -12 Z"/>
             <path d="M 2 -16 L -42 -14 L -78 2 L -74 9 L -38 -4 L 4 -6 Z"/>
@@ -570,8 +589,9 @@
             <path d="M 8 -48 Q 20 -58 34 -52 L 32 -41 Q 20 -50 10 -38 Z"/>
             <!-- head dropped forward -->
             <circle cx="28" cy="-86" r="12"/>
+            </g>
             <!-- wide hat tipped over the face -->
-            <g fill="#48597e">
+            <g data-poly="vs-hat" fill="#48597e">
               <ellipse cx="24" cy="-93" rx="21" ry="5.5" transform="rotate(-22 24 -93)"/>
               <path d="M 14 -102 Q 24 -110 36 -102 L 34 -90 L 14 -94 Z"/>
             </g>
@@ -646,7 +666,7 @@
           <path d="M 560 130 L 600 92 L 640 130 Z" fill="#241c30"/>
           <path d="M 556 130 L 644 130 L 610 134 L 590 134 Z" fill="#38294a"/>
           <circle cx="600" cy="128" r="9" fill="#fff0d0" class="flicker"/>
-          <polygon points="600,132 300,470 900,470" fill="url(#cone)"/>
+          <polygon data-poly="al-cone" points="600,132 300,470 900,470" fill="url(#cone)"/>
 
           <!-- back wall shelf hints -->
           <g stroke="#1c1528" stroke-width="3" opacity="0.8">
@@ -659,7 +679,7 @@
           </g>
 
           <!-- workbench -->
-          <rect x="120" y="440" width="960" height="26" rx="6" fill="url(#benchTop)"/>
+          <rect data-poly="al-bench" x="120" y="440" width="960" height="26" rx="6" fill="url(#benchTop)"/>
           <rect x="330" y="440" width="500" height="4" rx="2" fill="#ffd9a0" opacity="0.22"/>
           <rect x="240" y="440" width="700" height="9" rx="4" fill="#ffd9a0" opacity="0.08"/>
           <rect x="150" y="466" width="20" height="130" fill="#120d1c"/>
@@ -667,8 +687,8 @@
           <rect x="120" y="466" width="960" height="8" fill="#0b0813"/>
 
           <!-- the boy tipping the box -->
-          <g transform="translate(380, 440)" filter="url(#alSoft)">
-            <g fill="#181022">
+          <g transform="translate(380, 440)">
+            <g data-poly="al-boy" fill="#181022">
               <!-- torso leaning toward the box -->
               <path d="M -124 0 Q -134 -70 -108 -112 Q -90 -136 -60 -130 Q -40 -120 -44 -88 Q -48 -44 -62 0 Z"/>
               <!-- neck and head, tilted toward the spill -->
@@ -689,9 +709,11 @@
             </g>
             <!-- the box, tipped -->
             <g transform="translate(64, -104) rotate(24)">
-              <rect x="-40" y="-28" width="80" height="56" rx="5" fill="#1e1430" stroke="#4a3866" stroke-width="2.5"/>
-              <rect x="-40" y="-28" width="80" height="12" rx="5" fill="#2c1f42"/>
-              <path d="M 40 -28 L 66 -40 L 66 12 L 40 28 Z" fill="#170f26" stroke="#4a3866" stroke-width="2"/>
+              <g data-poly="al-box">
+                <rect x="-40" y="-28" width="80" height="56" rx="5" fill="#1e1430" stroke="#4a3866" stroke-width="2.5"/>
+                <rect x="-40" y="-28" width="80" height="12" rx="5" fill="#2c1f42"/>
+                <path d="M 40 -28 L 66 -40 L 66 12 L 40 28 Z" fill="#170f26" stroke="#4a3866" stroke-width="2"/>
+              </g>
             </g>
           </g>
 
@@ -751,7 +773,7 @@
             <!-- raised tentacle holding the magnifier -->
             <path d="M -16 12 C -30 6 -40 -4 -50 -13" stroke="#8a5ce8" stroke-width="6.5" fill="none" stroke-linecap="round"/>
             <!-- dome body -->
-            <path d="M -28 24 Q -34 -18 0 -22 Q 34 -18 28 24 Q 0 32 -28 24 Z" fill="#7a52d6"/>
+            <path data-poly="al-octo" d="M -28 24 Q -34 -18 0 -22 Q 34 -18 28 24 Q 0 32 -28 24 Z" fill="#7a52d6"/>
             <path d="M -20 -8 Q -8 -18 8 -14" stroke="#b18cff" stroke-width="3" fill="none" opacity="0.8"/>
             <!-- rivets -->
             <g fill="#c9b2ff">
@@ -809,7 +831,7 @@
           <g transform="translate(840, 230)">
             <g transform="rotate(-14) scale(1, 0.85)">
               <g class="galaxyturn">
-                <g filter="url(#galBlur)" fill="none" stroke-linecap="round">
+                <g data-poly="cv-arms" filter="url(#galBlur)" fill="none" stroke-linecap="round">
                   <path d="M 10 0 C 60 -18 96 18 88 62 C 76 122 -4 148 -74 118 C -150 84 -172 -8 -124 -78"
                         stroke="#9ecfff" stroke-width="13" opacity="0.55"/>
                   <path d="M -10 0 C -60 18 -96 -18 -88 -62 C -76 -122 4 -148 74 -118 C 150 -84 172 8 124 78"
@@ -854,7 +876,7 @@
           </g>
 
           <!-- hill and observer -->
-          <path d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540 L 1200 620 L 0 620 Z" fill="#0b1122"/>
+          <path data-poly="cv-hill" d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540 L 1200 620 L 0 620 Z" fill="#0b1122"/>
           <path d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540" stroke="#1c2a4a" stroke-width="2" fill="none" opacity="0.8"/>
           <g transform="translate(330, 528)" fill="#141f38">
             <!-- tripod -->
@@ -865,17 +887,20 @@
             </g>
             <!-- telescope tube aimed at the galaxy -->
             <g transform="rotate(-31 64 -62)">
-              <rect x="30" y="-74" width="92" height="20" rx="9"/>
-              <rect x="116" y="-77" width="14" height="26" rx="5"/>
+              <g data-poly="cv-tube">
+                <rect x="30" y="-74" width="92" height="20" rx="9"/>
+                <rect x="116" y="-77" width="14" height="26" rx="5"/>
+              </g>
               <line x1="36" y1="-70" x2="118" y2="-70" stroke="#e8d9b0" stroke-width="2" opacity="0.75" stroke-linecap="round"/>
             </g>
-            <!-- figure leaning to the eyepiece -->
+            <g data-poly="cv-figure">
             <path d="M -14 0 L -10 -48 L 0 -48 L 0 0 Z"/>
             <path d="M 8 0 L 10 -48 L 20 -48 L 22 0 Z"/>
             <path d="M -16 -44 Q -20 -86 2 -98 Q 22 -102 30 -88 Q 34 -66 26 -46 Q 4 -54 -16 -44 Z"/>
             <path d="M 16 -92 Q 30 -84 40 -72 L 32 -64 Q 24 -76 10 -82 Z"/>
             <circle cx="34" cy="-96" r="13"/>
             <path d="M 22 -104 Q 32 -112 44 -106 L 46 -96 Q 36 -104 24 -100 Z"/>
+            </g>
             <!-- starlight rim from the galaxy, upper right -->
             <g stroke="#e8d9b0" fill="none" stroke-linecap="round">
               <path d="M 27 -108 Q 40 -110 45 -100" stroke-width="2.2" opacity="0.85"/>
@@ -918,9 +943,9 @@
           </defs>
           <rect width="1200" height="620" fill="url(#rmSky)"/>
           <circle cx="600" cy="330" r="190" fill="url(#rmSun)"/>
-          <circle cx="600" cy="330" r="46" fill="#fff3d6" opacity="0.95"/>
+          <circle data-poly="rm-sun" cx="600" cy="330" r="46" fill="#fff3d6" opacity="0.95"/>
           <!-- soft clouds -->
-          <g fill="#f4c8a0" opacity="0.5">
+          <g data-poly="rm-clouds" fill="#f4c8a0" opacity="0.5">
             <ellipse cx="240" cy="140" rx="120" ry="16"/>
             <ellipse cx="920" cy="100" rx="150" ry="14"/>
             <ellipse cx="1060" cy="190" rx="90" ry="11"/>
@@ -933,11 +958,11 @@
 
           <!-- meadow -->
           <path d="M 0 360 Q 300 336 600 352 T 1200 348 L 1200 620 L 0 620 Z" fill="#2e4444"/>
-          <path d="M 0 430 Q 300 400 640 424 T 1200 416 L 1200 620 L 0 620 Z" fill="#243c38"/>
-          <path d="M 0 540 Q 400 500 800 528 T 1200 516 L 1200 620 L 0 620 Z" fill="#1a2e2c"/>
+          <path data-poly="rm-meadow2" d="M 0 430 Q 300 400 640 424 T 1200 416 L 1200 620 L 0 620 Z" fill="#243c38"/>
+          <path data-poly="rm-meadow3" d="M 0 540 Q 400 500 800 528 T 1200 516 L 1200 620 L 0 620 Z" fill="#1a2e2c"/>
 
           <!-- the path -->
-          <path d="M 452 620 Q 512 516 600 470 Q 680 424 640 388 Q 612 366 600 352 L 626 352 Q 660 380 700 400 Q 720 452 660 500 Q 600 550 622 620 Z" fill="url(#rmPath)"/>
+          <path data-poly="rm-path" d="M 452 620 Q 512 516 600 470 Q 680 424 640 388 Q 612 366 600 352 L 626 352 Q 660 380 700 400 Q 720 452 660 500 Q 600 550 622 620 Z" fill="url(#rmPath)"/>
           <g stroke="#8a5c3c" stroke-width="2" opacity="0.5" stroke-linecap="round">
             <path d="M 540 560 q 14 -4 26 2 M 600 500 q 12 -6 24 -2 M 636 444 q 10 -6 20 -4"/>
           </g>
@@ -958,10 +983,10 @@
           </g>
 
           <!-- the couple, back view, holding hands -->
-          <g transform="translate(566, 560)" filter="url(#rmSoft)">
+          <g transform="translate(566, 560)">
             <!-- boy, left, blond -->
             <g>
-              <g fill="#3a3050">
+              <g data-poly="rm-boy" fill="#3a3050">
                 <path d="M -34 0 L -31 -58 L -22 -58 L -22 0 Z"/>
                 <path d="M -16 0 L -17 -58 L -8 -58 L -6 0 Z"/>
                 <path d="M -36 -54 Q -40 -102 -20 -114 Q -2 -118 4 -104 Q 8 -78 2 -54 Q -18 -62 -36 -54 Z"/>
@@ -971,7 +996,7 @@
                 <path d="M 0 -96 Q 16 -76 26 -58 L 18 -52 Q 8 -72 -6 -90 Z"/>
               </g>
               <!-- blond head, seen from behind -->
-              <circle cx="-15" cy="-126" r="14.5" fill="#e8c86a"/>
+              <circle data-poly="rm-boyhead" cx="-15" cy="-126" r="14.5" fill="#e8c86a"/>
               <path d="M -27 -117 Q -15 -110 -3 -117 L -3 -112 Q -15 -106 -27 -112 Z" fill="#3a3050"/>
               <!-- sun rim on his silhouette -->
               <g stroke="#ffd9a0" fill="none" stroke-linecap="round">
@@ -982,7 +1007,7 @@
             </g>
             <!-- girl, right, short dark hair -->
             <g transform="translate(42, 6)">
-              <g fill="#4c3846">
+              <g data-poly="rm-girl" fill="#4c3846">
                 <path d="M -12 0 L -10 -50 L -2 -50 L -2 0 Z"/>
                 <path d="M 4 0 L 3 -50 L 11 -50 L 13 0 Z"/>
                 <!-- skirt + torso -->
@@ -993,7 +1018,7 @@
                 <path d="M -10 -86 Q -22 -70 -28 -52 L -20 -47 Q -14 -66 -4 -80 Z"/>
               </g>
               <!-- short dark bob, seen from behind -->
-              <circle cx="0" cy="-104" r="13" fill="#241a2c"/>
+              <circle data-poly="rm-girlhead" cx="0" cy="-104" r="13" fill="#241a2c"/>
               <path d="M -13 -100 Q -14 -94 -10 -90 L -6 -95 Q -10 -97 -10 -102 Z M 13 -100 Q 14 -94 10 -90 L 6 -95 Q 10 -97 10 -102 Z" fill="#241a2c"/>
               <!-- sun rim on her silhouette -->
               <g stroke="#ffd9a0" fill="none" stroke-linecap="round">
@@ -1642,6 +1667,7 @@ function switchToSite() {
   if (ffMode) fadeEl.style.display = 'none';
   state = 'site'; stateT = 0;
   fadeEl.style.opacity = '1';
+  setTimeout(() => document.getElementById('top')?.classList.add('play'), 150);
   const target = new URLSearchParams(location.search).get('go') || location.hash;
   if (target) {
     try { document.querySelector(target.startsWith('#') ? target : '#' + target)?.scrollIntoView(); } catch (e) {}
@@ -1734,6 +1760,7 @@ function animate() {
   const ff = parseFloat(new URLSearchParams(location.search).get('ff'));
   if (ff > 0) {
     ffMode = true;
+    document.documentElement.classList.add('ffmode');
     if (new URLSearchParams(location.search).has('compact')) {
       const st = document.createElement('style');
       st.textContent = '.hero{min-height:240px} section.seg{padding:30px 0 10px} footer{padding:30px 0}';
@@ -1743,6 +1770,510 @@ function animate() {
   }
 }
 animate();
+
+// ================================================================ facet engine
+// Rebuilds every major shape in the scenes as jittered triangular shards,
+// the same construction as the eye. Shards assemble on scroll; the fire
+// pours out shard by shard as the reader scrolls.
+{
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const rngFor = seed => {
+    let s = seed >>> 0;
+    return () => {
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+  const col = h => new THREE.Color(h);
+  const css = c => '#' + c.getHexString();
+  const jit = (c, rnd, lo = 0.82, hi = 1.16) => c.clone().multiplyScalar(lo + rnd() * (hi - lo));
+
+  function pip(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function nearestOn(x, y, poly) {
+    let best = null, bd = Infinity;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [ax, ay] = poly[j], [bx, by] = poly[i];
+      const dx = bx - ax, dy = by - ay;
+      const L2 = dx * dx + dy * dy || 1;
+      const t = clamp(((x - ax) * dx + (y - ay) * dy) / L2, 0, 1);
+      const px = ax + t * dx, py = ay + t * dy;
+      const d = (px - x) ** 2 + (py - y) ** 2;
+      if (d < bd) { bd = d; best = [px, py]; }
+    }
+    return best;
+  }
+  const ngon = (cx, cy, r, n, a0 = 0) => {
+    const p = [];
+    for (let i = 0; i < n; i++) { const a = a0 + i / n * TAU; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+    return p;
+  };
+
+  // Lattice fill: triangular grid, jittered shared vertices, boundary snap.
+  function facetFill(outline, cell, rnd) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y] of outline) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    const rowH = cell * 0.866;
+    x0 -= cell; y0 -= rowH;
+    const cols = Math.ceil((x1 - x0 + cell) / cell) + 1;
+    const rows = Math.ceil((y1 - y0 + rowH) / rowH) + 1;
+    const verts = new Map(), snaps = new Map();
+    const getV = (i, j) => {
+      const k = i + ',' + j;
+      let v = verts.get(k);
+      if (!v) {
+        v = [x0 + (i + (j % 2 ? 0.5 : 0)) * cell + (rnd() - 0.5) * cell * 0.55,
+             y0 + j * rowH + (rnd() - 0.5) * cell * 0.55];
+        verts.set(k, v);
+      }
+      return [k, v];
+    };
+    const snapped = (k, v) => {
+      let s = snaps.get(k);
+      if (!s) { s = pip(v[0], v[1], outline) ? v : (nearestOn(v[0], v[1], outline) || v); snaps.set(k, s); }
+      return s;
+    };
+    const tris = [];
+    for (let j = 0; j < rows; j++) {
+      for (let i = 0; i < cols; i++) {
+        const a = getV(i, j), b = getV(i + 1, j), c = getV(i, j + 1), d = getV(i + 1, j + 1);
+        for (const T of [[a, b, c], [b, d, c]]) {
+          const cx = (T[0][1][0] + T[1][1][0] + T[2][1][0]) / 3;
+          const cy = (T[0][1][1] + T[1][1][1] + T[2][1][1]) / 3;
+          if (!pip(cx, cy, outline)) continue;
+          const P = T.map(([k, v]) => snapped(k, v));
+          const area = Math.abs((P[1][0] - P[0][0]) * (P[2][1] - P[0][1]) - (P[2][0] - P[0][0]) * (P[1][1] - P[0][1])) / 2;
+          if (area < cell * cell * 0.045) continue;
+          tris.push({ p: P, cx, cy });
+        }
+      }
+    }
+    if (!tris.length) tris.push({ p: outline, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 });
+    return tris;
+  }
+
+  function emit(g, tris, colorFn, delayFn, rnd, cls) {
+    const made = [];
+    for (const t of tris) {
+      const p = document.createElementNS(SVGNS, 'polygon');
+      p.setAttribute('points', t.p.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+      p.setAttribute('fill', colorFn(t.cx, t.cy));
+      p.setAttribute('class', cls || 'fct');
+      if (delayFn) p.style.animationDelay = delayFn(t.cx, t.cy).toFixed(2) + 's';
+      g.appendChild(p);
+      made.push({ el: p, cx: t.cx, cy: t.cy });
+    }
+    return made;
+  }
+  const distDelay = (ax, ay, speed, rnd, base = 0) =>
+    (cx, cy) => base + Math.min(1.3, Math.hypot(cx - ax, cy - ay) / speed) + rnd() * 0.14;
+
+  // simple part-based silhouette job
+  function silhouette(parts, cell, baseHex, opts = {}) {
+    return (g, rnd) => {
+      const base = col(baseHex);
+      const warm = opts.warm ? col(opts.warm) : null;
+      for (const part of parts) {
+        const tris = facetFill(part.pts || part, cell, rnd);
+        emit(g, tris, (cx, cy) => {
+          let c = base.clone();
+          if (part.color) c = col(part.color);
+          if (warm && opts.warmT) c.lerp(warm, clamp(opts.warmT(cx, cy), 0, 1));
+          return css(jit(c, rnd, 0.84, 1.14));
+        }, opts.anchor ? distDelay(opts.anchor[0], opts.anchor[1], opts.speed || 120, rnd) : null, rnd);
+      }
+    };
+  }
+
+  // shard bursts for the fireworks
+  function burst(hexes, baseDelay) {
+    return (g, rnd) => {
+      const [inner, mid, outer] = hexes.map(col);
+      const n = 26;
+      for (let k = 0; k < n; k++) {
+        const ang = k / n * TAU + (rnd() - 0.5) * 0.12;
+        const L = (k % 2 ? 105 : 160) * (0.85 + rnd() * 0.3);
+        const w = 4.5 + rnd() * 4;
+        const r0 = 28 + rnd() * 8;
+        const ca = Math.cos(ang), sa = Math.sin(ang);
+        const px = -sa, py = ca;
+        const rm = (r0 + L) * 0.52;
+        const pts = [
+          [r0 * ca, r0 * sa],
+          [rm * ca + px * w, rm * sa + py * w],
+          [L * ca, L * sa],
+          [rm * ca - px * w, rm * sa - py * w],
+        ];
+        const t = L / 170;
+        const c = jit(inner.clone().lerp(mid, clamp(t * 1.3 - 0.15, 0, 1)), rnd, 0.9, 1.1);
+        const p = document.createElementNS(SVGNS, 'polygon');
+        p.setAttribute('points', pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+        p.setAttribute('fill', css(c));
+        p.setAttribute('class', 'fct');
+        p.style.animationDelay = (baseDelay + (L / 170) * 0.5 + rnd() * 0.1).toFixed(2) + 's';
+        g.appendChild(p);
+      }
+      for (let k = 0; k < 22; k++) {
+        const ang = rnd() * TAU, r = 50 + rnd() * 130, s = 2.5 + rnd() * 4;
+        const cx = r * Math.cos(ang), cy = r * Math.sin(ang), a0 = rnd() * TAU;
+        const pts = [0, 1, 2].map(i => [cx + s * Math.cos(a0 + i * 2.1), cy + s * Math.sin(a0 + i * 2.1)]);
+        const p = document.createElementNS(SVGNS, 'polygon');
+        p.setAttribute('points', pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+        p.setAttribute('fill', css(jit(outer.clone(), rnd, 0.7, 1.1)));
+        p.setAttribute('class', 'fct');
+        p.style.animationDelay = (baseDelay + (r / 180) * 0.55 + rnd() * 0.15).toFixed(2) + 's';
+        g.appendChild(p);
+      }
+    };
+  }
+
+  const fireFacets = [];
+
+  const JOBS = {
+    // ---- hero ----
+    'burst-gold': burst(['#fff3d6', '#ffbe6a', '#ffd9a0'], 0.1),
+    'burst-blue': burst(['#eaf6ff', '#7cc4ff', '#9ecfff'], 0.55),
+    'burst-violet': burst(['#f4ecff', '#b18cff', '#c9b2ff'], 0.95),
+    'h-meadow1': (g, rnd) => {
+      const base = col('#0a1122'), lit = col('#1c2c52');
+      const tris = facetFill([[0,700],[300,668],[620,690],[1000,678],[1600,672],[1600,900],[0,900]], 62, rnd);
+      emit(g, tris, (cx, cy) => {
+        const d = Math.hypot(cx - 1104, cy - 730);
+        return css(jit(base.clone().lerp(lit, Math.max(0, 1 - d / 260) * 0.7), rnd, 0.85, 1.15));
+      }, distDelay(1104, 720, 900, rnd, 0.9), rnd);
+    },
+    'h-meadow2': (g, rnd) => {
+      const base = col('#070c19');
+      const tris = facetFill([[0,760],[400,720],[860,748],[1600,738],[1600,900],[0,900]], 58, rnd);
+      emit(g, tris, () => css(jit(base.clone(), rnd, 0.8, 1.2)), distDelay(1104, 780, 900, rnd, 1.0), rnd);
+    },
+    'h-kid': silhouette([
+      [[-13,0],[-11,-52],[-3,-52],[-4,0]],
+      [[12,0],[10,-52],[2,-52],[3,0]],
+      [[-16,-50],[-18,-92],[-14,-104],[0,-112],[14,-104],[18,-92],[16,-50],[0,-56]],
+      [[-14,-100],[-26,-84],[-24,-58],[-18,-58],[-19,-80],[-12,-94]],
+      [[14,-100],[26,-84],[24,-58],[18,-58],[19,-80],[12,-94]],
+      ngon(1, -126, 15, 10),
+    ], 5, '#101830', { warm: '#3a281c', warmT: (cx) => (cx + 4) / 40, anchor: [0, -80], speed: 90 }),
+
+    // ---- staravorix ----
+    'sv-ground': (g, rnd) => {
+      const base = col('#140a0e'), warm = col('#33150e');
+      const tris = facetFill([[0,540],[260,514],[520,532],[860,526],[1200,520],[1200,620],[0,620]], 46, rnd);
+      emit(g, tris, (cx, cy) => {
+        const d = Math.hypot(cx - 720, cy - 520);
+        return css(jit(base.clone().lerp(warm, Math.max(0, 1 - d / 380) * 0.8), rnd, 0.8, 1.2));
+      }, distDelay(300, 540, 700, rnd, 0.5), rnd);
+    },
+    'sv-caster': silhouette([
+      [[-74,4],[-68,-6],[-34,-16],[-8,-66],[12,-56],[-28,-8],[-62,10]],
+      [[40,0],[30,-34],[16,-72],[32,-76],[44,-36],[52,0]],
+      [[-2,-64],[-8,-110],[12,-132],[34,-140],[44,-128],[52,-112],[44,-84],[30,-66],[12,-60]],
+      [[6,-122],[-30,-122],[-56,-104],[-64,-96],[-58,-88],[-30,-104],[8,-108]],
+      [[34,-124],[92,-142],[116,-148],[120,-134],[96,-128],[40,-108]],
+    ], 6, '#241018', { warm: '#4c2414', warmT: (cx) => (cx - 10) / 80, anchor: [20, -90], speed: 110 }),
+    'sv-head': silhouette([ngon(32, -150, 15, 10)], 5.5, '#241018', { warm: '#4c2414', warmT: () => 0.5, anchor: [32, -150], speed: 60 }),
+    'sv-fire': (g, rnd) => {
+      const stops = [[0, col('#fff3d6')], [0.18, col('#ffd9a0')], [0.45, col('#ffbe6a')], [0.75, col('#ff8a44')], [1, col('#d8502e')]];
+      const outline = [
+        [424,388],[475,368],[522,354],[516,318],[538,286],[556,274],[566,306],[590,330],
+        [640,320],[700,310],[700,272],[726,230],[748,216],[752,256],[780,290],
+        [830,286],[900,292],[905,262],[930,228],[948,220],[944,256],[976,284],
+        [1030,288],[1080,276],[1130,252],[1186,194],[1180,240],[1148,284],[1080,314],
+        [1000,334],[920,340],[830,338],[724,348],[640,362],[556,372],[494,390],[424,396],
+      ];
+      const tris = facetFill(outline, 15, rnd);
+      const made = emit(g, tris, (cx, cy) => {
+        const t = clamp((cx - 424) / 762, 0, 1);
+        let c;
+        for (let i = 1; i < stops.length; i++) {
+          if (t <= stops[i][0] || i === stops.length - 1) {
+            const f = (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+            c = stops[i - 1][1].clone().lerp(stops[i][1], clamp(f, 0, 1));
+            break;
+          }
+        }
+        if (rnd() < 0.06) c.lerp(col('#ffffff'), 0.55);
+        return css(jit(c, rnd, 0.88, 1.1));
+      }, null, rnd, 'fireFct');
+      for (const m of made) fireFacets.push({ el: m.el, xn: clamp((m.cx - 424) / 700, 0, 1) });
+    },
+
+    // ---- vintage story ----
+    'vs-canopy': (g, rnd) => {
+      const base = col('#0a1626'), lit = col('#182a44');
+      const outline = [[610,305],[560,258],[572,196],[632,136],[724,94],[858,62],[986,82],[1088,122],[1158,182],[1178,248],[1128,300],[1046,332],[942,348],[846,352],[740,338],[662,326]];
+      const tris = facetFill(outline, 30, rnd);
+      emit(g, tris, (cx, cy) => css(jit(base.clone().lerp(lit, clamp((200 - cy) / 160, 0, 1) * 0.6), rnd, 0.78, 1.22)),
+        distDelay(877, 300, 420, rnd, 0.25), rnd);
+    },
+    'vs-trunk': (g, rnd) => {
+      const base = col('#0b1526'), warm = col('#4a2c14');
+      const outline = [[812,566],[822,470],[830,400],[814,332],[838,286],[914,286],[942,332],[924,400],[930,470],[940,566],[984,578],[772,578]];
+      const tris = facetFill(outline, 22, rnd);
+      emit(g, tris, (cx, cy) => {
+        const d = Math.hypot(cx - 877, cy - 420);
+        return css(jit(base.clone().lerp(warm, Math.max(0, 1 - d / 95) * 0.85), rnd, 0.82, 1.18));
+      }, distDelay(877, 420, 300, rnd, 0.2), rnd);
+    },
+    'vs-moon': silhouette([ngon(180, 110, 38, 12)], 13, '#dbe7f5', { anchor: [180, 110], speed: 90 }),
+    'vs-ground': (g, rnd) => {
+      const base = col('#0a1322'), warm = col('#3a2412');
+      const tris = facetFill([[0,520],[300,490],[620,512],[900,506],[1200,500],[1200,620],[0,620]], 46, rnd);
+      emit(g, tris, (cx, cy) => {
+        const d = Math.hypot(cx - 870, cy - 556);
+        return css(jit(base.clone().lerp(warm, Math.max(0, 1 - d / 220) * 0.55), rnd, 0.82, 1.18));
+      }, distDelay(870, 550, 700, rnd, 0.6), rnd);
+    },
+    'vs-gear-ring': (g, rnd) => {
+      const a = col('#ffd9a0'), b = col('#ffbe6a');
+      for (let k = 0; k < 12; k++) {
+        const a0 = k / 12 * TAU, a1 = (k + 1) / 12 * TAU;
+        const pts = [
+          [34.5 * Math.cos(a0), 34.5 * Math.sin(a0)], [34.5 * Math.cos(a1), 34.5 * Math.sin(a1)],
+          [25.5 * Math.cos(a1), 25.5 * Math.sin(a1)], [25.5 * Math.cos(a0), 25.5 * Math.sin(a0)],
+        ];
+        const p = document.createElementNS(SVGNS, 'polygon');
+        p.setAttribute('points', pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+        p.setAttribute('fill', css(jit((k % 2 ? a : b).clone(), rnd, 0.85, 1.1)));
+        p.setAttribute('class', 'fct');
+        p.style.animationDelay = (0.3 + k * 0.04).toFixed(2) + 's';
+        g.appendChild(p);
+      }
+    },
+    'vs-gear-hub': (g, rnd) => {
+      for (let k = 0; k < 8; k++) {
+        const a0 = k / 8 * TAU, a1 = (k + 1) / 8 * TAU;
+        const pts = [[0, 0], [11 * Math.cos(a0), 11 * Math.sin(a0)], [11 * Math.cos(a1), 11 * Math.sin(a1)]];
+        const p = document.createElementNS(SVGNS, 'polygon');
+        p.setAttribute('points', pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+        p.setAttribute('fill', css(jit(col('#ffd9a0'), rnd, 0.8, 1.1)));
+        p.setAttribute('class', 'fct');
+        p.style.animationDelay = (0.5 + k * 0.03).toFixed(2) + 's';
+        g.appendChild(p);
+      }
+    },
+    'vs-sleeper': silhouette([
+      [[0,-22],[-48,-26],[-90,-10],[-87,-2],[-46,-16],[2,-12]],
+      [[2,-16],[-42,-14],[-78,2],[-74,9],[-38,-4],[4,-6]],
+      [[-90,-14],[-102,-8],[-99,-1],[-87,-4]],
+      [[-78,-2],[-90,5],[-86,12],[-75,8]],
+      [[2,-12],[-6,-46],[10,-72],[34,-80],[44,-56],[40,-26],[22,-8]],
+      [[8,-48],[20,-58],[34,-52],[32,-41],[20,-50],[10,-38]],
+      ngon(28, -86, 12, 10),
+    ], 6, '#2e4166', { warm: '#6a4c2c', warmT: (cx) => (cx - 15) / 40, anchor: [10, -50], speed: 90 }),
+    'vs-hat': silhouette([[[2,-92],[10,-104],[24,-110],[38,-104],[45,-88],[34,-92],[14,-96]]], 6, '#48597e', { anchor: [24, -98], speed: 50 }),
+
+    // ---- alignment ----
+    'al-cone': (g, rnd) => {
+      const xs = [300, 420, 540, 660, 780, 900];
+      const op = [0.55, 0.85, 1, 0.8, 0.5];
+      for (let i = 0; i < 5; i++) {
+        const p = document.createElementNS(SVGNS, 'polygon');
+        p.setAttribute('points', `600,132 ${xs[i]},470 ${xs[i + 1]},470`);
+        p.setAttribute('fill', 'url(#cone)');
+        p.setAttribute('opacity', op[i]);
+        p.setAttribute('class', 'fct');
+        p.style.animationDelay = (0.15 + Math.abs(i - 2) * 0.12).toFixed(2) + 's';
+        g.appendChild(p);
+      }
+    },
+    'al-bench': (g, rnd) => {
+      const a = col('#2a2036'), b = col('#161020'), lamp = col('#453347');
+      const tris = facetFill([[120,441],[1080,441],[1080,465],[120,465]], 26, rnd);
+      emit(g, tris, (cx, cy) => {
+        let c = a.clone().lerp(b, clamp((cy - 441) / 24, 0, 1));
+        c.lerp(lamp, Math.max(0, 1 - Math.abs(cx - 600) / 420) * 0.55);
+        return css(jit(c, rnd, 0.85, 1.15));
+      }, distDelay(600, 453, 800, rnd, 0.35), rnd);
+    },
+    'al-boy': silhouette([
+      [[-124,0],[-134,-70],[-108,-112],[-90,-136],[-60,-130],[-40,-120],[-44,-88],[-48,-44],[-62,0]],
+      [[-92,-130],[-66,-132],[-68,-116],[-92,-114]],
+      { pts: ngon(-78, -148, 18, 10), color: '#2c2040' },
+      [[-86,-122],[-20,-124],[36,-108],[33,-93],[-20,-110],[-88,-105]],
+      [[-76,-104],[-28,-98],[14,-78],[5,-58],[-32,-80],[-80,-82]],
+    ], 7, '#221934', { warm: '#443224', warmT: (cx, cy) => (-cy - 100) / 70, anchor: [-70, -100], speed: 130 }),
+    'al-box': silhouette([
+      { pts: [[-40,-28],[40,-28],[40,28],[-40,28]], color: '#241736' },
+      { pts: [[-40,-28],[40,-28],[40,-16],[-40,-16]], color: '#31224a' },
+      { pts: [[40,-28],[66,-40],[66,12],[40,28]], color: '#170f26' },
+    ], 15, '#241736', { anchor: [0, 0], speed: 70 }),
+    'al-octo': silhouette([
+      [[-28,24],[-33,4],[-30,-12],[-18,-20],[0,-23],[18,-20],[30,-12],[33,4],[28,24],[14,30],[0,31],[-14,30]],
+    ], 8.5, '#7a52d6', { warm: '#9a74ee', warmT: (cx, cy) => (-cy - 4) / 24, anchor: [0, 4], speed: 50 }),
+
+    // ---- convergence ----
+    'cv-hill': (g, rnd) => {
+      const base = col('#0b1122');
+      const tris = facetFill([[0,560],[200,502],[420,528],[700,558],[950,548],[1200,540],[1200,620],[0,620]], 46, rnd);
+      emit(g, tris, (cx) => css(jit(base.clone().lerp(col('#141c34'), clamp((cx - 600) / 600, 0, 1) * 0.5), rnd, 0.82, 1.18)),
+        distDelay(360, 540, 700, rnd, 0.5), rnd);
+    },
+    'cv-figure': silhouette([
+      [[-14,0],[-10,-48],[0,-48],[0,0]],
+      [[8,0],[10,-48],[20,-48],[22,0]],
+      [[-16,-44],[-20,-86],[2,-98],[22,-102],[30,-88],[34,-66],[26,-46],[4,-54]],
+      [[16,-92],[30,-84],[40,-72],[32,-64],[24,-76],[10,-82]],
+      ngon(34, -96, 13, 10),
+    ], 6, '#1a2744', { warm: '#3a486c', warmT: (cx) => (cx - 5) / 45, anchor: [15, -70], speed: 80 }),
+    'cv-tube': silhouette([
+      [[30,-74],[122,-74],[122,-54],[30,-54]],
+      [[116,-77],[130,-77],[130,-51],[116,-51]],
+    ], 12, '#141f38', { warm: '#4c5470', warmT: (cx, cy) => (-cy - 62) / 16, anchor: [70, -64], speed: 80 }),
+    'cv-arms': (g, rnd) => {
+      const arms = [
+        { c: col('#9ecfff'), start: [10, 0], segs: [[[60,-18],[96,18],[88,62]], [[76,122],[-4,148],[-74,118]], [[-150,84],[-172,-8],[-124,-78]]] },
+        { c: col('#b18cff'), start: [-10, 0], segs: [[[-60,18],[-96,-18],[-88,-62]], [[-76,-122],[4,-148],[74,-118]], [[150,-84],[172,8],[124,78]]] },
+        { c: col('#dbe7f5'), start: [6, -6], segs: [[[44,-14],[70,8],[64,44]], [[54,92],[-6,112],[-58,92]], [[-118,70],[-136,-8],[-100,-62]]] },
+        { c: col('#7cc4ff'), start: [-6, 6], segs: [[[-44,14],[-70,-8],[-64,-44]], [[-54,-92],[6,-112],[58,-92]], [[118,-70],[136,8],[100,62]]] },
+      ];
+      for (const arm of arms) {
+        let p0 = arm.start;
+        let tGlobal = 0;
+        const total = arm.segs.length;
+        for (const [c1, c2, p1] of arm.segs) {
+          for (let s = 0; s < 10; s++) {
+            const t = (s + 0.5) / 10;
+            const u = 1 - t;
+            const x = u*u*u*p0[0] + 3*u*u*t*c1[0] + 3*u*t*t*c2[0] + t*t*t*p1[0];
+            const y = u*u*u*p0[1] + 3*u*u*t*c1[1] + 3*u*t*t*c2[1] + t*t*t*p1[1];
+            const tg = (tGlobal + t) / total;
+            const nShards = tg < 0.4 ? 2 : 1;
+            for (let q = 0; q < nShards; q++) {
+              const size = 11 - tg * 5 + rnd() * 3;
+              const jx = x + (rnd() - 0.5) * 12, jy = y + (rnd() - 0.5) * 12;
+              const a0 = rnd() * TAU;
+              const pts = [0, 1, 2].map(i => [jx + size * Math.cos(a0 + i * 2.1), jy + size * Math.sin(a0 + i * 2.1)]);
+              const poly = document.createElementNS(SVGNS, 'polygon');
+              poly.setAttribute('points', pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+              poly.setAttribute('fill', css(jit(arm.c.clone(), rnd, 0.8, 1.1)));
+              poly.setAttribute('opacity', (0.8 - tg * 0.4).toFixed(2));
+              poly.setAttribute('class', 'fct');
+              poly.style.animationDelay = (0.2 + tg * 0.8 + rnd() * 0.1).toFixed(2) + 's';
+              g.appendChild(poly);
+            }
+          }
+          p0 = p1; tGlobal += 1;
+        }
+      }
+    },
+
+    // ---- romance ----
+    'rm-sun': (g, rnd) => {
+      const a = col('#fff6e0'), b = col('#ffd9a0');
+      for (let k = 0; k < 14; k++) {
+        const a0 = k / 14 * TAU, a1 = (k + 1) / 14 * TAU;
+        const r0 = 46 * (0.94 + rnd() * 0.1), r1 = 46 * (0.94 + rnd() * 0.1);
+        const pts = [[600, 330], [600 + r0 * Math.cos(a0), 330 + r0 * Math.sin(a0)], [600 + r1 * Math.cos(a1), 330 + r1 * Math.sin(a1)]];
+        const p = document.createElementNS(SVGNS, 'polygon');
+        p.setAttribute('points', pts.map(v => v[0].toFixed(1) + ',' + v[1].toFixed(1)).join(' '));
+        p.setAttribute('fill', css(jit(a.clone().lerp(b, rnd() * 0.8), rnd, 0.94, 1.04)));
+        p.setAttribute('class', 'fct');
+        p.style.animationDelay = (0.1 + k * 0.035).toFixed(2) + 's';
+        g.appendChild(p);
+      }
+    },
+    'rm-clouds': (g, rnd) => {
+      g.setAttribute('opacity', '0.5');
+      const base = col('#f4c8a0');
+      for (const [cx, cy, rx, ry] of [[240,140,120,16],[920,100,150,14],[1060,190,90,11]]) {
+        const outline = [[cx-rx,cy],[cx-rx*0.55,cy-ry],[cx+rx*0.5,cy-ry],[cx+rx,cy],[cx+rx*0.55,cy+ry],[cx-rx*0.5,cy+ry]];
+        const tris = facetFill(outline, 34, rnd);
+        emit(g, tris, () => css(jit(base.clone(), rnd, 0.9, 1.08)), distDelay(cx, cy, 200, rnd, 0.3), rnd);
+      }
+    },
+    'rm-meadow2': (g, rnd) => {
+      const tris = facetFill([[0,430],[300,402],[640,424],[900,420],[1200,416],[1200,620],[0,620]], 52, rnd);
+      emit(g, tris, () => css(jit(col('#243c38'), rnd, 0.84, 1.16)), distDelay(600, 430, 800, rnd, 0.4), rnd);
+    },
+    'rm-meadow3': (g, rnd) => {
+      const tris = facetFill([[0,540],[400,502],[800,528],[1000,522],[1200,516],[1200,620],[0,620]], 46, rnd);
+      emit(g, tris, () => css(jit(col('#1a2e2c'), rnd, 0.82, 1.18)), distDelay(600, 560, 800, rnd, 0.55), rnd);
+    },
+    'rm-path': (g, rnd) => {
+      const a = col('#d8a878'), b = col('#a8764e');
+      const outline = [[452,620],[512,516],[560,488],[600,470],[648,438],[662,414],[640,388],[618,368],[600,352],[626,352],[646,372],[672,388],[700,400],[714,424],[704,458],[660,500],[624,540],[614,580],[622,620]];
+      const tris = facetFill(outline, 24, rnd);
+      emit(g, tris, (cx, cy) => css(jit(a.clone().lerp(b, clamp((620 - cy) / 270, 0, 1)), rnd, 0.88, 1.12)),
+        distDelay(590, 560, 380, rnd, 0.25), rnd);
+    },
+    'rm-boy': silhouette([
+      [[-34,0],[-31,-58],[-22,-58],[-22,0]],
+      [[-16,0],[-17,-58],[-8,-58],[-6,0]],
+      [[-36,-54],[-40,-102],[-20,-114],[-2,-118],[4,-104],[8,-78],[2,-54],[-18,-62]],
+      [[-34,-100],[-46,-80],[-44,-58],[-36,-58],[-38,-80],[-28,-96]],
+      [[0,-96],[16,-76],[26,-58],[18,-52],[8,-72],[-6,-90]],
+    ], 5.5, '#413659', { warm: '#605070', warmT: (cx, cy) => (-cy - 80) / 60, anchor: [-15, -80], speed: 80 }),
+    'rm-boyhead': silhouette([ngon(-15, -126, 14.5, 10)], 5, '#e8c86a', { anchor: [-15, -126], speed: 50 }),
+    'rm-girl': silhouette([
+      [[-12,0],[-10,-50],[-2,-50],[-2,0]],
+      [[4,0],[3,-50],[11,-50],[13,0]],
+      [[-16,-46],[-20,-66],[-12,-92],[0,-102],[12,-92],[20,-66],[17,-46],[0,-40]],
+      [[12,-88],[22,-72],[20,-52],[13,-52],[15,-72],[6,-84]],
+      [[-10,-86],[-22,-70],[-28,-52],[-20,-47],[-14,-66],[-4,-80]],
+    ], 5.5, '#52404e', { warm: '#75606c', warmT: (cx, cy) => (-cy - 70) / 50, anchor: [0, -70], speed: 80 }),
+    'rm-girlhead': silhouette([ngon(0, -104, 13, 10)], 5, '#2c2136', { anchor: [0, -104], speed: 50 }),
+  };
+
+  let seedCounter = 7;
+  document.querySelectorAll('[data-poly]').forEach(el => {
+    const name = el.dataset.poly;
+    if (name === 'hide') { el.style.display = 'none'; return; }
+    const job = JOBS[name];
+    if (!job) return;
+    try {
+      const g = document.createElementNS(SVGNS, 'g');
+      const rnd = rngFor(1013904223 + seedCounter * 2654435761);
+      seedCounter++;
+      job(g, rnd);
+      el.parentNode.insertBefore(g, el);
+      if (name === 'cv-arms') el.style.opacity = '0.4';
+      else el.style.display = 'none';
+    } catch (e) { console.warn('facet fail:', name, e); }
+  });
+
+  // scroll assembly for sections
+  const io = new IntersectionObserver(entries => {
+    for (const en of entries) if (en.isIntersecting) { en.target.classList.add('play'); io.unobserve(en.target); }
+  }, { threshold: 0.2 });
+  document.querySelectorAll('#site .seg').forEach(s => io.observe(s));
+
+  // scroll-driven fire casting
+  const svSection = document.getElementById('staravorix');
+  const thread = document.getElementById('svFireThread');
+  const fpParam = parseFloat(new URLSearchParams(location.search).get('fp'));
+  function updateFire() {
+    if (!svSection || !fireFacets.length) return;
+    let p;
+    if (!isNaN(fpParam)) p = fpParam;
+    else if (ffMode || reduceMotion) p = 1;
+    else {
+      const r = svSection.getBoundingClientRect();
+      p = clamp((innerHeight * 0.88 - r.top) / (innerHeight * 0.72), 0, 1);
+    }
+    for (const f of fireFacets) f.el.style.opacity = f.xn <= p ? '1' : '0';
+    if (thread) {
+      if (!thread.hasAttribute('pathLength')) {
+        thread.setAttribute('pathLength', '1');
+        thread.style.strokeDasharray = '1';
+      }
+      thread.style.strokeDashoffset = String(1 - p);
+      thread.style.opacity = String(p > 0.02 ? 0.65 : 0);
+    }
+  }
+  addEventListener('scroll', () => requestAnimationFrame(updateFire), { passive: true });
+  addEventListener('resize', updateFire);
+  updateFire();
+}
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;

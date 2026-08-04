@@ -20,9 +20,12 @@ Then open http://localhost:5502.
 
 Query params used for automated screenshots:
 
-- `?ff=N` fast-forwards the intro timeline N seconds deterministically and skips the reveal animations.
+- `?ff=N` fast-forwards the intro timeline N seconds deterministically and forces all facet shards visible.
 - `&compact=1` (with `ff`) shrinks the hero so all sections fit one viewport.
+- `&fp=0.5` pins the scroll-driven fire cast to a fixed progress (0 to 1).
 - `&go=projects` (with `ff`) or a `#projects` hash jumps to a section after the intro.
+
+Every major shape in the scenes is generated at load by a small facet engine (seeded, deterministic): shapes are defined as polygon outlines and filled with a jittered triangular lattice snapped to the boundary, the same construction as the intro eye. Shards assemble with staggered delays when a section scrolls into view; the fireworks bloom on load; the Staravorix fire pours out shard by shard with scroll progress.
 
 Click, Enter, or Space skips the intro. `prefers-reduced-motion` skips it automatically.
 
