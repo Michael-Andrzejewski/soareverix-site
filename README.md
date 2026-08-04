@@ -2,7 +2,9 @@
 
 Personal website for Soareverix (Michael Andrzejewski).
 
-The intro is a polygonal blue eye rendered in three.js: faceted iris split three blue, one amber, with rotating geometric line work. The camera dives into the pupil and the site fades in over a low-poly night landscape.
+The intro is a brief glimpse of a polygonal blue eye rendered in three.js: faceted iris split three blue, one amber, with rotating geometric line work. The camera dives into the pupil (about three seconds, click to skip) and the site fades in.
+
+The main page is a set of hand-built SVG scenes: a kid watching fireworks frozen in the night (hero), Staravorix (fire caster), Vintage Story (snoozer by the gear tree), AI Alignment Research (workbench, spilled matrices, and a small mechanical octopus), Convergence (telescope and golden-ratio galaxy), and Romance and other Ramblings (a couple on a meadow path at dusk). Tabs across the top scroll to each section.
 
 ## Run locally
 

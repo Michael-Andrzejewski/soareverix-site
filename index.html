@@ -21,77 +21,91 @@
     -webkit-font-smoothing: antialiased;
   }
   #app { position: fixed; inset: 0; z-index: 0; }
+  html.site-mode #app { opacity: 0.45; }
   #fade {
     position: fixed; inset: 0; z-index: 3; background: #030508;
     opacity: 0; pointer-events: none; transition: none;
   }
-  #hint {
-    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
-    z-index: 2; color: rgba(143, 168, 196, 0.75);
-    font: 12px/1 Consolas, "Cascadia Mono", monospace; letter-spacing: 3px;
-    opacity: 0; transition: opacity 1.2s; pointer-events: none;
-    text-transform: uppercase;
-  }
-  #hint.show { opacity: 1; }
 
   /* ------------------------------------------------ site content */
+  html { scroll-behavior: smooth; }
   #site { position: relative; z-index: 1; display: none; }
   html.site-mode #site { display: block; }
-  #site .inner { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  #site .inner { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
 
-  .hero {
-    min-height: 92vh; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; text-align: center;
+  #nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 4;
+    display: none; justify-content: center; flex-wrap: wrap; gap: 4px;
+    padding: 12px 10px 26px;
+    background: linear-gradient(rgba(4, 7, 12, 0.88) 55%, rgba(4, 7, 12, 0));
+    font: 11.5px Consolas, "Cascadia Mono", monospace; letter-spacing: 2px;
+    text-transform: uppercase;
   }
-  .hero h1 {
-    margin: 0; font-size: clamp(40px, 9vw, 96px); font-weight: 200;
-    letter-spacing: clamp(8px, 2.2vw, 26px); text-indent: clamp(8px, 2.2vw, 26px);
-    color: #eaf3ff; text-shadow: 0 0 40px rgba(124, 196, 255, 0.35);
+  html.site-mode #nav { display: flex; }
+  #nav a {
+    color: var(--dim); text-decoration: none; padding: 7px 14px;
+    border: 1px solid transparent; border-radius: 999px;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
   }
-  .hero p {
-    margin: 18px 0 0; max-width: 560px; color: var(--dim);
-    font-size: clamp(15px, 2vw, 18px);
-  }
-  .hero .cue {
-    margin-top: 8vh; color: rgba(124, 196, 255, 0.6);
-    font: 12px Consolas, monospace; letter-spacing: 3px;
-    animation: bob 2.6s ease-in-out infinite;
-  }
-  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+  #nav a:hover { color: #eaf3ff; border-color: var(--border); background: rgba(16, 26, 42, 0.7); }
+  #nav a.home { color: var(--amber); }
 
-  section { padding: 9vh 0; }
+  .hero { position: relative; min-height: 100vh; overflow: hidden; }
+  .hero .hero-scene { position: absolute; inset: 0; }
+  .hero .hero-scene svg { width: 100%; height: 100%; display: block; }
+  @media (max-width: 620px) {
+    .hero .hero-scene svg { transform: translateX(-11%); }
+    .hero-title .sub { letter-spacing: 4px; text-indent: 4px; }
+  }
+  .hero-title {
+    position: absolute; left: 0; right: 0; bottom: 5vh;
+    text-align: center; pointer-events: none;
+  }
+  .hero-title h1 {
+    margin: 0; font-size: clamp(24px, 7vw, 78px); font-weight: 200;
+    letter-spacing: clamp(3px, 1.8vw, 22px); text-indent: clamp(3px, 1.8vw, 22px);
+    color: #eaf3ff; text-shadow: 0 2px 30px rgba(5, 8, 16, 0.9), 0 0 40px rgba(124, 196, 255, 0.3);
+  }
+  .hero-title .sub {
+    margin-top: 10px; color: var(--amber);
+    font: 13px Consolas, "Cascadia Mono", monospace; letter-spacing: 7px; text-indent: 7px;
+    text-transform: uppercase; text-shadow: 0 2px 16px rgba(5, 8, 16, 0.9);
+  }
+
+  section.seg { padding: 9vh 0 3vh; }
   h2 {
     font-size: 13px; font-weight: 600; letter-spacing: 5px; text-transform: uppercase;
-    color: var(--blue); margin: 0 0 28px;
+    color: var(--blue); margin: 0 0 20px;
   }
   h2::before { content: "\25C6\00a0\00a0"; color: var(--amber); font-size: 10px; }
-  .about p { max-width: 640px; color: var(--ink); font-size: 17px; }
-  .about .quiet { color: var(--dim); }
+  .seg .scene {
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    background: #0a101c; box-shadow: 0 14px 60px rgba(8, 24, 52, 0.45);
+  }
+  .seg .scene svg { display: block; width: 100%; height: auto; }
+  .seg .copy { max-width: 660px; color: var(--dim); font-size: 16px; margin-top: 22px; }
+  .seg .copy strong { color: var(--ink); font-weight: 600; }
 
-  .grid {
-    display: grid; gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* scene animation */
+  .breathe { transform-box: fill-box; transform-origin: center; animation: fwBreathe 5.5s ease-in-out infinite; }
+  @keyframes fwBreathe { 0%, 100% { transform: scale(1); opacity: 0.82; } 50% { transform: scale(1.035); opacity: 1; } }
+  .tw { animation: twinkle 3.4s ease-in-out infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.85; } }
+  .flicker { animation: flicker 2.8s ease-in-out infinite; }
+  @keyframes flicker { 0%, 100% { opacity: 0.8; } 38% { opacity: 1; } 61% { opacity: 0.88; } }
+  .gearspin { transform-box: fill-box; transform-origin: center; animation: gearSpin 40s linear infinite; }
+  @keyframes gearSpin { to { transform: rotate(360deg); } }
+  .zfloat { animation: zFloat 5s ease-in-out infinite; opacity: 0; }
+  @keyframes zFloat { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.75; } 100% { transform: translateY(-42px); opacity: 0; } }
+  .bob { transform-box: fill-box; transform-origin: center; animation: bobble 4.2s ease-in-out infinite; }
+  @keyframes bobble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .galaxyturn { transform-box: fill-box; transform-origin: center; animation: gearSpin 320s linear infinite; }
+  .petal { animation: petalDrift 9s linear infinite; opacity: 0; }
+  @keyframes petalDrift { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 0.8; } 100% { transform: translate(-150px, 90px); opacity: 0; } }
+  .firefly { animation: twinkle 4.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .breathe, .tw, .flicker, .gearspin, .zfloat, .bob, .galaxyturn, .petal, .firefly { animation: none; opacity: 1; }
   }
-  .card {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-    padding: 20px 22px; backdrop-filter: blur(4px);
-    transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-  }
-  .card:hover {
-    border-color: rgba(124, 196, 255, 0.55); transform: translateY(-3px);
-    box-shadow: 0 8px 30px rgba(20, 60, 120, 0.25);
-  }
-  .card .tag {
-    font: 11px Consolas, monospace; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--amber);
-  }
-  .card h3 { margin: 6px 0 8px; font-size: 19px; font-weight: 600; color: #eaf3ff; }
-  .card p { margin: 0; color: var(--dim); font-size: 14.5px; }
-  .card a.more {
-    display: inline-block; margin-top: 12px; color: var(--blue); text-decoration: none;
-    font: 12px Consolas, monospace; letter-spacing: 1px; border-bottom: 1px solid rgba(124,196,255,0.35);
-  }
-  .card a.more:hover { color: #b8ddff; border-color: #b8ddff; }
 
   footer {
     padding: 8vh 0 10vh; border-top: 1px solid rgba(124, 196, 255, 0.12);
@@ -112,57 +126,776 @@
 <body>
 <div id="app"></div>
 <div id="fade"></div>
-<div id="hint">click to enter</div>
+
+<nav id="nav">
+  <a class="home" href="#top">Soareverix</a>
+  <a href="#staravorix">Staravorix</a>
+  <a href="#vintage-story">Vintage Story</a>
+  <a href="#alignment">Alignment</a>
+  <a href="#convergence">Convergence</a>
+  <a href="#ramblings">Ramblings</a>
+</nav>
 
 <main id="site">
-  <div class="inner">
-    <div class="hero reveal">
-      <h1>SOAREVERIX</h1>
-      <p>Michael Andrzejewski. I make games, mods, and simulations that take on a life of their own.</p>
-      <div class="cue">&#9662; scroll</div>
-    </div>
+  <div id="top" class="hero reveal">
+    <div class="hero-scene">
+      <!-- ============ HERO: a kid watching fireworks frozen in the night ============ -->
+      <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A child stands in a meadow at night, looking up at fireworks frozen mid-burst">
+        <defs>
+          <linearGradient id="hSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#04060d"/>
+            <stop offset="0.55" stop-color="#0a1226"/>
+            <stop offset="1" stop-color="#16234a"/>
+          </linearGradient>
+          <linearGradient id="rayGold" gradientUnits="userSpaceOnUse" x1="0" y1="-30" x2="0" y2="-165">
+            <stop offset="0" stop-color="#fff3d6"/>
+            <stop offset="0.45" stop-color="#ffbe6a"/>
+            <stop offset="1" stop-color="#ffbe6a" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="rayBlue" gradientUnits="userSpaceOnUse" x1="0" y1="-30" x2="0" y2="-165">
+            <stop offset="0" stop-color="#eaf6ff"/>
+            <stop offset="0.45" stop-color="#7cc4ff"/>
+            <stop offset="1" stop-color="#7cc4ff" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="rayViolet" gradientUnits="userSpaceOnUse" x1="0" y1="-30" x2="0" y2="-165">
+            <stop offset="0" stop-color="#f4ecff"/>
+            <stop offset="0.45" stop-color="#b18cff"/>
+            <stop offset="1" stop-color="#b18cff" stop-opacity="0"/>
+          </linearGradient>
+          <radialGradient id="burstCore" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#fff8e8"/>
+            <stop offset="0.6" stop-color="#ffd9a0" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="groundGlow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#2a3f78" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#2a3f78" stop-opacity="0"/>
+          </radialGradient>
+          <g id="rayRingG">
+            <line x1="0" y1="-34" x2="0" y2="-160" stroke="url(#rayGold)" stroke-width="3.4" stroke-linecap="round"/>
+          </g>
+          <g id="rayRingB">
+            <line x1="0" y1="-34" x2="0" y2="-160" stroke="url(#rayBlue)" stroke-width="3.4" stroke-linecap="round"/>
+          </g>
+          <g id="rayRingV">
+            <line x1="0" y1="-34" x2="0" y2="-160" stroke="url(#rayViolet)" stroke-width="3.4" stroke-linecap="round"/>
+          </g>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="2.2" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
 
-    <section id="about" class="about reveal">
-      <h2>About</h2>
-      <p>Most of what I build starts as a question that sounds like "what would happen if..."</p>
-      <p class="quiet">Lately that means new creatures and world generators for Vintage Story, Balatro decks that bend the rules politely, VR spellcraft, and long-running simulated worlds with their own histories.</p>
+        <rect width="1600" height="900" fill="url(#hSky)"/>
+
+        <!-- stars -->
+        <g fill="#cfe4ff">
+          <circle cx="120" cy="90" r="1.4" opacity="0.7"/><circle cx="300" cy="160" r="1.1" opacity="0.5"/>
+          <circle cx="90" cy="300" r="1.2" opacity="0.4"/><circle cx="230" cy="420" r="1" opacity="0.5"/>
+          <circle cx="420" cy="70" r="1.3" opacity="0.6"/><circle cx="640" cy="120" r="1" opacity="0.45"/>
+          <circle cx="760" cy="60" r="1.5" opacity="0.7"/><circle cx="930" cy="100" r="1.1" opacity="0.5"/>
+          <circle cx="1180" cy="70" r="1.3" opacity="0.6"/><circle cx="1340" cy="140" r="1" opacity="0.5"/>
+          <circle cx="1460" cy="90" r="1.4" opacity="0.65"/><circle cx="1520" cy="260" r="1.1" opacity="0.5"/>
+          <circle cx="1420" cy="420" r="1" opacity="0.4"/><circle cx="60" cy="520" r="1.1" opacity="0.35"/>
+          <circle cx="560" cy="330" r="1" opacity="0.4" class="tw"/><circle cx="1250" cy="300" r="1.2" opacity="0.5" class="tw" style="animation-delay:1.2s"/>
+          <circle cx="820" cy="180" r="1" opacity="0.45" class="tw" style="animation-delay:2.1s"/>
+        </g>
+
+        <!-- launch trails -->
+        <g stroke-linecap="round" fill="none" opacity="0.4">
+          <path d="M 985 830 C 1000 640 1030 470 1045 300" stroke="#8a7040" stroke-width="1.6" stroke-dasharray="2 10"/>
+          <path d="M 505 830 C 500 680 496 480 498 262" stroke="#41608a" stroke-width="1.5" stroke-dasharray="2 11"/>
+          <path d="M 1320 840 C 1318 720 1310 560 1302 452" stroke="#5d4a86" stroke-width="1.4" stroke-dasharray="2 9"/>
+        </g>
+
+        <!-- gold burst -->
+        <g transform="translate(1050, 275)">
+          <circle r="150" fill="url(#burstCore)" opacity="0.35"/>
+          <g class="breathe" filter="url(#soft)">
+            <g>
+              <use href="#rayRingG"/><use href="#rayRingG" transform="rotate(30)"/><use href="#rayRingG" transform="rotate(60)"/>
+              <use href="#rayRingG" transform="rotate(90)"/><use href="#rayRingG" transform="rotate(120)"/><use href="#rayRingG" transform="rotate(150)"/>
+              <use href="#rayRingG" transform="rotate(180)"/><use href="#rayRingG" transform="rotate(210)"/><use href="#rayRingG" transform="rotate(240)"/>
+              <use href="#rayRingG" transform="rotate(270)"/><use href="#rayRingG" transform="rotate(300)"/><use href="#rayRingG" transform="rotate(330)"/>
+            </g>
+            <g transform="rotate(15) scale(0.72)" opacity="0.8">
+              <use href="#rayRingG"/><use href="#rayRingG" transform="rotate(30)"/><use href="#rayRingG" transform="rotate(60)"/>
+              <use href="#rayRingG" transform="rotate(90)"/><use href="#rayRingG" transform="rotate(120)"/><use href="#rayRingG" transform="rotate(150)"/>
+              <use href="#rayRingG" transform="rotate(180)"/><use href="#rayRingG" transform="rotate(210)"/><use href="#rayRingG" transform="rotate(240)"/>
+              <use href="#rayRingG" transform="rotate(270)"/><use href="#rayRingG" transform="rotate(300)"/><use href="#rayRingG" transform="rotate(330)"/>
+            </g>
+            <circle r="20" fill="#fff3d6" opacity="0.9"/>
+          </g>
+          <g fill="#ffd9a0">
+            <circle cx="0" cy="-178" r="2.6" class="tw"/><circle cx="126" cy="-126" r="2.2" class="tw" style="animation-delay:0.7s"/>
+            <circle cx="178" cy="0" r="2.6" class="tw" style="animation-delay:1.4s"/><circle cx="126" cy="126" r="2" class="tw" style="animation-delay:2.1s"/>
+            <circle cx="0" cy="178" r="2.4" class="tw" style="animation-delay:0.4s"/><circle cx="-126" cy="126" r="2.2" class="tw" style="animation-delay:1.8s"/>
+            <circle cx="-178" cy="0" r="2.6" class="tw" style="animation-delay:1.1s"/><circle cx="-126" cy="-126" r="2" class="tw" style="animation-delay:2.5s"/>
+          </g>
+        </g>
+
+        <!-- blue burst -->
+        <g transform="translate(500, 240) scale(0.82)">
+          <circle r="150" fill="url(#burstCore)" opacity="0.2"/>
+          <g class="breathe" style="animation-delay:1.6s" filter="url(#soft)">
+            <g>
+              <use href="#rayRingB"/><use href="#rayRingB" transform="rotate(30)"/><use href="#rayRingB" transform="rotate(60)"/>
+              <use href="#rayRingB" transform="rotate(90)"/><use href="#rayRingB" transform="rotate(120)"/><use href="#rayRingB" transform="rotate(150)"/>
+              <use href="#rayRingB" transform="rotate(180)"/><use href="#rayRingB" transform="rotate(210)"/><use href="#rayRingB" transform="rotate(240)"/>
+              <use href="#rayRingB" transform="rotate(270)"/><use href="#rayRingB" transform="rotate(300)"/><use href="#rayRingB" transform="rotate(330)"/>
+            </g>
+            <g transform="rotate(15) scale(0.7)" opacity="0.75">
+              <use href="#rayRingB"/><use href="#rayRingB" transform="rotate(45)"/><use href="#rayRingB" transform="rotate(90)"/>
+              <use href="#rayRingB" transform="rotate(135)"/><use href="#rayRingB" transform="rotate(180)"/><use href="#rayRingB" transform="rotate(225)"/>
+              <use href="#rayRingB" transform="rotate(270)"/><use href="#rayRingB" transform="rotate(315)"/>
+            </g>
+            <circle r="17" fill="#eaf6ff" opacity="0.9"/>
+          </g>
+          <g fill="#9ecfff">
+            <circle cx="0" cy="-180" r="2.6" class="tw" style="animation-delay:0.9s"/><circle cx="128" cy="-128" r="2.2" class="tw"/>
+            <circle cx="181" cy="0" r="2.4" class="tw" style="animation-delay:1.9s"/><circle cx="-128" cy="-128" r="2" class="tw" style="animation-delay:2.7s"/>
+            <circle cx="-181" cy="0" r="2.4" class="tw" style="animation-delay:1.2s"/><circle cx="0" cy="181" r="2.2" class="tw" style="animation-delay:0.3s"/>
+          </g>
+        </g>
+
+        <!-- violet burst -->
+        <g transform="translate(1305, 430) scale(0.5)">
+          <g class="breathe" style="animation-delay:3s" filter="url(#soft)">
+            <g>
+              <use href="#rayRingV"/><use href="#rayRingV" transform="rotate(36)"/><use href="#rayRingV" transform="rotate(72)"/>
+              <use href="#rayRingV" transform="rotate(108)"/><use href="#rayRingV" transform="rotate(144)"/><use href="#rayRingV" transform="rotate(180)"/>
+              <use href="#rayRingV" transform="rotate(216)"/><use href="#rayRingV" transform="rotate(252)"/><use href="#rayRingV" transform="rotate(288)"/>
+              <use href="#rayRingV" transform="rotate(324)"/>
+            </g>
+            <circle r="15" fill="#f4ecff" opacity="0.9"/>
+          </g>
+        </g>
+
+        <!-- meadow -->
+        <path d="M 0 700 Q 300 660 620 690 T 1600 672 L 1600 900 L 0 900 Z" fill="#0a1122"/>
+        <path d="M 0 760 Q 400 716 860 748 T 1600 738 L 1600 900 L 0 900 Z" fill="#070c19"/>
+        <ellipse cx="1050" cy="740" rx="330" ry="90" fill="url(#groundGlow)"/>
+
+        <!-- grass tufts -->
+        <g stroke="#12203e" stroke-width="2" stroke-linecap="round" opacity="0.9">
+          <path d="M 140 792 q 3 -16 -2 -26 M 152 794 q 2 -12 8 -20"/>
+          <path d="M 420 812 q 3 -16 -3 -24 M 432 812 q 3 -12 9 -18"/>
+          <path d="M 1330 800 q 3 -15 -2 -24 M 1342 802 q 2 -12 8 -19"/>
+          <path d="M 620 782 q 3 -14 -2 -22 M 632 784 q 2 -11 7 -17"/>
+        </g>
+
+        <!-- fireflies -->
+        <g fill="#ffd9a0">
+          <circle cx="330" cy="700" r="1.8" class="firefly"/>
+          <circle cx="1240" cy="676" r="1.6" class="firefly" style="animation-delay:1.5s"/>
+          <circle cx="720" cy="712" r="1.5" class="firefly" style="animation-delay:3s"/>
+        </g>
+
+        <!-- the kid, back view, looking up -->
+        <g transform="translate(1090, 792)" filter="url(#soft)">
+          <g fill="#060a13">
+            <!-- legs -->
+            <path d="M -13 0 L -11 -52 L -3 -52 L -4 0 Z"/>
+            <path d="M 12 0 L 10 -52 L 2 -52 L 3 0 Z"/>
+            <!-- torso -->
+            <path d="M -16 -50 Q -18 -92 -14 -104 Q 0 -112 14 -104 Q 18 -92 16 -50 Q 0 -56 -16 -50 Z"/>
+            <!-- arms relaxed, slightly out -->
+            <path d="M -14 -100 Q -26 -84 -24 -58 L -18 -58 Q -19 -80 -12 -94 Z"/>
+            <path d="M 14 -100 Q 26 -84 24 -58 L 18 -58 Q 19 -80 12 -94 Z"/>
+            <!-- head tilted up -->
+            <circle cx="1" cy="-126" r="15"/>
+            <path d="M -13 -132 Q -6 -142 4 -141 Q 13 -140 15 -130 Q 6 -136 -2 -135 Q -9 -135 -13 -132 Z"/>
+          </g>
+          <!-- rim light from the gold burst -->
+          <path d="M 15 -130 Q 17 -122 14 -114 M 16 -98 Q 19 -76 17 -54" stroke="#ffbe6a" stroke-width="1.6" fill="none" opacity="0.55" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </div>
+    <div class="hero-title">
+      <h1>SOAREVERIX</h1>
+      <div class="sub">Towards Utopia</div>
+    </div>
+  </div>
+
+  <div class="inner">
+    <!-- ============ STARAVORIX ============ -->
+    <section id="staravorix" class="seg reveal">
+      <h2>Staravorix</h2>
+      <div class="scene">
+        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A figure lunges and throws a hand forward, waves of stylized fire flowing from it">
+          <defs>
+            <linearGradient id="svSky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0c0710"/>
+              <stop offset="0.7" stop-color="#1c0d14"/>
+              <stop offset="1" stop-color="#2b1213"/>
+            </linearGradient>
+            <linearGradient id="fireA" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#fff3d6"/>
+              <stop offset="0.25" stop-color="#ffbe6a"/>
+              <stop offset="0.6" stop-color="#ff7a3d"/>
+              <stop offset="1" stop-color="#c8402a" stop-opacity="0.25"/>
+            </linearGradient>
+            <linearGradient id="fireB" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#ffd9a0"/>
+              <stop offset="0.5" stop-color="#ff9a4d"/>
+              <stop offset="1" stop-color="#a03020" stop-opacity="0.2"/>
+            </linearGradient>
+            <filter id="fireGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="1200" height="620" fill="url(#svSky)"/>
+          <!-- embers and distant stars -->
+          <g fill="#ffbe6a">
+            <circle cx="820" cy="130" r="2" class="tw"/><circle cx="990" cy="210" r="1.6" class="tw" style="animation-delay:1s"/>
+            <circle cx="700" cy="90" r="1.4" class="tw" style="animation-delay:2s"/><circle cx="1100" cy="120" r="1.8" class="tw" style="animation-delay:0.5s"/>
+            <circle cx="600" cy="180" r="1.4" class="tw" style="animation-delay:1.6s"/>
+          </g>
+          <!-- ground -->
+          <path d="M 0 540 Q 260 512 520 532 T 1200 520 L 1200 620 L 0 620 Z" fill="#120a10"/>
+          <ellipse cx="330" cy="548" rx="200" ry="26" fill="#1e0f12"/>
+
+          <!-- faint rune circle behind the caster -->
+          <g transform="translate(300, 360)" stroke="#ffbe6a" fill="none" opacity="0.14">
+            <circle r="150" stroke-width="2"/>
+            <circle r="122" stroke-width="1" stroke-dasharray="6 8"/>
+            <path d="M 0 -150 L 0 150 M -150 0 L 150 0 M -92 -92 L 92 92 M -92 92 L 92 -92" stroke-width="1"/>
+          </g>
+
+          <!-- fire waves flowing right from the thrown hand -->
+          <g class="flicker" filter="url(#fireGlow)" transform="translate(0, 80)">
+            <path d="M 430 300
+                     C 560 230 640 350 780 290
+                     C 900 240 950 330 1080 290
+                     C 1120 278 1150 250 1165 224
+                     C 1130 260 1090 268 1060 262
+                     C 940 320 880 230 760 280
+                     C 630 332 570 220 445 288 Z"
+                  fill="url(#fireA)" opacity="0.9"/>
+            <path d="M 435 310
+                     C 540 380 660 300 780 350
+                     C 890 394 980 330 1090 360
+                     C 1130 370 1158 396 1170 420
+                     C 1130 396 1090 392 1056 396
+                     C 950 366 880 420 770 372
+                     C 650 322 560 400 448 326 Z"
+                  fill="url(#fireB)" opacity="0.7"/>
+            <!-- curled tips -->
+            <path d="M 1165 224 q 22 -8 26 -30 q 2 18 -14 34 Z" fill="#ffbe6a" opacity="0.8"/>
+            <path d="M 1170 420 q 24 6 30 26 q 0 -18 -16 -32 Z" fill="#ff9a4d" opacity="0.7"/>
+            <path d="M 900 262 q 10 -22 -4 -38 q 20 10 16 36 Z" fill="#ffd9a0" opacity="0.6"/>
+            <!-- core stream -->
+            <path d="M 432 302 C 570 270 700 320 860 300 C 990 284 1060 310 1150 300"
+                  stroke="#fff3d6" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>
+          </g>
+          <!-- drifting embers -->
+          <g fill="#ff9a4d" transform="translate(0, 60)">
+            <circle cx="640" cy="250" r="2.4" class="tw" style="animation-delay:0.2s"/>
+            <circle cx="840" cy="380" r="2" class="tw" style="animation-delay:1.3s"/>
+            <circle cx="1010" cy="250" r="2.2" class="tw" style="animation-delay:2.2s"/>
+            <circle cx="520" cy="350" r="1.8" class="tw" style="animation-delay:1.8s"/>
+          </g>
+
+          <!-- the caster: lunging, hand thrown -->
+          <g transform="translate(300, 540)" fill="#0a0509" filter="url(#fireGlow)">
+            <!-- back leg lunging -->
+            <path d="M -74 4 L -68 -6 L -34 -16 L -8 -66 L 12 -56 L -28 -8 L -62 10 Z"/>
+            <!-- front leg planted -->
+            <path d="M 40 0 L 30 -34 L 16 -72 L 32 -76 L 44 -36 L 52 0 Z"/>
+            <!-- torso leaning forward -->
+            <path d="M -2 -64 Q -8 -110 12 -132 Q 34 -140 44 -128 Q 52 -112 44 -84 Q 30 -66 12 -60 Z"/>
+            <!-- trailing arm back -->
+            <path d="M 6 -120 Q -34 -116 -58 -96 L -52 -84 Q -28 -102 8 -108 Z"/>
+            <!-- throwing arm extended right, palm open -->
+            <path d="M 40 -126 Q 82 -140 118 -150 L 122 -136 Q 88 -128 48 -114 Z"/>
+            <path d="M 118 -152 l 14 -8 l 5 6 l -10 8 M 122 -138 l 16 -2 l 1 7 l -15 2" stroke="#0a0509" stroke-width="4" stroke-linecap="round"/>
+            <!-- head, looking along the throw -->
+            <circle cx="34" cy="-148" r="14"/>
+            <path d="M 24 -158 Q 34 -166 46 -160 L 50 -150 Q 40 -156 26 -154 Z"/>
+            <!-- rim light -->
+            <path d="M 46 -128 Q 52 -110 44 -86 M 116 -148 Q 96 -140 60 -122" stroke="#ff9a4d" stroke-width="1.8" fill="none" opacity="0.7" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <p class="copy"><strong>A universe of my own.</strong> Burning gods, drifted stars, and long campaigns that outlive their characters. The maps get redrawn every time someone survives something they should not have.</p>
     </section>
 
-    <section id="projects" class="reveal">
-      <h2>Projects</h2>
-      <div class="grid">
-        <div class="card">
-          <span class="tag">Vintage Story</span>
-          <h3>Seraph Leveling</h3>
-          <p>Trait progression for long lives. Level the skills you actually use, and carry them between worlds.</p>
-        </div>
-        <div class="card">
-          <span class="tag">Vintage Story</span>
-          <h3>Underwater Horrors</h3>
-          <p>Sea serpents and a kraken beneath calm water. The deep is no longer empty.</p>
-        </div>
-        <div class="card">
-          <span class="tag">Vintage Story</span>
-          <h3>Building Commands</h3>
-          <p>Minecraft style building commands for creative work: /fill, /setblock, /clone, /blockcode.</p>
-          <a class="more" href="https://github.com/Michael-Andrzejewski/VS-Building-Commands" target="_blank" rel="noopener">source &#8599;</a>
-        </div>
-        <div class="card">
-          <span class="tag">Balatro</span>
-          <h3>Reinforcement</h3>
-          <p>A jokerless deck about stacking cards into monsters. Played live on stream by Bean.</p>
-        </div>
-        <div class="card">
-          <span class="tag">Balatro</span>
-          <h3>Progression</h3>
-          <p>A roguelite deck where every win carries forward: keep cards, jokers, and vouchers between runs.</p>
-        </div>
-        <div class="card">
-          <span class="tag">Beyond All Reason</span>
-          <h3>Micro Wars</h3>
-          <p>Tiny units, huge swarms. A custom game mode built on the BAR engine.</p>
-        </div>
+    <!-- ============ VINTAGE STORY ============ -->
+    <section id="vintage-story" class="seg reveal">
+      <h2>Vintage Story</h2>
+      <div class="scene">
+        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A figure snoozes under a large tree with a glowing gear set into its trunk">
+          <defs>
+            <linearGradient id="vsSky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#050a14"/>
+              <stop offset="0.7" stop-color="#0a1526"/>
+              <stop offset="1" stop-color="#11233c"/>
+            </linearGradient>
+            <radialGradient id="gearGlow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.9"/>
+              <stop offset="0.5" stop-color="#ffbe6a" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#ffbe6a" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="vsSoft" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="1200" height="620" fill="url(#vsSky)"/>
+          <!-- moon and stars -->
+          <circle cx="180" cy="110" r="38" fill="#dbe7f5" opacity="0.85"/>
+          <circle cx="196" cy="102" r="34" fill="#0a1526"/>
+          <g fill="#cfe4ff">
+            <circle cx="90" cy="220" r="1.4" opacity="0.6"/><circle cx="320" cy="80" r="1.2" opacity="0.5"/>
+            <circle cx="480" cy="150" r="1.3" class="tw"/><circle cx="600" cy="70" r="1.1" opacity="0.5"/>
+            <circle cx="260" cy="300" r="1" opacity="0.4"/><circle cx="540" cy="260" r="1" class="tw" style="animation-delay:1.4s"/>
+          </g>
+          <!-- distant treeline -->
+          <path d="M 0 470 Q 80 430 160 462 Q 240 420 330 458 Q 420 426 500 460 L 500 620 L 0 620 Z" fill="#081020" opacity="0.9"/>
+          <!-- ground -->
+          <path d="M 0 520 Q 300 490 620 512 T 1200 500 L 1200 620 L 0 620 Z" fill="#0a1322"/>
+          <path d="M 0 570 Q 400 544 800 562 T 1200 556 L 1200 620 L 0 620 Z" fill="#070d18"/>
+
+          <!-- the big tree -->
+          <g>
+            <!-- canopy -->
+            <g fill="#081222">
+              <ellipse cx="860" cy="180" rx="260" ry="125"/>
+              <ellipse cx="690" cy="245" rx="165" ry="92"/>
+              <ellipse cx="1035" cy="250" rx="175" ry="96"/>
+              <ellipse cx="880" cy="115" rx="155" ry="82"/>
+            </g>
+            <g fill="#0d1b30" opacity="0.6">
+              <ellipse cx="795" cy="165" rx="105" ry="50"/>
+              <ellipse cx="985" cy="215" rx="95" ry="46"/>
+            </g>
+            <!-- trunk -->
+            <path d="M 812 566 Q 824 470 830 400 Q 812 330 838 284 L 916 284 Q 944 330 924 400 Q 930 470 942 566 L 986 578 L 770 578 Z" fill="#0a1322"/>
+            <path d="M 840 286 Q 810 246 762 230 M 914 286 Q 946 248 992 234 M 876 288 Q 876 244 884 218"
+                  stroke="#0a1322" stroke-width="20" fill="none" stroke-linecap="round"/>
+            <!-- hollow with the gear -->
+            <ellipse cx="877" cy="420" rx="52" ry="62" fill="#04070d"/>
+            <circle cx="874" cy="420" r="82" fill="url(#gearGlow)" class="flicker"/>
+            <g class="gearspin" filter="url(#vsSoft)">
+              <g transform="translate(874, 420)">
+                <g fill="#ffbe6a">
+                  <rect x="-5" y="-40" width="10" height="13" rx="2"/>
+                  <rect x="-5" y="27" width="10" height="13" rx="2"/>
+                  <rect x="-40" y="-5" width="13" height="10" rx="2"/>
+                  <rect x="27" y="-5" width="13" height="10" rx="2"/>
+                  <rect x="-5" y="-40" width="10" height="13" rx="2" transform="rotate(45)"/>
+                  <rect x="-5" y="27" width="10" height="13" rx="2" transform="rotate(45)"/>
+                  <rect x="-40" y="-5" width="13" height="10" rx="2" transform="rotate(45)"/>
+                  <rect x="27" y="-5" width="13" height="10" rx="2" transform="rotate(45)"/>
+                </g>
+                <circle r="30" fill="none" stroke="#ffd9a0" stroke-width="9"/>
+                <circle r="9" fill="none" stroke="#ffd9a0" stroke-width="5"/>
+              </g>
+            </g>
+            <!-- roots -->
+            <path d="M 770 578 Q 730 568 694 580 M 986 578 Q 1028 566 1064 580" stroke="#0a1322" stroke-width="16" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- the snoozer, propped against the roots -->
+          <g transform="translate(716, 564) scale(1.35)" fill="#131e33" filter="url(#vsSoft)">
+            <!-- legs stretched, crossed at ankles -->
+            <path d="M -8 -6 L -78 -2 L -110 8 L -108 16 L -74 10 L -6 6 Z"/>
+            <path d="M -6 -2 L -70 -14 L -102 -8 L -100 0 L -68 -4 L -4 6 Z"/>
+            <!-- torso leaning back on trunk -->
+            <path d="M -10 4 Q -16 -40 0 -62 Q 18 -70 28 -56 Q 34 -30 26 -2 Q 8 8 -10 4 Z"/>
+            <!-- arms folded on chest -->
+            <path d="M -8 -34 Q 6 -44 22 -36 L 20 -26 Q 6 -34 -6 -24 Z"/>
+            <!-- head slumped to one side -->
+            <circle cx="16" cy="-72" r="13"/>
+            <path d="M 4 -78 Q 12 -88 26 -82 L 28 -70 Q 18 -80 6 -74 Z"/>
+            <!-- straw hat tipped over the face -->
+            <ellipse cx="12" cy="-76" rx="19" ry="6" fill="#33415e" transform="rotate(-18 12 -76)"/>
+            <path d="M 2 -88 Q 12 -94 24 -88 L 22 -76 L 2 -78 Z" fill="#33415e"/>
+          </g>
+          <!-- z z z -->
+          <g font-family="Consolas, monospace" fill="#9ecfff" font-size="20">
+            <text x="790" y="470" class="zfloat">z</text>
+            <text x="806" y="452" font-size="15" class="zfloat" style="animation-delay:1.6s">z</text>
+            <text x="820" y="438" font-size="11" class="zfloat" style="animation-delay:3.2s">z</text>
+          </g>
+          <!-- fireflies -->
+          <g fill="#ffd9a0">
+            <circle cx="1080" cy="470" r="2" class="firefly"/>
+            <circle cx="640" cy="430" r="1.7" class="firefly" style="animation-delay:2s"/>
+            <circle cx="1140" cy="380" r="1.5" class="firefly" style="animation-delay:3.4s"/>
+            <circle cx="560" cy="500" r="1.6" class="firefly" style="animation-delay:1s"/>
+          </g>
+          <!-- grass -->
+          <g stroke="#122038" stroke-width="2" stroke-linecap="round">
+            <path d="M 200 560 q 3 -16 -2 -26 M 212 562 q 2 -12 8 -20"/>
+            <path d="M 460 586 q 3 -15 -3 -24 M 472 586 q 3 -12 9 -18"/>
+            <path d="M 1100 590 q 3 -15 -2 -23 M 1112 592 q 2 -12 8 -18"/>
+          </g>
+        </svg>
       </div>
+      <p class="copy"><strong>Mods for a quiet, stubborn world.</strong> Trait progression for long lives, sea monsters under calm water, spreading devastation, building commands, and villages that grow when you are generous to them.</p>
+    </section>
+
+    <!-- ============ AI ALIGNMENT RESEARCH ============ -->
+    <section id="alignment" class="seg reveal">
+      <h2>AI Alignment Research</h2>
+      <div class="scene">
+        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A boy tips a box of glowing matrices onto a workbench while a small mechanical purple octopus inspects one with a magnifying glass">
+          <defs>
+            <linearGradient id="alBg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#08060e"/>
+              <stop offset="1" stop-color="#120e1c"/>
+            </linearGradient>
+            <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.32"/>
+              <stop offset="1" stop-color="#ffd9a0" stop-opacity="0.02"/>
+            </linearGradient>
+            <linearGradient id="benchTop" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2a2036"/>
+              <stop offset="1" stop-color="#161020"/>
+            </linearGradient>
+            <filter id="alSoft" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.4" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <g id="matrix">
+              <rect x="-19" y="-19" width="38" height="38" rx="5" fill="#0d1a26" stroke="#7ce4ff" stroke-width="1.6"/>
+              <path d="M -19 -6.5 H 19 M -19 6.5 H 19 M -6.5 -19 V 19 M 6.5 -19 V 19" stroke="#7ce4ff" stroke-width="0.8" opacity="0.7"/>
+              <g fill="#7ce4ff" opacity="0.85">
+                <circle cx="-12.5" cy="-12.5" r="2.4"/><circle cx="0" cy="-12.5" r="1.4"/>
+                <circle cx="12.5" cy="0" r="2.2"/><circle cx="-12.5" cy="12.5" r="1.6"/>
+                <circle cx="0" cy="12.5" r="2.6"/><circle cx="12.5" cy="12.5" r="1.2"/>
+              </g>
+            </g>
+          </defs>
+          <rect width="1200" height="620" fill="url(#alBg)"/>
+
+          <!-- hanging lamp -->
+          <line x1="600" y1="0" x2="600" y2="96" stroke="#241c30" stroke-width="4"/>
+          <path d="M 560 130 L 600 92 L 640 130 Z" fill="#241c30"/>
+          <path d="M 556 130 L 644 130 L 610 134 L 590 134 Z" fill="#38294a"/>
+          <circle cx="600" cy="128" r="9" fill="#fff0d0" class="flicker"/>
+          <polygon points="600,132 300,470 900,470" fill="url(#cone)"/>
+
+          <!-- back wall shelf hints -->
+          <g stroke="#1c1528" stroke-width="3" opacity="0.8">
+            <line x1="80" y1="200" x2="330" y2="200"/><line x1="900" y1="180" x2="1130" y2="180"/>
+          </g>
+          <g fill="#1c1528">
+            <rect x="110" y="168" width="26" height="32" rx="3"/><rect x="150" y="176" width="18" height="24" rx="3"/>
+            <rect x="220" y="162" width="34" height="38" rx="3"/><rect x="940" y="148" width="24" height="32" rx="3"/>
+            <rect x="990" y="156" width="30" height="24" rx="3"/><rect x="1060" y="144" width="20" height="36" rx="3"/>
+          </g>
+
+          <!-- workbench -->
+          <rect x="120" y="440" width="960" height="26" rx="6" fill="url(#benchTop)"/>
+          <rect x="150" y="466" width="20" height="130" fill="#120d1c"/>
+          <rect x="1030" y="466" width="20" height="130" fill="#120d1c"/>
+          <rect x="120" y="466" width="960" height="8" fill="#0b0813"/>
+
+          <!-- the boy tipping the box -->
+          <g transform="translate(380, 440)" filter="url(#alSoft)">
+            <g fill="#0a0714">
+              <!-- torso leaning toward the box -->
+              <path d="M -118 0 Q -124 -66 -104 -108 Q -88 -132 -62 -128 Q -40 -118 -42 -86 Q -46 -44 -60 0 Z"/>
+              <!-- shoulder mass -->
+              <path d="M -100 -104 Q -78 -124 -52 -116 L -48 -98 Q -74 -110 -96 -92 Z"/>
+              <!-- near arm reaching to the box mouth -->
+              <path d="M -64 -104 L 20 -86 L 17 -72 L -68 -90 Z"/>
+              <!-- far arm steadying the lid -->
+              <path d="M -70 -118 L 36 -108 L 34 -95 L -72 -105 Z"/>
+              <!-- head above the shoulders, tilted toward the spill -->
+              <circle cx="-74" cy="-146" r="17"/>
+              <path d="M -92 -152 Q -86 -168 -70 -168 Q -56 -167 -56 -152 Q -62 -162 -74 -161 Q -85 -160 -92 -152 Z"/>
+            </g>
+            <!-- the box, tipped -->
+            <g transform="translate(64, -104) rotate(24)">
+              <rect x="-40" y="-28" width="80" height="56" rx="5" fill="#1e1430" stroke="#4a3866" stroke-width="2.5"/>
+              <rect x="-40" y="-28" width="80" height="12" rx="5" fill="#2c1f42"/>
+              <path d="M 40 -28 L 66 -40 L 66 12 L 40 28 Z" fill="#170f26" stroke="#4a3866" stroke-width="2"/>
+            </g>
+          </g>
+
+          <!-- matrices spilling out -->
+          <g filter="url(#alSoft)">
+            <use href="#matrix" transform="translate(492, 372) rotate(32)" class="flicker"/>
+            <use href="#matrix" transform="translate(540, 402) rotate(-14) scale(0.85)"/>
+            <use href="#matrix" transform="translate(596, 424) rotate(10)" class="flicker" style="animation-delay:1.2s"/>
+            <use href="#matrix" transform="translate(650, 430) rotate(-5) scale(0.9)"/>
+            <!-- a little neural net card -->
+            <g transform="translate(716, 424) rotate(7)">
+              <rect x="-24" y="-19" width="48" height="38" rx="5" fill="#0d1a26" stroke="#7ce4ff" stroke-width="1.6"/>
+              <g stroke="#7ce4ff" stroke-width="0.9" opacity="0.6">
+                <path d="M -14 -10 L 0 -4 M -14 -10 L 0 4 M -14 0 L 0 -4 M -14 0 L 0 4 M -14 10 L 0 4 M -14 10 L 0 -4 M 0 -4 L 14 0 M 0 4 L 14 0"/>
+              </g>
+              <g fill="#7ce4ff">
+                <circle cx="-14" cy="-10" r="2.4"/><circle cx="-14" cy="0" r="2.4"/><circle cx="-14" cy="10" r="2.4"/>
+                <circle cx="0" cy="-4" r="2.4"/><circle cx="0" cy="4" r="2.4"/>
+                <circle cx="14" cy="0" r="2.8"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- tools, right of bench -->
+          <g stroke="#aab2c8" stroke-linecap="round" fill="none">
+            <!-- wrench -->
+            <path d="M 936 428 l 34 -16" stroke-width="6"/>
+            <circle cx="978" cy="408" r="7" stroke-width="4"/>
+            <path d="M 973 401 l 10 -4" stroke="#120e1c" stroke-width="6"/>
+            <!-- screwdriver -->
+            <path d="M 896 434 l 36 -6" stroke-width="3.4"/>
+            <path d="M 892 435 l -20 4" stroke-width="8"/>
+            <!-- calipers -->
+            <path d="M 1004 434 q 8 -26 28 -32 M 1010 436 q 7 -20 22 -26" stroke-width="4"/>
+          </g>
+          <g fill="#c9d0e0">
+            <circle cx="953" cy="420" r="2"/><circle cx="914" cy="431" r="1.8"/><circle cx="1018" cy="416" r="1.6"/>
+          </g>
+
+          <!-- the little mechanical purple octopus -->
+          <g transform="translate(830, 404)" filter="url(#alSoft)">
+          <g class="bob">
+            <!-- tentacles -->
+            <g stroke="#6b46c8" stroke-width="7" fill="none" stroke-linecap="round">
+              <path d="M -22 22 q -14 10 -26 4"/>
+              <path d="M -10 28 q -4 14 -18 16"/>
+              <path d="M 6 28 q 4 14 16 14"/>
+              <path d="M 20 22 q 14 10 24 2"/>
+            </g>
+            <!-- raised tentacle holding the magnifier -->
+            <path d="M -20 6 q -30 -8 -40 -32" stroke="#8a5ce8" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <!-- dome body -->
+            <path d="M -28 24 Q -34 -18 0 -22 Q 34 -18 28 24 Q 0 32 -28 24 Z" fill="#7a52d6"/>
+            <path d="M -20 -8 Q -8 -18 8 -14" stroke="#b18cff" stroke-width="3" fill="none" opacity="0.8"/>
+            <!-- rivets -->
+            <g fill="#c9b2ff">
+              <circle cx="-18" cy="8" r="1.8"/><circle cx="18" cy="8" r="1.8"/><circle cx="0" cy="-16" r="1.8"/>
+            </g>
+            <!-- big eye -->
+            <circle cx="2" cy="4" r="11" fill="#efe8ff"/>
+            <circle cx="4" cy="5" r="5.5" fill="#241640"/>
+            <circle cx="6.5" cy="2.5" r="2" fill="#ffffff"/>
+            <!-- magnifying glass over a matrix -->
+            <g transform="translate(-72, -44)">
+              <circle r="16" fill="#7ce4ff" fill-opacity="0.14" stroke="#b8c4d8" stroke-width="3.5"/>
+              <line x1="11" y1="11" x2="24" y2="24" stroke="#b8c4d8" stroke-width="5" stroke-linecap="round"/>
+            </g>
+          </g>
+          </g>
+          <!-- matrix under the magnifier -->
+          <use href="#matrix" transform="translate(758, 372) rotate(-8) scale(0.8)" class="flicker" style="animation-delay:0.6s"/>
+        </svg>
+      </div>
+      <p class="copy"><strong>I like opening the box.</strong> Benchmarks for how models drift from your preferences, games repurposed as evals, and careful notes on what the matrices are actually doing. Small experiments, patient tools, curious helpers.</p>
+    </section>
+
+    <!-- ============ CONVERGENCE ============ -->
+    <section id="convergence" class="seg reveal">
+      <h2>Convergence</h2>
+      <div class="scene">
+        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A figure looks through a telescope at a spiral galaxy overlaid with the golden ratio and math symbols">
+          <defs>
+            <linearGradient id="cvSky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#05070f"/>
+              <stop offset="1" stop-color="#0d1330"/>
+            </linearGradient>
+            <radialGradient id="galCore" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#fff6e0"/>
+              <stop offset="0.35" stop-color="#ffd9a0" stop-opacity="0.7"/>
+              <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="galBlur"><feGaussianBlur stdDeviation="6"/></filter>
+            <filter id="cvSoft" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.4" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="1200" height="620" fill="url(#cvSky)"/>
+          <g fill="#cfe4ff">
+            <circle cx="120" cy="100" r="1.4" opacity="0.7"/><circle cx="300" cy="60" r="1.1" opacity="0.5"/>
+            <circle cx="480" cy="140" r="1.3" class="tw"/><circle cx="200" cy="240" r="1" opacity="0.45"/>
+            <circle cx="420" cy="300" r="1.1" class="tw" style="animation-delay:1.3s"/><circle cx="90" cy="400" r="1.2" opacity="0.5"/>
+            <circle cx="1130" cy="480" r="1.2" opacity="0.5"/><circle cx="1060" cy="70" r="1.1" class="tw" style="animation-delay:2.2s"/>
+            <circle cx="620" cy="80" r="1.2" opacity="0.55"/><circle cx="560" cy="220" r="1" opacity="0.4"/>
+          </g>
+
+          <!-- spiral galaxy -->
+          <g transform="translate(840, 230)">
+            <g class="galaxyturn">
+              <g filter="url(#galBlur)" fill="none" stroke-linecap="round">
+                <path d="M 0 0 C 40 -10 70 12 66 48 C 60 100 -6 128 -66 104 C -140 76 -160 -10 -118 -74 C -80 -128 10 -150 80 -114"
+                      stroke="#9ecfff" stroke-width="26" opacity="0.5"/>
+                <path d="M 0 0 C -40 10 -70 -12 -66 -48 C -60 -100 6 -128 66 -104 C 140 -76 160 10 118 74 C 80 128 -10 150 -80 114"
+                      stroke="#b18cff" stroke-width="24" opacity="0.42"/>
+                <path d="M 0 0 C 30 -20 62 -4 66 28 C 70 76 16 108 -38 96 C -108 82 -132 -2 -96 -60"
+                      stroke="#dbe7f5" stroke-width="12" opacity="0.5"/>
+              </g>
+            </g>
+            <circle r="90" fill="url(#galCore)"/>
+            <circle r="10" fill="#fff6e0"/>
+            <!-- golden ratio overlay -->
+            <g stroke="#ffbe6a" fill="none" opacity="0.9">
+              <path d="M 0 0 A 34 34 0 0 1 -34 -34 A 55 55 0 0 1 21 -89 A 89 89 0 0 1 110 0 A 144 144 0 0 1 -34 144" stroke-width="2.4"/>
+              <g stroke-width="1" stroke-dasharray="4 5" opacity="0.6">
+                <rect x="-34" y="-34" width="34" height="34"/>
+                <rect x="-34" y="-89" width="55" height="55"/>
+                <rect x="21" y="-89" width="89" height="89"/>
+              </g>
+            </g>
+            <text x="122" y="-96" font-family="Georgia, serif" font-style="italic" font-size="26" fill="#ffbe6a">&#966; = 1.618&#8230;</text>
+          </g>
+
+          <!-- floating math -->
+          <g font-family="Georgia, serif" font-style="italic" fill="#8fa8c4">
+            <text x="180" y="180" font-size="26" class="tw">&#8721;</text>
+            <text x="340" y="120" font-size="24" class="tw" style="animation-delay:1s">&#8747;</text>
+            <text x="250" y="330" font-size="22" class="tw" style="animation-delay:2s">&#960;</text>
+            <text x="420" y="230" font-size="22" class="tw" style="animation-delay:0.5s">&#8734;</text>
+            <text x="140" y="470" font-size="19" class="tw" style="animation-delay:1.7s">e&#8305;&#960; + 1 = 0</text>
+            <text x="460" y="420" font-size="17" class="tw" style="animation-delay:2.6s">1 1 2 3 5 8 13 21&#8230;</text>
+          </g>
+
+          <!-- hill and observer -->
+          <path d="M 0 560 Q 200 500 420 528 Q 700 560 1200 540 L 1200 620 L 0 620 Z" fill="#070b16"/>
+          <g transform="translate(330, 528)" fill="#060a13" filter="url(#cvSoft)">
+            <!-- tripod -->
+            <g stroke="#060a13" stroke-width="6" stroke-linecap="round">
+              <line x1="64" y1="-58" x2="46" y2="0"/>
+              <line x1="64" y1="-58" x2="76" y2="0"/>
+              <line x1="64" y1="-58" x2="62" y2="-6"/>
+            </g>
+            <!-- telescope tube aimed at the galaxy -->
+            <g transform="rotate(-31 64 -62)">
+              <rect x="30" y="-74" width="92" height="20" rx="9"/>
+              <rect x="116" y="-77" width="14" height="26" rx="5"/>
+            </g>
+            <!-- figure leaning to the eyepiece -->
+            <path d="M -14 0 L -10 -48 L 0 -48 L 0 0 Z"/>
+            <path d="M 8 0 L 10 -48 L 20 -48 L 22 0 Z"/>
+            <path d="M -16 -44 Q -20 -86 2 -98 Q 22 -102 30 -88 Q 34 -66 26 -46 Q 4 -54 -16 -44 Z"/>
+            <path d="M 16 -92 Q 30 -84 40 -72 L 32 -64 Q 24 -76 10 -82 Z"/>
+            <circle cx="34" cy="-96" r="13"/>
+            <path d="M 22 -104 Q 32 -112 44 -106 L 46 -96 Q 36 -104 24 -100 Z"/>
+          </g>
+        </svg>
+      </div>
+      <p class="copy"><strong>My philosophy.</strong> Notes on utopia, convergence, and the patterns that keep reappearing when I follow the math far enough: spirals, ratios, and things that want to meet in the middle.</p>
+    </section>
+
+    <!-- ============ ROMANCE AND OTHER RAMBLINGS ============ -->
+    <section id="ramblings" class="seg reveal">
+      <h2>Romance and other Ramblings</h2>
+      <div class="scene">
+        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A blond boy and a girl with short dark hair walk hand in hand along a meadow path at dusk">
+          <defs>
+            <linearGradient id="rmSky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2b1f4a"/>
+              <stop offset="0.45" stop-color="#8a4a6a"/>
+              <stop offset="0.75" stop-color="#e89a6a"/>
+              <stop offset="1" stop-color="#ffd9a0"/>
+            </linearGradient>
+            <radialGradient id="rmSun" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#fff3d6"/>
+              <stop offset="0.5" stop-color="#ffd9a0" stop-opacity="0.6"/>
+              <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="rmPath" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#d8a878"/>
+              <stop offset="1" stop-color="#a8764e"/>
+            </linearGradient>
+            <filter id="rmSoft" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <rect width="1200" height="620" fill="url(#rmSky)"/>
+          <circle cx="600" cy="330" r="190" fill="url(#rmSun)"/>
+          <circle cx="600" cy="330" r="46" fill="#fff3d6" opacity="0.95"/>
+          <!-- soft clouds -->
+          <g fill="#f4c8a0" opacity="0.5">
+            <ellipse cx="240" cy="140" rx="120" ry="16"/>
+            <ellipse cx="920" cy="100" rx="150" ry="14"/>
+            <ellipse cx="1060" cy="190" rx="90" ry="11"/>
+          </g>
+          <!-- birds -->
+          <g stroke="#4a3050" stroke-width="2.4" fill="none" stroke-linecap="round">
+            <path d="M 880 170 q 8 -8 16 0 q 8 -8 16 0"/>
+            <path d="M 940 210 q 6 -6 12 0 q 6 -6 12 0"/>
+          </g>
+
+          <!-- meadow -->
+          <path d="M 0 360 Q 300 336 600 352 T 1200 348 L 1200 620 L 0 620 Z" fill="#2e4444"/>
+          <path d="M 0 430 Q 300 400 640 424 T 1200 416 L 1200 620 L 0 620 Z" fill="#243c38"/>
+          <path d="M 0 540 Q 400 500 800 528 T 1200 516 L 1200 620 L 0 620 Z" fill="#1a2e2c"/>
+
+          <!-- the path -->
+          <path d="M 470 620 Q 520 520 600 470 Q 680 424 640 388 Q 612 366 600 352 L 626 352 Q 660 380 700 400 Q 720 452 660 500 Q 596 552 590 620 Z" fill="url(#rmPath)"/>
+          <g stroke="#8a5c3c" stroke-width="2" opacity="0.5" stroke-linecap="round">
+            <path d="M 540 560 q 14 -4 26 2 M 600 500 q 12 -6 24 -2 M 636 444 q 10 -6 20 -4"/>
+          </g>
+
+          <!-- wildflowers -->
+          <g>
+            <g fill="#f4e8ff"><circle cx="180" cy="500" r="3"/><circle cx="330" cy="560" r="2.6"/><circle cx="920" cy="540" r="3"/><circle cx="1060" cy="490" r="2.4"/></g>
+            <g fill="#ff9a8a"><circle cx="240" cy="452" r="2.6"/><circle cx="800" cy="470" r="2.6"/><circle cx="1120" cy="560" r="3"/><circle cx="90 " cy="580" r="3"/></g>
+            <g fill="#ffd9a0"><circle cx="420" cy="580" r="2.6"/><circle cx="720" cy="560" r="2.4"/><circle cx="980" cy="440" r="2.2"/></g>
+            <g fill="#c9b2ff"><circle cx="140" cy="440" r="2.4"/><circle cx="860" cy="590" r="2.8"/><circle cx="1020" cy="580" r="2.2"/></g>
+          </g>
+
+          <!-- drifting petals -->
+          <g fill="#ffb8a0">
+            <ellipse cx="760" cy="300" rx="4" ry="2.4" class="petal"/>
+            <ellipse cx="880" cy="250" rx="3.6" ry="2.2" class="petal" style="animation-delay:3s"/>
+            <ellipse cx="700" cy="220" rx="3" ry="2" class="petal" style="animation-delay:6s"/>
+          </g>
+
+          <!-- the couple, back view, holding hands -->
+          <g transform="translate(566, 560)" filter="url(#rmSoft)">
+            <!-- boy, left, blond -->
+            <g>
+              <g fill="#2c2438">
+                <path d="M -34 0 L -31 -58 L -22 -58 L -22 0 Z"/>
+                <path d="M -16 0 L -17 -58 L -8 -58 L -6 0 Z"/>
+                <path d="M -36 -54 Q -40 -102 -20 -114 Q -2 -118 4 -104 Q 8 -78 2 -54 Q -18 -62 -36 -54 Z"/>
+                <!-- outer arm -->
+                <path d="M -34 -100 Q -46 -80 -44 -58 L -36 -58 Q -38 -80 -28 -96 Z"/>
+                <!-- inner arm toward her -->
+                <path d="M 0 -96 Q 10 -78 14 -60 L 6 -56 Q 2 -74 -6 -90 Z"/>
+              </g>
+              <circle cx="-15" cy="-126" r="14" fill="#2c2438"/>
+              <!-- blond hair -->
+              <path d="M -29 -130 Q -27 -144 -13 -145 Q 0 -144 0 -130 Q -2 -138 -10 -139 Q -6 -132 -8 -126 Q -14 -138 -22 -134 Q -20 -128 -24 -124 Q -28 -128 -29 -130 Z" fill="#e8c86a"/>
+            </g>
+            <!-- girl, right, short dark hair -->
+            <g transform="translate(52, 6)">
+              <g fill="#3c2a34">
+                <path d="M -12 0 L -10 -50 L -2 -50 L -2 0 Z"/>
+                <path d="M 4 0 L 3 -50 L 11 -50 L 13 0 Z"/>
+                <!-- skirt + torso -->
+                <path d="M -16 -46 Q -20 -66 -12 -92 Q 0 -102 12 -92 Q 20 -66 17 -46 Q 0 -40 -16 -46 Z"/>
+                <!-- outer arm -->
+                <path d="M 12 -88 Q 22 -72 20 -52 L 13 -52 Q 15 -72 6 -84 Z"/>
+                <!-- inner arm toward him -->
+                <path d="M -10 -86 Q -20 -72 -24 -56 L -17 -52 Q -13 -68 -4 -80 Z"/>
+              </g>
+              <circle cx="0" cy="-104" r="12.5" fill="#3c2a34"/>
+              <!-- short dark bob -->
+              <path d="M -13 -104 Q -14 -120 0 -121 Q 13 -120 13 -104 Q 13 -96 9 -94 Q 12 -102 8 -110 Q 2 -114 -6 -112 Q -11 -108 -10 -96 Q -13 -98 -13 -104 Z" fill="#1c1420"/>
+            </g>
+            <!-- held hands -->
+            <circle cx="24" cy="-52" r="5" fill="#33283a"/>
+          </g>
+
+          <!-- grass sway foreground -->
+          <g stroke="#142622" stroke-width="2.6" stroke-linecap="round" opacity="0.9">
+            <path d="M 80 618 q 4 -20 -3 -32 M 96 618 q 3 -15 10 -24"/>
+            <path d="M 1100 618 q 4 -18 -3 -30 M 1116 618 q 3 -14 10 -22"/>
+            <path d="M 320 616 q 4 -16 -2 -26 M 334 616 q 3 -13 9 -20"/>
+          </g>
+        </svg>
+      </div>
+      <p class="copy"><strong>Life things, written in the open.</strong> Walks, small ceremonies, what makes a day good. A public diary, updated when there is something worth saying.</p>
     </section>
 
     <footer class="reveal">
@@ -756,18 +1489,16 @@ let stateT = 0;
 let uProg = 0;
 let ffMode = false;
 const fadeEl = document.getElementById('fade');
-const hintEl = document.getElementById('hint');
 const mouse = { x: 0, y: 0 };
 addEventListener('pointermove', e => {
   mouse.x = (e.clientX / innerWidth) * 2 - 1;
   mouse.y = (e.clientY / innerHeight) * 2 - 1;
 });
 
-const DIVE_LEN = 2.3;
+const DIVE_LEN = 1.5;
 function startDive() {
   if (state !== 'idle' && state !== 'assemble') return;
   state = 'dive'; stateT = 0;
-  hintEl.classList.remove('show');
 }
 addEventListener('pointerdown', () => { if (state === 'idle' || state === 'assemble') startDive(); });
 addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') startDive(); });
@@ -813,7 +1544,7 @@ function step(dt) {
 
   if (state === 'assemble' || state === 'idle' || state === 'dive') {
     // assembly progress: triangles first, lines chase behind
-    uProg = Math.min(uProg + dt / 1.45, 2.0);
+    uProg = Math.min(uProg + dt / 0.6, 2.0);
     for (const obj of eyeScene.children) {
       obj.traverse?.(o => {
         if (o.material?.uniforms?.uProg && o.material.vertexShader === facetVert)
@@ -829,9 +1560,8 @@ function step(dt) {
 
     if (state === 'assemble' && uProg >= 1.6) {
       state = 'idle'; stateT = 0;
-      setTimeout(() => { if (state === 'idle') hintEl.classList.add('show'); }, 600);
     }
-    if (state === 'idle' && stateT > 3.2) startDive();
+    if (state === 'idle' && stateT > 0.25) startDive();
 
     // idle motion: iris slowly rotates, geometry counter-rotates, eye watches the cursor
     let speed = 1, diveT = 0;
@@ -886,7 +1616,7 @@ function animate() {
     ffMode = true;
     if (new URLSearchParams(location.search).has('compact')) {
       const st = document.createElement('style');
-      st.textContent = '.hero{min-height:22vh} section{padding:3vh 0} footer{padding:3vh 0}';
+      st.textContent = '.hero{min-height:240px} section.seg{padding:30px 0 10px} footer{padding:30px 0}';
       document.head.appendChild(st);
     }
     for (let i = 0; i < Math.min(ff, 30) * 60; i++) step(1 / 60);
