@@ -681,183 +681,218 @@
     <section id="alignment" class="seg reveal">
       <h2>AI Alignment Research</h2>
       <div class="scene">
-        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A boy tips a box of glowing matrices onto a workbench while a small mechanical purple octopus inspects one with a magnifying glass">
+        <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Seen from directly above, hands tip a crate of glowing matrices in glass boxes across a desk while a small mechanical purple octopus holds one box and a magnifying glass in its tentacles">
           <defs>
-            <linearGradient id="alBg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#08060e"/>
-              <stop offset="1" stop-color="#120e1c"/>
-            </linearGradient>
-            <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.32"/>
-              <stop offset="1" stop-color="#ffd9a0" stop-opacity="0.02"/>
-            </linearGradient>
-            <linearGradient id="benchTop" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#2a2036"/>
-              <stop offset="1" stop-color="#161020"/>
-            </linearGradient>
+            <radialGradient id="alPool" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.14"/>
+              <stop offset="0.55" stop-color="#ffd9a0" stop-opacity="0.05"/>
+              <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
+            </radialGradient>
             <filter id="alSoft" x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur stdDeviation="2.4" result="b"/>
               <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            <g id="matrix">
-              <rect x="-19" y="-19" width="38" height="38" rx="5" fill="#0d1a26" stroke="#7ce4ff" stroke-width="1.6"/>
-              <path d="M -19 -6.5 H 19 M -19 6.5 H 19 M -6.5 -19 V 19 M 6.5 -19 V 19" stroke="#7ce4ff" stroke-width="0.8" opacity="0.7"/>
-              <g fill="#7ce4ff" opacity="0.85">
-                <circle cx="-12.5" cy="-12.5" r="2.4"/><circle cx="0" cy="-12.5" r="1.4"/>
-                <circle cx="12.5" cy="0" r="2.2"/><circle cx="-12.5" cy="12.5" r="1.6"/>
-                <circle cx="0" cy="12.5" r="2.6"/><circle cx="12.5" cy="12.5" r="1.2"/>
+            <!-- a matrix sealed in a little glass box, seen from directly above -->
+            <g id="gbox">
+              <rect x="-24" y="-24" width="48" height="48" rx="7" fill="#0d1a26" fill-opacity="0.9" stroke="#a8dcf5" stroke-width="2.2"/>
+              <rect x="-16" y="-16" width="32" height="32" rx="3.5" fill="none" stroke="#a8dcf5" stroke-width="1" opacity="0.45"/>
+              <path d="M -11 -5.5 H 11 M -11 5.5 H 11 M -5.5 -11 V 11 M 5.5 -11 V 11" stroke="#7ce4ff" stroke-width="0.8" opacity="0.7"/>
+              <g fill="#7ce4ff" opacity="0.9">
+                <circle cx="-11" cy="-11" r="2.2"/><circle cx="0" cy="-11" r="1.3"/><circle cx="11" cy="-11" r="1.7"/>
+                <circle cx="-11" cy="0" r="1.4"/><circle cx="0" cy="0" r="2.4"/><circle cx="11" cy="0" r="1.2"/>
+                <circle cx="-11" cy="11" r="1.6"/><circle cx="0" cy="11" r="1.2"/><circle cx="11" cy="11" r="2.1"/>
               </g>
+              <path d="M -21 -9 L -9 -21 L -3 -21 L -21 -3 Z" fill="#eaf8ff" opacity="0.3"/>
+              <path d="M 12 21 L 21 12 L 21 16 L 16 21 Z" fill="#eaf8ff" opacity="0.15"/>
             </g>
-          </defs>
-          <rect width="1200" height="620" fill="url(#alBg)"/>
-
-          <!-- blueprint grid ghosted on the back wall -->
-          <path d="M 0 110 H 1200 M 0 190 H 1200 M 0 270 H 1200 M 0 350 H 1200 M 140 30 V 420 M 300 30 V 420 M 460 30 V 420 M 740 30 V 420 M 900 30 V 420 M 1060 30 V 420"
-                stroke="#7ce4ff" stroke-width="1" opacity="0.045" fill="none"/>
-          <!-- pinned diagram sheet -->
-          <g transform="translate(146, 214) rotate(-2)">
-            <rect width="92" height="70" rx="3" fill="#151026" stroke="#4a3866" stroke-width="1.6"/>
-            <g stroke="#7ce4ff" stroke-width="0.9" opacity="0.5">
-              <path d="M 18 18 L 44 28 M 18 36 L 44 28 M 18 54 L 44 28 M 44 28 L 72 22 M 44 28 L 72 40"/>
-            </g>
-            <g fill="#7ce4ff" opacity="0.7">
-              <circle cx="18" cy="18" r="2.4"/><circle cx="18" cy="36" r="2.4"/><circle cx="18" cy="54" r="2.4"/>
-              <circle cx="44" cy="28" r="2.6"/><circle cx="72" cy="22" r="2.4"/><circle cx="72" cy="40" r="2.4"/>
-            </g>
-            <circle cx="8" cy="7" r="2" fill="#8a92aa"/><circle cx="84" cy="7" r="2" fill="#8a92aa"/>
-          </g>
-
-          <!-- hanging lamp -->
-          <line x1="600" y1="0" x2="600" y2="96" stroke="#241c30" stroke-width="4"/>
-          <path d="M 560 130 L 600 92 L 640 130 Z" fill="#241c30"/>
-          <path d="M 556 130 L 644 130 L 610 134 L 590 134 Z" fill="#38294a"/>
-          <circle cx="600" cy="128" r="9" fill="#fff0d0" class="flicker"/>
-          <polygon data-poly="al-cone" points="600,132 300,470 900,470" fill="url(#cone)"/>
-
-          <!-- back wall shelf hints -->
-          <g stroke="#1c1528" stroke-width="3" opacity="0.8">
-            <line x1="80" y1="200" x2="330" y2="200"/><line x1="900" y1="180" x2="1130" y2="180"/>
-          </g>
-          <g fill="#1c1528">
-            <rect x="110" y="168" width="26" height="32" rx="3"/><rect x="150" y="176" width="18" height="24" rx="3"/>
-            <rect x="220" y="162" width="34" height="38" rx="3"/><rect x="940" y="148" width="24" height="32" rx="3"/>
-            <rect x="990" y="156" width="30" height="24" rx="3"/><rect x="1060" y="144" width="20" height="36" rx="3"/>
-          </g>
-
-          <!-- workbench -->
-          <rect data-poly="al-bench" x="120" y="440" width="960" height="26" rx="6" fill="url(#benchTop)"/>
-          <rect x="330" y="440" width="500" height="4" rx="2" fill="#ffd9a0" opacity="0.22"/>
-          <rect x="240" y="440" width="700" height="9" rx="4" fill="#ffd9a0" opacity="0.08"/>
-          <rect x="150" y="466" width="20" height="130" fill="#120d1c"/>
-          <rect x="1030" y="466" width="20" height="130" fill="#120d1c"/>
-          <rect x="120" y="466" width="960" height="8" fill="#0b0813"/>
-
-          <!-- the boy tipping the box -->
-          <g transform="translate(380, 440)">
-            <g data-poly="al-boy" fill="#181022">
-              <!-- torso leaning toward the box -->
-              <path d="M -124 0 Q -134 -70 -108 -112 Q -90 -136 -60 -130 Q -40 -120 -44 -88 Q -48 -44 -62 0 Z"/>
-              <!-- neck and head, tilted toward the spill -->
-              <path d="M -92 -130 L -66 -132 L -68 -116 L -92 -114 Z"/>
-              <circle cx="-78" cy="-148" r="18"/>
-              <path d="M -97 -152 Q -92 -170 -74 -170 Q -58 -169 -59 -154 Q -66 -164 -80 -163 Q -91 -161 -97 -152 Z"/>
-              <!-- far arm steadying the lid -->
-              <path d="M -86 -122 Q -20 -124 36 -108 L 33 -93 Q -20 -110 -88 -105 Z"/>
-              <!-- near arm angled down to the box mouth -->
-              <path d="M -76 -104 Q -28 -98 14 -78 L 5 -58 Q -32 -80 -80 -82 Z"/>
-            </g>
-            <!-- lamplight rim from above, cool spill from the matrices below -->
-            <g fill="none" stroke-linecap="round">
-              <path d="M -95 -155 Q -84 -172 -62 -162" stroke="#ffd9a0" stroke-width="2.4" opacity="0.8"/>
-              <path d="M -106 -110 Q -92 -134 -64 -130" stroke="#ffd9a0" stroke-width="2.2" opacity="0.65"/>
-              <path d="M -80 -120 Q -20 -122 34 -108" stroke="#ffd9a0" stroke-width="1.8" opacity="0.55"/>
-              <path d="M -66 -82 Q -28 -80 4 -62" stroke="#7ce4ff" stroke-width="1.6" opacity="0.4"/>
-            </g>
-            <!-- the box, tipped -->
-            <g transform="translate(64, -104) rotate(24)">
-              <g data-poly="al-box">
-                <rect x="-40" y="-28" width="80" height="56" rx="5" fill="#1e1430" stroke="#4a3866" stroke-width="2.5"/>
-                <rect x="-40" y="-28" width="80" height="12" rx="5" fill="#2c1f42"/>
-                <path d="M 40 -28 L 66 -40 L 66 12 L 40 28 Z" fill="#170f26" stroke="#4a3866" stroke-width="2"/>
-              </g>
-            </g>
-          </g>
-
-          <!-- matrices spilling out -->
-          <g filter="url(#alSoft)">
-            <use href="#matrix" transform="translate(492, 372) rotate(32)" class="flicker"/>
-            <use href="#matrix" transform="translate(540, 402) rotate(-14) scale(0.85)"/>
-            <use href="#matrix" transform="translate(596, 424) rotate(10)" class="flicker" style="animation-delay:1.2s"/>
-            <use href="#matrix" transform="translate(650, 430) rotate(-5) scale(0.9)"/>
-            <!-- a little neural net card -->
-            <g transform="translate(716, 424) rotate(7)">
-              <rect x="-24" y="-19" width="48" height="38" rx="5" fill="#0d1a26" stroke="#7ce4ff" stroke-width="1.6"/>
+            <!-- variant with a tiny neural net inside -->
+            <g id="gboxNet">
+              <rect x="-24" y="-24" width="48" height="48" rx="7" fill="#0d1a26" fill-opacity="0.9" stroke="#a8dcf5" stroke-width="2.2"/>
+              <rect x="-16" y="-16" width="32" height="32" rx="3.5" fill="none" stroke="#a8dcf5" stroke-width="1" opacity="0.45"/>
               <g stroke="#7ce4ff" stroke-width="0.9" opacity="0.6">
-                <path d="M -14 -10 L 0 -4 M -14 -10 L 0 4 M -14 0 L 0 -4 M -14 0 L 0 4 M -14 10 L 0 4 M -14 10 L 0 -4 M 0 -4 L 14 0 M 0 4 L 14 0"/>
+                <path d="M -11 -9 L 0 -3 M -11 -9 L 0 5 M -11 1 L 0 -3 M -11 1 L 0 5 M -11 10 L 0 5 M -11 10 L 0 -3 M 0 -3 L 11 1 M 0 5 L 11 1"/>
               </g>
               <g fill="#7ce4ff">
-                <circle cx="-14" cy="-10" r="2.4"/><circle cx="-14" cy="0" r="2.4"/><circle cx="-14" cy="10" r="2.4"/>
-                <circle cx="0" cy="-4" r="2.4"/><circle cx="0" cy="4" r="2.4"/>
-                <circle cx="14" cy="0" r="2.8"/>
+                <circle cx="-11" cy="-9" r="2.2"/><circle cx="-11" cy="1" r="2.2"/><circle cx="-11" cy="10" r="2.2"/>
+                <circle cx="0" cy="-3" r="2.2"/><circle cx="0" cy="5" r="2.2"/>
+                <circle cx="11" cy="1" r="2.6"/>
               </g>
+              <path d="M -21 -9 L -9 -21 L -3 -21 L -21 -3 Z" fill="#eaf8ff" opacity="0.3"/>
+            </g>
+            <g id="gshadow">
+              <rect x="-26" y="-26" width="52" height="52" rx="9" fill="#050308" opacity="0.45"/>
+            </g>
+          </defs>
+          <!-- desk surface fills the whole frame -->
+          <rect data-poly="al-desk" width="1200" height="620" fill="#171021"/>
+          <!-- plank seams -->
+          <g stroke="#060409" stroke-width="3" opacity="0.28" fill="none">
+            <path d="M 0 158 Q 600 150 1200 162"/>
+            <path d="M 0 318 Q 600 312 1200 322"/>
+            <path d="M 0 472 Q 600 466 1200 476"/>
+          </g>
+          <!-- warm pool of lamplight from overhead -->
+          <ellipse cx="600" cy="300" rx="520" ry="330" fill="url(#alPool)"/>
+
+          <!-- blueprint sheet lying on the desk, the octopus sits half on it -->
+          <g transform="translate(790, 262) rotate(4)">
+            <rect width="236" height="182" rx="4" fill="#131026" stroke="#4a3866" stroke-width="2"/>
+            <path d="M 12 24 H 224 M 12 60 H 224 M 12 96 H 224 M 12 132 H 224 M 12 160 H 224 M 40 12 V 170 M 90 12 V 170 M 140 12 V 170 M 190 12 V 170"
+                  stroke="#7ce4ff" stroke-width="0.8" opacity="0.1" fill="none"/>
+            <g stroke="#7ce4ff" stroke-width="1.1" opacity="0.5" fill="none">
+              <path d="M 34 46 L 78 66 M 34 96 L 78 66 M 34 142 L 78 66 M 34 46 L 78 118 M 34 96 L 78 118 M 34 142 L 78 118 M 78 66 L 126 92 M 78 118 L 126 92"/>
+            </g>
+            <g fill="#7ce4ff" opacity="0.75">
+              <circle cx="34" cy="46" r="3.4"/><circle cx="34" cy="96" r="3.4"/><circle cx="34" cy="142" r="3.4"/>
+              <circle cx="78" cy="66" r="3.6"/><circle cx="78" cy="118" r="3.6"/>
+              <circle cx="126" cy="92" r="4"/>
+            </g>
+            <path d="M 150 40 l 8 0 M 154 36 l 0 8" stroke="#ffd9a0" stroke-width="1.2" opacity="0.4"/>
+            <circle cx="14" cy="14" r="3" fill="#8a92aa"/><circle cx="222" cy="170" r="3" fill="#8a92aa"/>
+          </g>
+
+          <!-- notebook and pencil, top right -->
+          <g transform="translate(990, 96) rotate(9)">
+            <rect x="6" y="8" width="150" height="106" rx="4" fill="#050308" opacity="0.4"/>
+            <rect width="150" height="106" rx="4" fill="#191330" stroke="#4a3866" stroke-width="1.8"/>
+            <path d="M 14 20 H 136 M 14 40 H 136 M 14 60 H 136 M 14 80 H 100" stroke="#8a92aa" stroke-width="1" opacity="0.25" fill="none"/>
+            <path d="M 30 92 q 18 -14 36 -2 q 16 10 32 -4" stroke="#ffd9a0" stroke-width="1.4" opacity="0.5" fill="none"/>
+            <rect x="72" y="-2" width="6" height="110" fill="#241a3c"/>
+          </g>
+          <g transform="translate(716, 146) rotate(-12)">
+            <rect x="4" y="5" width="86" height="9" rx="4" fill="#050308" opacity="0.4"/>
+            <rect x="0" y="-4.5" width="70" height="9" rx="3" fill="#c8a04a"/>
+            <path d="M 70 -4.5 L 84 0 L 70 4.5 Z" fill="#e8d2a0"/>
+            <path d="M 79 -1.7 L 84 0 L 79 1.7 Z" fill="#241636"/>
+            <rect x="-8" y="-4.5" width="8" height="9" rx="2" fill="#d88a9a"/>
+          </g>
+
+          <!-- coffee mug, top left -->
+          <g transform="translate(152, 118)">
+            <ellipse cx="9" cy="11" rx="36" ry="34" fill="#050308" opacity="0.45"/>
+            <path d="M 28 -16 A 46 46 0 0 1 58 4 L 44 12 A 30 30 0 0 0 24 -2 Z" fill="#513a78"/>
+            <circle r="32" fill="#513a78"/>
+            <circle r="25" fill="#12080c"/>
+            <path d="M -16 -13 A 21 21 0 0 1 12 -20 L 8 -12 A 13 13 0 0 0 -9 -7 Z" fill="#c89a6a" opacity="0.35"/>
+          </g>
+
+          <!-- the crate, tipped open toward the middle of the desk -->
+          <g transform="translate(296, 302) rotate(-14)">
+            <rect x="-78" y="-50" width="176" height="126" rx="8" fill="#050308" opacity="0.45"/>
+            <g data-poly="al-crate">
+              <rect x="-85" y="-60" width="170" height="120" rx="6" fill="#251a3c" stroke="#43315e" stroke-width="6"/>
+              <rect x="45" y="-46" width="40" height="92" fill="#0a0614"/>
+            </g>
+            <!-- boxes still inside the mouth -->
+            <use href="#gbox" transform="translate(58, -12) rotate(18) scale(0.82)" opacity="0.85"/>
+            <use href="#gbox" transform="translate(64, 26) rotate(-9) scale(0.78)" opacity="0.7"/>
+            <!-- lid flap swung open from the mouth, hinged on the rim -->
+            <g transform="translate(85, 0) rotate(7)">
+              <rect x="6" y="-52" width="34" height="112" rx="4" fill="#050308" opacity="0.35"/>
+              <rect x="0" y="-58" width="34" height="116" rx="4" fill="#2e2148" stroke="#43315e" stroke-width="4"/>
+              <path d="M 11 -50 V 50 M 23 -50 V 50" stroke="#43315e" stroke-width="2" opacity="0.7"/>
             </g>
           </g>
 
-          <!-- tools lying on the bench -->
+          <!-- his hands, reaching in from the bottom edge to tip the crate -->
+          <g data-poly="al-arms" fill="#1c1328">
+            <path d="M 142 620 L 150 540 Q 160 500 176 470 Q 194 434 214 410 L 248 384 L 276 404 Q 258 424 244 440 Q 228 468 218 500 Q 208 528 204 560 L 200 620 Z"/>
+            <path d="M 240 376 L 266 356 L 286 366 L 280 390 L 256 398 Z" fill="#8a6650"/>
+            <path d="M 318 620 L 322 552 Q 330 518 338 492 Q 348 464 362 444 L 390 462 Q 380 484 372 506 Q 364 532 358 560 L 356 620 Z"/>
+            <path d="M 356 436 L 380 420 L 398 432 L 390 454 L 368 458 Z" fill="#8a6650"/>
+          </g>
+          <!-- lamplight rim along the outer sleeve edges -->
+          <g fill="none" stroke-linecap="round">
+            <path d="M 180 464 Q 196 434 216 408" stroke="#ffd9a0" stroke-width="2.2" opacity="0.55"/>
+            <path d="M 340 488 Q 350 464 362 446" stroke="#ffd9a0" stroke-width="2" opacity="0.45"/>
+          </g>
+
+          <!-- glass boxes spilled in an arc across the desk -->
+          <g filter="url(#alSoft)">
+            <use href="#gshadow" transform="translate(462, 319) rotate(24)"/>
+            <use href="#gbox" transform="translate(455, 310) rotate(24)" class="flicker"/>
+            <use href="#gshadow" transform="translate(527, 361) rotate(-12) scale(0.9)"/>
+            <use href="#gbox" transform="translate(520, 352) rotate(-12) scale(0.9)"/>
+            <use href="#gshadow" transform="translate(607, 389) rotate(8)"/>
+            <use href="#gbox" transform="translate(600, 380) rotate(8)" class="flicker" style="animation-delay:1.2s"/>
+            <use href="#gshadow" transform="translate(675, 361) rotate(-18) scale(0.85)"/>
+            <use href="#gboxNet" transform="translate(668, 352) rotate(-18) scale(0.85)"/>
+            <!-- box under the magnifying glass -->
+            <use href="#gshadow" transform="translate(755, 377) rotate(-4) scale(0.9)"/>
+            <use href="#gbox" transform="translate(748, 368) rotate(-4) scale(0.9)" class="flicker" style="animation-delay:0.6s"/>
+          </g>
+          <!-- cool glow bleeding onto the desk from the cluster -->
+          <ellipse cx="600" cy="360" rx="230" ry="90" fill="#7ce4ff" opacity="0.05"/>
+
+          <!-- tools near the bottom -->
           <g>
-            <!-- wrench -->
-            <g transform="translate(896, 432) rotate(-7)" fill="#aab4cc">
+            <g transform="translate(498, 536) rotate(-16)" fill="#aab4cc">
+              <rect x="3" y="4" width="70" height="8" rx="4" fill="#050308" opacity="0.4"/>
               <rect x="0" y="-4" width="52" height="8" rx="4"/>
               <path d="M 52 -11 q 15 2 17 11 q -2 9 -17 11 q 9 -6 9 -11 q 0 -5 -9 -11 Z"/>
               <circle cx="4" cy="0" r="6"/>
-              <path d="M 0 -6 l -6 3 l 0 6 l 6 3 Z" fill="#120e1c"/>
+              <path d="M 0 -6 l -6 3 l 0 6 l 6 3 Z" fill="#171021"/>
             </g>
-            <!-- screwdriver with a purple handle -->
-            <g transform="translate(984, 430) rotate(4)">
+            <g transform="translate(688, 548) rotate(6)">
+              <rect x="3" y="3" width="62" height="9" rx="4" fill="#050308" opacity="0.4"/>
               <rect x="0" y="-5" width="24" height="10" rx="4.5" fill="#6b46c8"/>
               <rect x="24" y="-3" width="5" height="6" fill="#c9d0e0"/>
               <rect x="29" y="-1.7" width="30" height="3.4" fill="#aab2c8"/>
               <rect x="59" y="-2.6" width="5" height="5.2" fill="#c9d0e0"/>
             </g>
-            <!-- stray nuts -->
             <g fill="#9aa2b8">
-              <circle cx="1052" cy="432" r="3.4"/><circle cx="1064" cy="426" r="2.6"/>
-              <circle cx="872" cy="418" r="2.4"/>
+              <circle cx="596" cy="524" r="3.4"/><circle cx="612" cy="516" r="2.6"/>
+              <circle cx="806" cy="518" r="2.4"/><circle cx="438" cy="416" r="2.6"/>
             </g>
           </g>
 
-          <!-- the little mechanical purple octopus -->
-          <g transform="translate(856, 404)" filter="url(#alSoft)">
-          <g class="bob">
-            <!-- tentacles -->
-            <g stroke="#6b46c8" stroke-width="7" fill="none" stroke-linecap="round">
-              <path d="M -22 22 q -14 10 -26 4"/>
-              <path d="M -10 28 q -4 14 -18 16"/>
-              <path d="M 6 28 q 4 14 16 14"/>
-              <path d="M 20 22 q 14 10 24 2"/>
-            </g>
-            <!-- raised tentacle holding the magnifier -->
-            <path d="M -16 12 C -30 6 -40 -4 -50 -13" stroke="#8a5ce8" stroke-width="6.5" fill="none" stroke-linecap="round"/>
-            <!-- dome body -->
-            <path data-poly="al-octo" d="M -28 24 Q -34 -18 0 -22 Q 34 -18 28 24 Q 0 32 -28 24 Z" fill="#7a52d6"/>
-            <path d="M -20 -8 Q -8 -18 8 -14" stroke="#b18cff" stroke-width="3" fill="none" opacity="0.8"/>
-            <!-- rivets -->
-            <g fill="#c9b2ff">
-              <circle cx="-18" cy="8" r="1.8"/><circle cx="18" cy="8" r="1.8"/><circle cx="0" cy="-16" r="1.8"/>
-            </g>
-            <!-- big eye -->
-            <circle cx="2" cy="4" r="11" fill="#efe8ff"/>
-            <circle cx="4" cy="5" r="5.5" fill="#241640"/>
-            <circle cx="6.5" cy="2.5" r="2" fill="#ffffff"/>
-            <!-- magnifying glass hovering over the card below -->
-            <g transform="translate(-70, 4)">
-              <circle r="15" fill="#7ce4ff" fill-opacity="0.16" stroke="#c9d0e0" stroke-width="3.5"/>
-              <line x1="10" y1="-10" x2="19" y2="-17" stroke="#c9d0e0" stroke-width="4.5" stroke-linecap="round"/>
+          <!-- the little mechanical purple octopus, seen from above -->
+          <g transform="translate(880, 330)" filter="url(#alSoft)">
+            <ellipse cx="8" cy="10" rx="46" ry="42" fill="#050308" opacity="0.4"/>
+            <g class="bob">
+              <!-- six resting tentacles radiating out -->
+              <g stroke="#6b46c8" fill="none" stroke-linecap="round">
+                <path d="M 18 -34 Q 34 -52 30 -72 Q 28 -82 38 -86" stroke-width="8"/>
+                <path d="M 38 -8 Q 62 -12 76 2 Q 84 10 78 20" stroke-width="8"/>
+                <path d="M 30 26 Q 46 44 42 62 Q 40 72 50 74" stroke-width="7"/>
+                <path d="M 2 40 Q 0 62 -14 72 Q -22 78 -18 88" stroke-width="7"/>
+                <path d="M -26 30 Q -44 44 -62 40 Q -72 38 -74 48" stroke-width="7"/>
+                <path d="M -36 -14 Q -56 -22 -64 -40 Q -68 -50 -78 -48" stroke-width="7"/>
+              </g>
+              <!-- tentacle curling up to hold a glass box -->
+              <path d="M 26 -30 C 44 -50 54 -66 64 -80 Q 70 -88 78 -84" stroke="#9a74ee" stroke-width="8" fill="none" stroke-linecap="round"/>
+              <!-- tentacle reaching out to the magnifying glass -->
+              <path d="M -38 6 C -62 10 -84 16 -104 24" stroke="#9a74ee" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+              <!-- dome body from above -->
+              <circle data-poly="al-octo-top" r="40" fill="#7a52d6"/>
+              <path d="M -30 -20 Q -6 -36 22 -26" stroke="#b18cff" stroke-width="3" fill="none" opacity="0.8"/>
+              <!-- plating seams across the dome -->
+              <path d="M -38 10 Q 0 22 38 10 M -30 -24 Q 0 -12 30 -24" stroke="#5c3aa8" stroke-width="2" fill="none" opacity="0.6"/>
+              <g fill="#c9b2ff">
+                <circle cx="-22" cy="-28" r="1.8"/><circle cx="24" cy="-26" r="1.8"/><circle cx="34" cy="16" r="1.8"/>
+                <circle cx="-34" cy="16" r="1.8"/><circle cx="4" cy="38" r="1.8"/>
+              </g>
+              <!-- two eyes peeking over the front rim, toward the lens -->
+              <circle cx="-30" cy="12" r="8.5" fill="#efe8ff"/>
+              <circle cx="-33" cy="14" r="4.2" fill="#241640"/>
+              <circle cx="-31" cy="12" r="1.6" fill="#ffffff"/>
+              <circle cx="-14" cy="26" r="7.5" fill="#efe8ff"/>
+              <circle cx="-17" cy="28" r="3.8" fill="#241640"/>
+              <circle cx="-15" cy="26" r="1.4" fill="#ffffff"/>
+              <!-- magnifying glass held over the box below left -->
+              <g transform="translate(-132, 36)">
+                <ellipse cx="5" cy="6" rx="24" ry="22" fill="#050308" opacity="0.3"/>
+                <circle r="21" fill="#7ce4ff" fill-opacity="0.16" stroke="#c9d0e0" stroke-width="4"/>
+                <line x1="17" y1="-8" x2="32" y2="-14" stroke="#c9d0e0" stroke-width="5" stroke-linecap="round"/>
+              </g>
+              <!-- the held glass box, lifted off the desk -->
+              <g transform="translate(84, -96) rotate(14)">
+                <use href="#gshadow" transform="translate(12, 16) scale(0.8)"/>
+                <use href="#gbox" transform="scale(0.8)" class="flicker" style="animation-delay:1.8s"/>
+                <path d="M -6 -22 Q 4 -30 14 -24" stroke="#9a74ee" stroke-width="6" fill="none" stroke-linecap="round"/>
+              </g>
             </g>
           </g>
-          </g>
-          <!-- the matrix being inspected, flat on the bench -->
-          <use href="#matrix" transform="translate(776, 424) rotate(-4) scale(0.85)" class="flicker" style="animation-delay:0.6s"/>
         </svg>
       </div>
       <p class="copy"><strong>I like opening the box.</strong> Benchmarks for how models drift from your preferences, games repurposed as evals, and careful notes on what the matrices are actually doing. Small experiments, patient tools, curious helpers.</p>
@@ -2169,43 +2204,32 @@ animate();
     'vs-hat': silhouette([[[2,-92],[10,-104],[24,-110],[38,-104],[45,-88],[34,-92],[14,-96]]], 6, '#39496a', { anchor: [24, -98], speed: 50 }),
 
     // ---- alignment ----
-    'al-cone': (g, rnd) => {
-      const xs = [300, 420, 540, 660, 780, 900];
-      const op = [0.55, 0.85, 1, 0.8, 0.5];
-      for (let i = 0; i < 5; i++) {
-        const p = document.createElementNS(SVGNS, 'polygon');
-        p.setAttribute('points', `600,132 ${xs[i]},470 ${xs[i + 1]},470`);
-        p.setAttribute('fill', 'url(#cone)');
-        p.setAttribute('opacity', op[i]);
-        p.setAttribute('class', 'fct');
-        p.style.animationDelay = (0.15 + Math.abs(i - 2) * 0.12).toFixed(2) + 's';
-        g.appendChild(p);
-      }
-    },
-    'al-bench': (g, rnd) => {
-      const a = col('#2a2036'), b = col('#161020'), lamp = col('#453347');
-      const tris = facetFill([[120,441],[1080,441],[1080,465],[120,465]], 26, rnd);
+    'al-desk': (g, rnd) => {
+      const base = col('#171021'), lamp = col('#40303e'), edge = col('#0c0814');
+      const tris = facetFill([[0,0],[1200,0],[1200,620],[0,620]], 54, rnd);
       emit(g, tris, (cx, cy) => {
-        let c = a.clone().lerp(b, clamp((cy - 441) / 24, 0, 1));
-        c.lerp(lamp, Math.max(0, 1 - Math.abs(cx - 600) / 420) * 0.55);
-        return css(jit(c, rnd, 0.85, 1.15));
-      }, distDelay(600, 453, 800, rnd, 0.35), rnd);
+        const d = Math.hypot(cx - 600, (cy - 300) * 1.3);
+        let c = base.clone().lerp(lamp, Math.max(0, 1 - d / 540) * 0.8);
+        c.lerp(edge, clamp((d - 460) / 280, 0, 1) * 0.6);
+        return css(jit(c, rnd, 0.88, 1.12));
+      }, distDelay(600, 300, 820, rnd, 0.5), rnd);
     },
-    'al-boy': silhouette([
-      [[-124,0],[-134,-70],[-108,-112],[-90,-136],[-60,-130],[-40,-120],[-44,-88],[-48,-44],[-62,0]],
-      [[-92,-130],[-66,-132],[-68,-116],[-92,-114]],
-      { pts: ngon(-78, -148, 18, 10), color: '#2c2040' },
-      [[-86,-122],[-20,-124],[36,-108],[33,-93],[-20,-110],[-88,-105]],
-      [[-76,-104],[-28,-98],[14,-78],[5,-58],[-32,-80],[-80,-82]],
-    ], 7, '#221934', { warm: '#443224', warmT: (cx, cy) => (-cy - 100) / 70, anchor: [-70, -100], speed: 130 }),
-    'al-box': silhouette([
-      { pts: [[-40,-28],[40,-28],[40,28],[-40,28]], color: '#241736' },
-      { pts: [[-40,-28],[40,-28],[40,-16],[-40,-16]], color: '#31224a' },
-      { pts: [[40,-28],[66,-40],[66,12],[40,28]], color: '#170f26' },
-    ], 15, '#241736', { anchor: [0, 0], speed: 70 }),
-    'al-octo': silhouette([
-      [[-28,24],[-33,4],[-30,-12],[-18,-20],[0,-23],[18,-20],[30,-12],[33,4],[28,24],[14,30],[0,31],[-14,30]],
-    ], 8.5, '#7a52d6', { warm: '#9a74ee', warmT: (cx, cy) => (-cy - 4) / 24, anchor: [0, 4], speed: 50 }),
+    'al-crate': silhouette([
+      { pts: [[-85,-60],[85,-60],[85,-46],[-85,-46]], color: '#43315e' },
+      { pts: [[-85,46],[85,46],[85,60],[-85,60]], color: '#43315e' },
+      { pts: [[-85,-46],[-71,-46],[-71,46],[-85,46]], color: '#4a3868' },
+      { pts: [[-71,-46],[45,-46],[45,46],[-71,46]], color: '#251a3c' },
+      { pts: [[45,-46],[85,-46],[85,46],[45,46]], color: '#0a0614' },
+    ], 14, '#251a3c', { warm: '#5c4680', warmT: (cx, cy) => (cx - 20) / 90, anchor: [0, 0], speed: 90 }),
+    'al-arms': silhouette([
+      [[142,620],[150,540],[176,470],[214,410],[248,384],[276,404],[244,440],[218,500],[204,560],[200,620]],
+      { pts: [[240,376],[266,356],[286,366],[280,390],[256,398]], color: '#8a6650' },
+      [[318,620],[322,552],[338,492],[362,444],[390,462],[372,506],[358,560],[356,620]],
+      { pts: [[356,436],[380,420],[398,432],[390,454],[368,458]], color: '#8a6650' },
+    ], 9, '#1c1328', { warm: '#40304a', warmT: (cx, cy) => (620 - cy) / 300, anchor: [280, 520], speed: 130 }),
+    'al-octo-top': silhouette([
+      ngon(0, 0, 40, 14),
+    ], 8.5, '#7a52d6', { warm: '#9d78f0', warmT: (cx, cy) => 0.4 - (cx + cy) / 70, anchor: [0, 0], speed: 55 }),
 
     // ---- convergence ----
     'cv-hill': (g, rnd) => {
