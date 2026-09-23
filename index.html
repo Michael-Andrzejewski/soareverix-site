@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Soareverix</title>
-<meta name="description" content="Soareverix. Michael Andrzejewski. Games, mods, and simulations.">
+<meta name="description" content="Soareverix: Michael Andrzejewski. Worlds, mods, and AI safety evals. All of life is practice.">
+<meta name="theme-color" content="#05080e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200..600;1,9..144,300..500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --ink: #dbe7f5;
@@ -137,14 +141,236 @@
     animation: rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
   }
   @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* ================================================ design pass: type, rhythm, chapters */
+  :root {
+    --gold: #f3c77a;
+    --gold-deep: #c98f3c;
+    --ink: #e6eef8;
+    --dim: #93a7c0;
+    --faint: rgba(147, 167, 192, 0.55);
+    --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", Consolas, "Cascadia Mono", monospace;
+  }
+  html, body { background: #05080e; }
+  body { font-family: var(--sans); font-size: 17px; line-height: 1.7; }
+  ::selection { background: rgba(243, 199, 122, 0.35); color: #fff; }
+
+  /* fine film grain over everything, very quiet */
+  html.site-mode body::after {
+    content: ""; position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  #progress {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 6; display: none;
+    transform-origin: 0 50%; transform: scaleX(0);
+    background: linear-gradient(90deg, var(--blue), #a9a2ff 55%, var(--gold));
+    box-shadow: 0 0 12px rgba(124, 196, 255, 0.6);
+  }
+  html.site-mode #progress { display: block; }
+
+  #nav {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 2.2px;
+    padding: 14px 10px 30px;
+    background: linear-gradient(rgba(5, 8, 14, 0.9) 50%, rgba(5, 8, 14, 0));
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    mask-image: linear-gradient(#000 60%, transparent);
+    -webkit-mask-image: linear-gradient(#000 60%, transparent);
+  }
+  #nav a.on { color: #f4f8ff; border-color: rgba(243, 199, 122, 0.35); background: rgba(40, 30, 14, 0.35); }
+  #nav a.home { color: var(--gold); display: inline-flex; align-items: center; gap: 8px; }
+  .spark {
+    width: 6px; height: 6px; border-radius: 50%; background: #9dffb8;
+    box-shadow: 0 0 8px 2px rgba(120, 255, 170, 0.7);
+    animation: spark 3.2s ease-in-out infinite;
+  }
+  @keyframes spark { 0%, 100% { transform: scale(0.8); opacity: 0.7; } 50% { transform: scale(1.25); opacity: 1; } }
+
+  /* hero title */
+  .hero-title { bottom: 9vh; left: 7vw; right: auto; text-align: left; }
+  .hero-title .eyebrow, .hero-title .sub { text-indent: 0; }
+  @media (max-width: 620px) { .hero-title { left: 16px; right: 16px; bottom: 8vh; } }
+  .hero-title .eyebrow {
+    font: 500 11px var(--mono); letter-spacing: 6px; text-indent: 6px; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 14px; text-shadow: 0 2px 14px rgba(5, 8, 16, 0.9);
+  }
+  .hero-title h1 {
+    font-family: var(--serif); font-weight: 300; font-style: italic;
+    font-size: clamp(46px, 10vw, 132px); line-height: 1;
+    letter-spacing: clamp(1px, 0.4vw, 6px); text-indent: 0;
+    background: linear-gradient(180deg, #ffffff 30%, #cfe6ff 70%, #f3d49b);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: none; filter: drop-shadow(0 4px 30px rgba(5, 8, 16, 0.9)) drop-shadow(0 0 40px rgba(124, 196, 255, 0.25));
+  }
+  .hero-title .sub { font-family: var(--mono); font-size: 12px; margin-top: 18px; color: var(--gold); }
+  .scrollcue {
+    pointer-events: auto; display: inline-block; margin-top: 26px; width: 22px; height: 36px;
+    border: 1px solid rgba(230, 238, 248, 0.35); border-radius: 12px; position: relative;
+  }
+  .scrollcue span {
+    position: absolute; left: 50%; top: 7px; width: 2px; height: 7px; margin-left: -1px;
+    border-radius: 2px; background: var(--gold); animation: cue 2.2s ease-in-out infinite;
+  }
+  @keyframes cue { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px); } }
+
+  /* prelude */
+  .prelude { padding: 16vh 0 6vh; position: relative; }
+  .prelude::before {
+    content: ""; position: absolute; left: 50%; top: 4vh; width: 1px; height: 9vh;
+    background: linear-gradient(transparent, rgba(243, 199, 122, 0.6));
+  }
+  .motto {
+    font-family: var(--serif); font-weight: 250; font-size: clamp(38px, 6.4vw, 84px);
+    line-height: 1.05; letter-spacing: -0.5px; color: #f2f6fc; margin: 0 0 5vh; text-align: center;
+  }
+  .motto em { font-style: italic; color: var(--gold); font-weight: 300; }
+  .intro {
+    display: grid; grid-template-columns: 1.35fr 1fr; gap: 48px; align-items: start;
+    max-width: 900px; margin: 0 auto;
+  }
+  .intro p { margin: 0; color: #c2d0e2; font-size: 19px; line-height: 1.75; }
+  .intro .aside-note {
+    font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--dim);
+    border-left: 1px solid rgba(243, 199, 122, 0.4); padding-left: 22px;
+  }
+  .toc {
+    list-style: none; padding: 0; margin: 9vh auto 0; max-width: 900px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+    background: rgba(124, 196, 255, 0.14); border: 1px solid rgba(124, 196, 255, 0.14); border-radius: 14px; overflow: hidden;
+  }
+  .toc a {
+    display: flex; flex-direction: column; gap: 4px; height: 100%; box-sizing: border-box;
+    padding: 18px 18px 20px; background: #070b13; color: var(--ink); text-decoration: none;
+    font-family: var(--serif); font-size: 19px; line-height: 1.2; transition: background 0.3s;
+  }
+  .toc a span { font: 500 11px var(--mono); color: var(--gold); letter-spacing: 2px; margin-bottom: 6px; }
+  .toc a i { font: 400 13px var(--sans); color: var(--faint); font-style: normal; }
+  .toc a:hover { background: #0d1524; }
+
+  /* chapters */
+  #site .inner { max-width: 1120px; }
+  section.seg { padding: 13vh 0 4vh; }
+  .chap {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 22px;
+    margin-bottom: 28px; padding-bottom: 18px; border-bottom: 1px solid rgba(124, 196, 255, 0.12);
+  }
+  .chap .num { font: 500 12px var(--mono); color: var(--gold); letter-spacing: 3px; }
+  .chap h2 {
+    margin: 0; font-family: var(--serif); font-weight: 300; font-size: clamp(30px, 4.4vw, 54px);
+    letter-spacing: -0.5px; text-transform: none; color: #f2f6fc; line-height: 1.05;
+  }
+  .chap h2::before { content: none; }
+  .chap .kicker { font: 400 12px var(--mono); letter-spacing: 1.5px; color: var(--faint); text-transform: uppercase; text-align: right; }
+
+  .seg .scene {
+    position: relative; border: 0; border-radius: 18px; overflow: visible; background: none;
+    box-shadow: none; isolation: isolate;
+  }
+  .seg .scene::before {
+    content: ""; position: absolute; inset: -8% -6%; z-index: -1; pointer-events: none;
+    background: radial-gradient(closest-side, var(--glow, rgba(90, 140, 255, 0.16)), transparent);
+    filter: blur(20px);
+  }
+  .seg .scene svg {
+    border-radius: 18px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(160, 200, 255, 0.14), 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+    transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.8s;
+  }
+  .seg .scene:hover svg { transform: translateY(-3px); box-shadow: 0 0 0 1px rgba(243, 199, 122, 0.28), 0 40px 90px -20px rgba(0, 0, 0, 0.85); }
+  #staravorix { --glow: rgba(255, 140, 60, 0.18); }
+  #vintage-story { --glow: rgba(90, 255, 150, 0.12); }
+  #alignment { --glow: rgba(170, 120, 255, 0.17); }
+  #convergence { --glow: rgba(110, 160, 255, 0.17); }
+  #ramblings { --glow: rgba(255, 170, 120, 0.16); }
+
+  .seg .copy {
+    max-width: none; margin-top: 44px; font-size: 17px; color: var(--dim);
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: start;
+  }
+  .seg .copy .lede {
+    margin: 0; font-family: var(--serif); font-weight: 300; font-size: clamp(21px, 2.1vw, 27px);
+    line-height: 1.45; color: #dce6f3;
+  }
+  .seg .copy aside { font-size: 15.5px; }
+  .seg .copy aside p { margin: 0 0 14px; }
+  .seg .copy blockquote {
+    margin: 0 0 22px; padding-left: 20px; border-left: 1px solid rgba(243, 199, 122, 0.45);
+    font-family: var(--serif); font-style: italic; font-size: 18px; color: #c9d5e5; line-height: 1.6;
+  }
+  .seg .copy blockquote em { color: var(--gold); }
+  .seg dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; margin: 0; }
+  .seg dt { font: 500 11px/2 var(--mono); letter-spacing: 2px; text-transform: uppercase; color: var(--faint); }
+  .seg dd { margin: 0; color: #c2d0e2; }
+  .marks { list-style: none; margin: 0; padding: 0; }
+  .marks li { padding: 9px 0 9px 26px; border-bottom: 1px solid rgba(124, 196, 255, 0.09); position: relative; color: #c2d0e2; }
+  .marks li::before { content: ""; position: absolute; left: 4px; top: 50%; width: 7px; height: 7px; margin-top: -4px; transform: rotate(45deg); border: 1px solid var(--gold); }
+  .paper .tag { font: 500 11px var(--mono); letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
+  .bars { display: grid; gap: 10px; margin-bottom: 20px; }
+  .bar { position: relative; display: flex; align-items: baseline; gap: 14px; padding: 8px 12px; border-radius: 8px; overflow: hidden; background: rgba(124, 196, 255, 0.05); }
+  .bar::before {
+    content: ""; position: absolute; inset: 0; right: auto; width: calc(var(--v) * 1%); z-index: 0;
+    background: linear-gradient(90deg, rgba(124, 196, 255, 0.18), rgba(170, 140, 255, 0.28));
+    transform-origin: 0 50%; transform: scaleX(0); transition: transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s;
+  }
+  .play .bar::before, html.ffmode .bar::before { transform: none; }
+  .bar b, .bar span { position: relative; }
+  .bar b { font: 500 16px var(--mono); color: #f2f6fc; min-width: 44px; }
+  .bar span { font-size: 14px; color: var(--dim); }
+  .paper .origin { color: var(--faint); font-size: 14.5px; }
+  .loops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .loops div { border: 1px solid rgba(124, 196, 255, 0.16); border-radius: 50%; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px; }
+  .loops i { font-family: var(--serif); font-size: 19px; color: #eef3fa; }
+  .loops span { font: 400 10.5px var(--mono); letter-spacing: 1px; color: var(--faint); text-transform: uppercase; margin-top: 4px; }
+  .loops div:nth-child(3) { border-color: rgba(243, 199, 122, 0.45); }
+  .seg .small { font-size: 15px; margin: 0; }
+
+  /* footer */
+  footer { padding: 18vh 0 12vh; border-top: 0; text-align: center; position: relative; }
+  footer::before {
+    content: ""; position: absolute; top: 5vh; left: 50%; width: 1px; height: 9vh;
+    background: linear-gradient(rgba(124, 196, 255, 0.5), transparent);
+  }
+  footer .closing { font-family: var(--serif); font-style: italic; font-weight: 300; font-size: clamp(26px, 3.6vw, 44px); color: #eef3fa; margin: 0 0 34px; line-height: 1.2; }
+  footer .links { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+  footer .links a {
+    font: 500 12px var(--mono); letter-spacing: 1.5px; text-transform: uppercase; color: var(--ink);
+    padding: 10px 18px; border: 1px solid rgba(124, 196, 255, 0.22); border-radius: 999px; transition: border-color 0.2s, background 0.2s, color 0.2s;
+  }
+  footer .links a:hover { border-color: rgba(243, 199, 122, 0.55); background: rgba(243, 199, 122, 0.08); color: #fff; }
+  footer .note { margin-top: 44px; font-family: var(--mono); font-size: 11px; }
+
+  @media (max-width: 860px) {
+    .intro, .seg .copy { grid-template-columns: 1fr; gap: 28px; }
+    .toc { grid-template-columns: 1fr; }
+    .toc a { flex-direction: row; align-items: baseline; gap: 14px; padding: 14px 18px; }
+    .toc a span { margin: 0; }
+    .toc a i { margin-left: auto; }
+    .chap { grid-template-columns: auto 1fr; }
+    .chap .kicker { grid-column: 1 / -1; text-align: left; }
+  }
+  @media (max-width: 620px) {
+    body { font-size: 16px; }
+    #site .inner { padding: 0 16px; }
+    #nav { gap: 2px; padding: 10px 6px 24px; }
+    #nav a { padding: 6px 9px; letter-spacing: 1.2px; }
+    .prelude { padding-top: 12vh; }
+    .intro p { font-size: 17px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spark, .scrollcue span { animation: none; }
+    .bar::before { transform: none; transition: none; }
+  }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="fade"></div>
 
+<div id="progress" aria-hidden="true"></div>
 <nav id="nav">
-  <a class="home" href="#top">Soareverix</a>
+  <a class="home" href="#top"><span class="spark" aria-hidden="true"></span>Soareverix</a>
   <a href="#staravorix">Staravorix</a>
   <a href="#vintage-story">Vintage Story</a>
   <a href="#alignment">Alignment</a>
@@ -354,15 +580,34 @@
       </svg>
     </div>
     <div class="hero-title">
-      <h1>SOAREVERIX</h1>
+      <div class="eyebrow">Michael Andrzejewski</div>
+      <h1>Soareverix</h1>
       <div class="sub">Towards Utopia</div>
+      <a class="scrollcue" href="#prelude" aria-label="Scroll to the introduction"><span></span></a>
     </div>
   </div>
+
+  <section id="prelude" class="prelude reveal">
+    <div class="inner">
+      <p class="motto">All of life is <em>practice</em>.</p>
+      <div class="intro">
+        <p>I&rsquo;m Michael. I make worlds, mods, and AI safety evals, and I try to make each of them a little more beautiful than the last. This site is a doorway: five rooms, each one a thing I keep coming back to.</p>
+        <p class="aside-note">Tell people what you made, not what you are going to make. Finished things are for sharing. Dreams are for building.</p>
+      </div>
+      <ol class="toc">
+        <li><a href="#staravorix"><span>01</span>Staravorix<i>a universe of my own</i></a></li>
+        <li><a href="#vintage-story"><span>02</span>Vintage Story<i>mods</i></a></li>
+        <li><a href="#alignment"><span>03</span>Alignment<i>evals &amp; research</i></a></li>
+        <li><a href="#convergence"><span>04</span>Convergence<i>philosophy</i></a></li>
+        <li><a href="#ramblings"><span>05</span>Ramblings<i>life, written openly</i></a></li>
+      </ol>
+    </div>
+  </section>
 
   <div class="inner">
     <!-- ============ STARAVORIX ============ -->
     <section id="staravorix" class="seg reveal">
-      <h2>Staravorix</h2>
+      <header class="chap"><span class="num">01</span><h2>Staravorix</h2><span class="kicker">A world written for over a decade</span></header>
       <div class="scene">
         <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A figure lunges and throws a hand forward, waves of stylized fire flowing from it">
           <defs>
@@ -522,12 +767,12 @@
           </g>
         </svg>
       </div>
-      <p class="copy"><strong>A universe of my own.</strong> Burning gods, drifted stars, and long campaigns that outlive their characters. The maps get redrawn every time someone survives something they should not have.</p>
+      <div class="copy"><p class="lede">A universe of my own. Burning gods, drifted stars, and long campaigns that outlive their characters. The maps get redrawn every time someone survives something they should not have.</p><aside><blockquote>Runes are markers in reality that tell reality to <em>pay attention</em>. The better they are drawn, the more eye-catching they are to the world.</blockquote><dl><dt>Inside</dt><dd>Runes, God-Runes, and the Dreament</dd><dt>Forces</dt><dd>The Golden Iris and the Plague</dd><dt>Scroll</dt><dd>The fire casts as you move</dd></dl></aside></div>
     </section>
 
     <!-- ============ VINTAGE STORY ============ -->
     <section id="vintage-story" class="seg reveal">
-      <h2>Vintage Story</h2>
+      <header class="chap"><span class="num">02</span><h2>Vintage Story</h2><span class="kicker">Mods for a quiet, stubborn world</span></header>
       <div class="scene">
         <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A figure snoozes under a large tree with a glowing gear set into its trunk">
           <defs>
@@ -674,12 +919,12 @@
           </g>
         </svg>
       </div>
-      <p class="copy"><strong>Mods for a quiet, stubborn world.</strong> Trait progression for long lives, sea monsters under calm water, spreading devastation, building commands, and villages that grow when you are generous to them.</p>
+      <div class="copy"><p class="lede">Some worlds reward patience. I build mods for one of them: slow systems that make a long life feel earned.</p><aside><ul class="marks"><li>Trait progression for long lives</li><li>Sea monsters under calm water</li><li>Spreading devastation</li><li>Building commands</li><li>Villages that grow when you are generous to them</li></ul></aside></div>
     </section>
 
     <!-- ============ AI ALIGNMENT RESEARCH ============ -->
     <section id="alignment" class="seg reveal">
-      <h2>AI Alignment Research</h2>
+      <header class="chap"><span class="num">03</span><h2>AI Alignment Research</h2><span class="kicker">I like opening the box</span></header>
       <div class="scene">
         <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Seen from directly above, hands tip a crate of glowing matrices in glass boxes across a desk while a small mechanical purple octopus holds one box and a magnifying glass in its tentacles">
           <defs>
@@ -895,12 +1140,12 @@
           </g>
         </svg>
       </div>
-      <p class="copy"><strong>I like opening the box.</strong> Benchmarks for how models drift from your preferences, games repurposed as evals, and careful notes on what the matrices are actually doing. Small experiments, patient tools, curious helpers.</p>
+      <div class="copy"><p class="lede">When an agent’s context gets summarized, do your preferences survive? I build evals that answer small questions like that exactly, because labs steer by what gets measured.</p><aside><div class="paper"><div class="tag">PrefDecay-Eval &middot; Apart Research &middot; 2026</div><div class="bars" role="img" aria-label="Preference adherence: 95 percent before compaction, 80 percent after one, 72 percent after six"><div class="bar" style="--v:95"><b>95%</b><span>before compaction</span></div><div class="bar" style="--v:80"><b>80%</b><span>after one summary</span></div><div class="bar" style="--v:72"><b>72%</b><span>after six</span></div></div><p>Make the preference a tool parameter and adherence becomes an exact check, no LLM judge. The summarizer turned out to be the culprit: routing compaction to a stronger model took the weakest cell from 23% to 92%.</p><p class="origin">It started with an Apart hackathon win: a Minecraft agent that drifted off its goal, and the safety layer that caught it.</p></div></aside></div>
     </section>
 
     <!-- ============ CONVERGENCE ============ -->
     <section id="convergence" class="seg reveal">
-      <h2>Convergence</h2>
+      <header class="chap"><span class="num">04</span><h2>Convergence</h2><span class="kicker">My philosophy</span></header>
       <div class="scene">
         <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A figure looks through a telescope at a spiral galaxy overlaid with the golden ratio and math symbols">
           <defs>
@@ -1030,12 +1275,12 @@
           </g>
         </svg>
       </div>
-      <p class="copy"><strong>My philosophy.</strong> Notes on utopia, convergence, and the patterns that keep reappearing when I follow the math far enough: spirals, ratios, and things that want to meet in the middle.</p>
+      <div class="copy"><p class="lede">Notes on utopia, convergence, and the patterns that keep reappearing when I follow the math far enough: spirals, ratios, and things that want to meet in the middle.</p><aside><div class="loops"><div><i>Entropy</i><span>the universal realm</span></div><div><i>Evolution</i><span>the social realm</span></div><div><i>Desire</i><span>the personal realm</span></div></div><p class="small">Three optimization loops, orbiting one another. Every action starts in the innermost one, the self, and ripples outward.</p></aside></div>
     </section>
 
     <!-- ============ ROMANCE AND OTHER RAMBLINGS ============ -->
     <section id="ramblings" class="seg reveal">
-      <h2>Romance and other Ramblings</h2>
+      <header class="chap"><span class="num">05</span><h2>Romance and other Ramblings</h2><span class="kicker">Written in the open</span></header>
       <div class="scene">
         <svg viewBox="0 0 1200 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A blond boy and a girl with short dark hair walk hand in hand along a meadow path at dusk">
           <defs>
@@ -1163,12 +1408,17 @@
           </g>
         </svg>
       </div>
-      <p class="copy"><strong>Life things, written in the open.</strong> Walks, small ceremonies, what makes a day good. A public diary, updated when there is something worth saying.</p>
+      <div class="copy"><p class="lede">Life things. Walks, small ceremonies, what makes a day good. A public diary, updated when there is something worth saying.</p><aside><blockquote>Gold and blue should be the two colors, not black and white. After darkness comes light.</blockquote></aside></div>
     </section>
 
     <footer class="reveal">
-      <div><a href="https://github.com/Michael-Andrzejewski" target="_blank" rel="noopener">github.com/Michael-Andrzejewski</a></div>
-      <div class="note">soareverix.com &middot; the intro is a polygonal eye rendered in three.js &middot; <a class="replay" onclick="location.reload()">replay it</a></div>
+      <p class="closing">What is one beautiful thing you want to make?</p>
+      <div class="links">
+        <a href="https://github.com/Michael-Andrzejewski" target="_blank" rel="noopener">GitHub</a>
+        <a href="#top">Back to the top</a>
+        <a class="replay" onclick="location.reload()">Replay the eye</a>
+      </div>
+      <div class="note">soareverix.com &middot; hand-built SVG scenes, faceted by a small seeded engine &middot; intro in three.js</div>
     </footer>
   </div>
 </main>
@@ -2366,6 +2616,20 @@ animate();
     for (const en of entries) if (en.isIntersecting) { en.target.classList.add('play'); io.unobserve(en.target); }
   }, { threshold: 0.2 });
   document.querySelectorAll('#site .seg').forEach(s => io.observe(s));
+
+  // reading progress and active chapter in the nav
+  const progressEl = document.getElementById('progress');
+  const navLinks = [...document.querySelectorAll('#nav a[href^="#"]:not(.home)')];
+  const chapters = navLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const onScroll = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    if (progressEl) progressEl.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`;
+    let cur = -1;
+    chapters.forEach((c, i) => { if (c.offsetHeight && c.getBoundingClientRect().top < innerHeight * 0.45) cur = i; });
+    navLinks.forEach((a, i) => a.classList.toggle('on', i === cur));
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  new ResizeObserver(onScroll).observe(document.body);
 
   // scroll-driven fire casting
   const svSection = document.getElementById('staravorix');

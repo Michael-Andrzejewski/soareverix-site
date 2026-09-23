@@ -6,6 +6,8 @@ The intro is a brief glimpse of a polygonal blue eye rendered in three.js: facet
 
 The main page is a set of hand-built SVG scenes: a kid watching fireworks frozen in the night (hero), Staravorix (fire caster), Vintage Story (snoozer by the gear tree), AI Alignment Research (workbench, spilled matrices, and a small mechanical octopus), Convergence (telescope and golden-ratio galaxy), and Romance and other Ramblings (a couple on a meadow path at dusk). Tabs across the top scroll to each section.
 
+Typography is Fraunces (display serif), Inter (text), and JetBrains Mono (labels), from Google Fonts with system fallbacks. The palette is gold and blue on near-black. After the hero comes a short prelude ("All of life is practice.") with a chapter index. Each scene then sits under a numbered chapter header, with a serif lede and a detail column: the rune quote for Staravorix, the mod list for Vintage Story, PrefDecay-Eval results for Alignment, the three optimization loops for Convergence. The nav highlights the current chapter, and a thin gold-to-blue bar tracks reading progress.
+
 ## Run locally
 
 Any static server works:
