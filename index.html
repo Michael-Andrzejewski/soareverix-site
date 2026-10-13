@@ -426,10 +426,133 @@
   @media (prefers-reduced-motion: reduce) {
     .timeline::before, .timeline li { transform: none !important; opacity: 1 !important; transition: none; }
   }
+
+  /* ================================================ beauty pass: ambient light, chapter accents */
+  @property --amb { syntax: "<color>"; inherits: true; initial-value: #3d6fe0; }
+  @property --amb2 { syntax: "<color>"; inherits: true; initial-value: #f3c77a; }
+  :root { --amb: #3d6fe0; --amb2: #f3c77a; --acc: var(--gold); transition: --amb 1.6s ease, --amb2 1.6s ease; }
+  html[data-ch="staravorix"]    { --amb: #ff7a3a; --amb2: #ffb46a; }
+  html[data-ch="vintage-story"] { --amb: #2fd88a; --amb2: #5a8cff; }
+  html[data-ch="alignment"]     { --amb: #9b6bff; --amb2: #4fc3ff; }
+  html[data-ch="convergence"]   { --amb: #4f8dff; --amb2: #f3c77a; }
+  html[data-ch="ramblings"]     { --amb: #ff7f9c; --amb2: #ffb46a; }
+  html[data-ch="made"]          { --amb: #f3c77a; --amb2: #a9a2ff; }
+  #staravorix    { --acc: #ffa063; }
+  #vintage-story { --acc: #74f0a8; }
+  #alignment     { --acc: #b99bff; }
+  #convergence   { --acc: #8cbcff; }
+  #ramblings     { --acc: #ffa3b5; }
+  #made          { --acc: var(--gold); }
+
+  /* a slow wash of colour that follows the chapter you are reading */
+  #ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; display: none; }
+  html.site-mode #ambient { display: block; }
+  #ambient::before, #ambient::after {
+    content: ""; position: absolute; border-radius: 50%; filter: blur(60px);
+    animation: ambDrift 26s ease-in-out infinite alternate;
+  }
+  #ambient::before {
+    width: 70vmax; height: 70vmax; right: -24vmax; top: -30vmax;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--amb) 22%, transparent), transparent);
+  }
+  #ambient::after {
+    width: 60vmax; height: 60vmax; left: -26vmax; bottom: -32vmax; animation-delay: -13s;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--amb2) 14%, transparent), transparent);
+  }
+  @keyframes ambDrift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-6vmax, 5vmax) scale(1.12); } }
+
+  /* chapter headers: accent numeral, a rule that draws itself in */
+  .chap { position: relative; border-bottom-color: rgba(124, 196, 255, 0.08); }
+  .chap .num { color: var(--acc); }
+  .chap::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 30%, transparent) 45%, transparent);
+    transform-origin: 0 50%; transform: scaleX(0); transition: transform 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s;
+  }
+  .play .chap::after, html.ffmode .chap::after { transform: none; }
+  .chap h2 {
+    background: linear-gradient(100deg, #f7faff 55%, color-mix(in srgb, var(--acc) 70%, #fff));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* scene frames: an accent ring, deeper glow, and a single sheen as each one arrives */
+  .seg .scene::before { inset: -14% -10%; filter: blur(34px); }
+  .seg .scene svg {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--acc) 22%, transparent),
+                0 40px 100px -30px rgba(0, 0, 0, 0.9),
+                0 0 80px -20px color-mix(in srgb, var(--acc) 25%, transparent);
+  }
+  .seg .scene:hover svg {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent),
+                0 50px 110px -30px rgba(0, 0, 0, 0.9),
+                0 0 110px -16px color-mix(in srgb, var(--acc) 40%, transparent);
+  }
+  .seg .scene::after {
+    content: ""; position: absolute; inset: 0; border-radius: 18px; pointer-events: none;
+    background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.10) 48%, rgba(255, 255, 255, 0.02) 54%, transparent 62%);
+    background-size: 260% 100%; background-position: 130% 0; opacity: 0; mix-blend-mode: screen;
+  }
+  .play .scene::after { animation: sheen 2.6s cubic-bezier(0.3, 0.6, 0.2, 1) 0.5s forwards; }
+  @keyframes sheen { 0% { opacity: 1; background-position: 130% 0; } 85% { opacity: 1; } 100% { opacity: 0; background-position: -30% 0; } }
+
+  /* lede and quotes pick up the chapter colour */
+  .seg .copy blockquote { border-left-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+  .seg .copy blockquote em, .seg .copy em { color: var(--acc); }
+  .marks li::before { border-color: var(--acc); }
+  .paper .tag { color: var(--acc); }
+
+  /* nav: the active pill glows in the chapter colour */
+  #nav a.on {
+    border-color: color-mix(in srgb, var(--amb) 55%, transparent);
+    background: color-mix(in srgb, var(--amb) 14%, rgba(5, 8, 14, 0.6));
+    box-shadow: 0 0 18px -4px color-mix(in srgb, var(--amb) 60%, transparent);
+  }
+  #progress { background: linear-gradient(90deg, var(--blue), var(--amb) 60%, var(--gold)); }
+
+  /* contents grid: each door lit in its own colour */
+  .toc { background: rgba(124, 196, 255, 0.10); border-color: rgba(124, 196, 255, 0.10); }
+  .toc li:nth-child(1) { --acc: #ffa063; } .toc li:nth-child(2) { --acc: #74f0a8; } .toc li:nth-child(3) { --acc: #b99bff; }
+  .toc li:nth-child(4) { --acc: #8cbcff; } .toc li:nth-child(5) { --acc: #ffa3b5; } .toc li:nth-child(6) { --acc: #f3c77a; }
+  .toc a { position: relative; background: rgba(7, 11, 19, 0.92); transition: background 0.4s; }
+  .toc a span { color: var(--acc); }
+  .toc a::after {
+    content: "\2192"; position: absolute; right: 18px; top: 18px; font: 400 16px var(--sans);
+    color: var(--acc); opacity: 0; transform: translateX(-8px); transition: opacity 0.3s, transform 0.3s;
+  }
+  .toc a:hover { background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--acc) 16%, #070b13), #070b13 70%); }
+  .toc a:hover::after { opacity: 1; transform: none; }
+
+  /* motto and closing line get a soft golden light */
+  .motto em, footer .closing {
+    text-shadow: 0 0 40px rgba(243, 199, 122, 0.25);
+  }
+  footer .closing {
+    background: linear-gradient(100deg, #f4f8ff 30%, #f3d49b 70%, #ffb46a);
+    -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none;
+    filter: drop-shadow(0 0 24px rgba(243, 199, 122, 0.18));
+  }
+  .timeline li:hover h3 { color: #fff; }
+  .timeline li::before { transition: box-shadow 0.3s, background 0.3s; }
+  .timeline li:hover::before { background: var(--gold); box-shadow: 0 0 0 4px #05080e, 0 0 14px rgba(243, 199, 122, 0.8); }
+
+  @media (max-width: 860px) { .toc a::after { top: 50%; margin-top: -12px; } }
+  /* phones: one swipeable row of chapters instead of two stacked rows over the text */
+  @media (max-width: 620px) {
+    #nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; padding: 10px 12px 22px; }
+    #nav::-webkit-scrollbar { display: none; }
+    #nav a { flex: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root { transition: none; }
+    #ambient::before, #ambient::after, .play .scene::after { animation: none; }
+    .chap::after { transform: none; transition: none; }
+  }
 </style>
 </head>
 <body>
 <div id="app"></div>
+<div id="ambient" aria-hidden="true"></div>
 <div id="fade"></div>
 
 <div id="progress" aria-hidden="true"></div>
@@ -1918,7 +2041,8 @@ function fitEye() {
 let eyeScale = fitEye();
 
 // ================================================================ SITE SCENE
-let siteScene = null, siteLayers = [];
+let siteScene = null, siteLayers = [], siteCrests = [], sunGroup = null, auroraMat = null;
+let scrollSink = 0;   // 0 at the top of the page, 1 once the hero has scrolled away
 function buildSiteScene() {
   siteScene = new THREE.Scene();
   siteScene.background = new THREE.Color(0x06090f);
@@ -1963,17 +2087,19 @@ function buildSiteScene() {
         [cx + r1 * Math.cos(a1), cy + r1 * Math.sin(a1)],
         inner.clone().lerp(outer, rand(0.3, 1)).multiplyScalar(rand(0.85, 1.1)), 0);
     }
+    sunGroup = new THREE.Group();
+    siteScene.add(sunGroup);
     const sun = bucketToMesh(B, false);
     sun.material.uniforms.uProg.value = 10;
     sun.position.z = -12;
-    siteScene.add(sun);
+    sunGroup.add(sun);
 
     const LB = makeLineBucket();
     pushPolyline(LB, circlePts(R * 1.45, 40, cx, cy), AMBER_LINE, 0.8);
     const ring = bucketToLines(LB, 0.7);
     ring.material.uniforms.uProg.value = 1;
     ring.position.z = -12;
-    siteScene.add(ring);
+    sunGroup.add(ring);
 
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({
       map: glowTex, color: 0xb06a20, transparent: true, opacity: 0.5,
@@ -1981,7 +2107,7 @@ function buildSiteScene() {
     }));
     halo.scale.set(6, 6, 1);
     halo.position.set(cx, cy, -12.5);
-    siteScene.add(halo);
+    sunGroup.add(halo);
   }
 
   // aurora ribbons
@@ -1998,6 +2124,7 @@ function buildSiteScene() {
     }
     const aurora = bucketToLines(LB, 0.8);
     aurora.material.uniforms.uProg.value = 1;
+    auroraMat = aurora.material;
     siteScene.add(aurora);
   }
 
@@ -2070,6 +2197,7 @@ function buildSiteScene() {
       const crest = bucketToLines(LB, 0.6);
       crest.material.uniforms.uProg.value = 1;
       siteScene.add(crest);
+      siteCrests[L] = crest;
     }
   }
 }
@@ -2189,9 +2317,20 @@ function step(dt) {
     camera.position.x += ((mouse.x * 0.5) - camera.position.x) * Math.min(1, dt * 1.5);
     camera.position.y += ((0.8 - mouse.y * 0.3) - camera.position.y) * Math.min(1, dt * 1.5);
     camera.lookAt(0, 0.6, -6);
+    // once the hero scrolls away the sun sets and the ridges sink out of frame,
+    // leaving a clear sky of stars behind the reading content
+    const target = smooth(clamp(scrollY / (innerHeight * 0.95), 0, 1));
+    // wall-clock easing, so a slow device or a throttled tab still clears the sky promptly
+    const now = performance.now(), realDt = Math.min((now - (step.sinkT || now)) / 1000, 1);
+    step.sinkT = now;
+    scrollSink = reduceMotion ? target : scrollSink + (target - scrollSink) * (1 - Math.exp(-realDt * 6));
     for (let i = 0; i < siteLayers.length; i++) {
       siteLayers[i].position.x = mouse.x * (0.5 - i * 0.12) * -0.6;
+      siteLayers[i].position.y = -scrollSink * 12;
+      if (siteCrests[i]) { siteCrests[i].position.x = siteLayers[i].position.x; siteCrests[i].position.y = siteLayers[i].position.y; }
     }
+    if (sunGroup) { sunGroup.position.y = -scrollSink * 20; sunGroup.visible = scrollSink < 0.99; }
+    if (auroraMat) auroraMat.uniforms.uDim.value = 0.8 * (1 - scrollSink * 0.55);
   }
 }
 
@@ -2700,6 +2839,14 @@ animate();
     let cur = -1;
     chapters.forEach((c, i) => { if (c.offsetHeight && c.getBoundingClientRect().top < innerHeight * 0.45) cur = i; });
     navLinks.forEach((a, i) => a.classList.toggle('on', i === cur));
+    const ch = cur >= 0 ? chapters[cur].id : (scrollY > innerHeight * 0.6 ? 'prelude' : 'top');
+    if (document.documentElement.dataset.ch !== ch) {
+      document.documentElement.dataset.ch = ch;
+      // on phones the nav is one swipeable row: keep the current chapter in view
+      const nav = document.getElementById('nav'), on = navLinks[cur];
+      if (on && nav.scrollWidth > nav.clientWidth)
+        nav.scrollTo({ left: on.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+    }
   };
   addEventListener('scroll', onScroll, { passive: true });
   new ResizeObserver(onScroll).observe(document.body);
