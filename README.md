@@ -2,11 +2,27 @@
 
 Personal website for Soareverix (Michael Andrzejewski).
 
-The intro is a brief glimpse of a polygonal blue eye rendered in three.js: faceted iris split three blue, one amber, with rotating geometric line work. The camera dives into the pupil (about three seconds, click to skip) and the site fades in.
+## The intro
 
-The main page is a set of hand-built SVG scenes: a kid watching fireworks frozen in the night (hero), Staravorix (fire caster), Vintage Story (snoozer by the gear tree), AI Alignment Research (workbench, spilled matrices, and a small mechanical octopus), Convergence (telescope and golden-ratio galaxy), and Romance and other Ramblings (a couple on a meadow path at dusk). Tabs across the top scroll to each section.
+A polygonal eye rendered in three.js: a faceted iris split into sea blue, ocean teal, deep blue, and one lobe of golden-hour amber, with a ring of warm light around the pupil and rotating geometric line work. It assembles out of a misty dusk sky while warm lantern motes drift upward, breathes for a moment, then the camera dives through the pupil into warm light (about four seconds; click, Enter, or Space skips ahead). When the dive ends, the WebGL context is released.
 
-Typography is Fraunces (display serif), Inter (text), and JetBrains Mono (labels), from Google Fonts with system fallbacks. The palette is gold and blue on near-black. After the hero comes a short prelude ("All of life is practice.") with a chapter index. Each scene then sits under a numbered chapter header, with a serif lede and a detail column: the rune quote for Staravorix, the named mods and the Rustfall modpack for Vintage Story, PrefDecay-Eval results for Alignment, the seven steps of Convergence (Star to Cycle). A sixth chapter, Things I've Made, is a gold-to-blue timeline from the first bedtime stories through City Breaker, Hanger VR, FitFight, Civilization Sim, and the 2026 Vintage Story mods. The nav highlights the current chapter, and a thin gold-to-blue bar tracks reading progress.
+## The site
+
+There is no body text. Each section is one full-screen painting with a single header, and every painting moves softly. The paintings are made at load time on a canvas: static layers (sky, hills, trees, figures) are painted once per screen size from seeded noise, and a light layer of moving things is drawn over them every frame. One fixed canvas shows the current painting and dissolves into the next as you scroll, with gentle parallax that follows the pointer (or drifts on its own on touch screens).
+
+| Section | Painting |
+| --- | --- |
+| Soareverix | A hilltop road under a swaying tree, looking down on a sunlit bay: sea glitter, waves on the sand, dappled shade, drifting pollen, a soft lens flare |
+| Staravorix | A golden forest with layered trunks fading into the light, god rays, ember-coloured leaves fluttering down, and a wanderer in a red cloak |
+| Vintage Story | Rolling green coastal hills with hedgerows and Norfolk pines, swells breaking along a crescent beach, cloud shadows crossing the fields, gulls, rooftops out of focus |
+| AI Alignment Research | A lighthouse at blue hour, its beam sweeping and flaring as it turns toward you, a small boat with a lantern, mist on the water |
+| Convergence | Stars wheeling slowly around a pole, a golden-angle spiral whose light travels inward, falling stars, fireflies, a watcher with a telescope |
+| Romance and other Ramblings | Two figures on a hill at sunset, hair and scarf in the wind, sunset clouds, blossom petals blowing off a lone tree |
+| Things I've Made | A misty terraced hillside covered in flickering lanterns, sky lanterns rising into the fog, a walker looking out |
+
+The dots on the right edge jump between sections. Headers fade in out of a blur as their painting arrives.
+
+Inspired by golden-hour coastlines, Yorsh-style glowing forests, and hillsides of lanterns in fog.
 
 ## Run locally
 
@@ -20,16 +36,10 @@ Then open http://localhost:5502.
 
 ## Testing hooks
 
-Query params used for automated screenshots:
+- `?ff=N` fast-forwards the intro timeline N seconds deterministically (`?ff=8` lands straight on the site).
+- `?go=convergence` (or a `#convergence` hash) jumps to a section once the site opens.
 
-- `?ff=N` fast-forwards the intro timeline N seconds deterministically and forces all facet shards visible.
-- `&compact=1` (with `ff`) shrinks the hero so all sections fit one viewport.
-- `&fp=0.5` pins the scroll-driven fire cast to a fixed progress (0 to 1).
-- `&go=projects` (with `ff`) or a `#projects` hash jumps to a section after the intro.
-
-Every major shape in the scenes is generated at load by a small facet engine (seeded, deterministic): shapes are defined as polygon outlines and filled with a jittered triangular lattice snapped to the boundary, the same construction as the intro eye. Shards assemble with staggered delays when a section scrolls into view; the fireworks bloom on load; the Staravorix fire pours out shard by shard with scroll progress.
-
-Click, Enter, or Space skips the intro. `prefers-reduced-motion` skips it automatically.
+`prefers-reduced-motion` skips the intro and holds every painting still. If three.js cannot load, the site opens on its own after a few seconds.
 
 ## Deploy (Cloudflare Pages)
 
