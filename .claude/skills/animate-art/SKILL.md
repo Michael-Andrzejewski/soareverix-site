@@ -33,6 +33,11 @@ Unless the request says gentle, aim for clearly visible motion:
 - events have rhythm: surges of different strengths (calm-then-gust if asked
   for gusts; a storm that never drops if asked for a seamless storm)
 - light sources respond to the events (glow surges with each gust)
+- measure it: `scripts/motion.py framesdir` reports optical-flow speed (frame
+  heights per second) and the share of the frame in motion. Ascension's rising
+  storm (accepted as intense) averages 0.078 H/s with 54% of the frame moving;
+  Maelstrom's swirl and zoom average 0.53 H/s with 95% moving. A piece meant to be
+  intense should land near or above Ascension, and report the numbers.
 - get the direction right. Ascension went through "blowing sideways" before
   the wanted "storm-force wind rising upward around the figure, not diagonal".
   A rising storm is `Wind(..., dir=(0, -1), sweep="up", ground=H, base=0.75,
@@ -274,6 +279,7 @@ scripts/artkit.py         library: masks, shape extraction, guided fill, profile
 scripts/extract_shapes.py exploration CLI for a new picture
 scripts/capture.mjs       deterministic frame capture (Playwright), --times / --off / --scale
 scripts/compare.py        PSNR/SSIM/MAE + side-by-side and contact sheets
+scripts/motion.py         optical-flow motion intensity, to compare pieces (frame heights/s)
 scripts/screenshot.mjs    viewer page screenshot at any viewport
 scripts/encode.sh         PNG frames -> MP4 (BT.709, even size, faststart)
 scripts/bundle.py         inline scripts -> single HTML (--fragment for Artifact)
