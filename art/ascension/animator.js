@@ -18,8 +18,11 @@
  *              at yBot: offset amp * h^1.6 * (G - gmin), h = height above yBot / H, the gust
  *              reaching height h after (yBot - y) / cup seconds.
  *   path       { points: [[x,y]...], shape, blend?, alpha?: Anim, fade: [fi, fo], items: [{k, p, r, c, a}] }
- * Anim  { base, amp, k, p, wave: 'sin01'|'beat'|'sin'|'wind' }   value = base + amp * wave(k*t/loop + p)
+ * Anim  { base, amp, k, p, wave: 'sin01'|'beat'|'sin'|'wind'|'rest' }   value = base + amp * wave(k*t/loop + p)
  *       'wind' is the normalised gust strength at time t (ignores k and p).
+ *       'rest' is 1 within `hold` s of the loop point, easing to 0 over the next `fade` s, on
+ *       both sides. Put the untouched source on top with it and every loop passes exactly
+ *       through the original picture: the scene wakes from the still and settles back into it.
  * P     { x, y, r, c:[r,g,b], a, l: life, p: phase, vx, vy, ay, fi, fo, sh, gr, sw, swc, swp,
  *         tw, twk, twp, wd, wt, spin, wr, ang }
  */
@@ -67,6 +70,10 @@
     if (spec == null) return 1;
     if (typeof spec === 'number') return spec;
     if (spec.wave === 'wind') return (spec.base || 0) + (spec.amp || 0) * (wind ? wind.Gn(t) : 0);
+    if (spec.wave === 'rest') {
+      const d = Math.min(t, loop - t), h = spec.hold || 0;
+      return 1 - smooth(h, h + (spec.fade || 1), d);
+    }
     const w = WAVES[spec.wave || 'sin01'];
     return (spec.base || 0) + (spec.amp || 0) * w(frac(((spec.k || 1) * t) / loop + (spec.p || 0)));
   }

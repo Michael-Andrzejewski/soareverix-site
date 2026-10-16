@@ -115,7 +115,8 @@ def main():
                                  at_phase=rng.uniform(0.3, 0.68), **W_))
     layers.append({"id": "drift", "type": "particles", "shape": KIND, "grow": True, "items": items})
 
-    img_uri = ak.to_data_uri(img, "WEBP", quality=92)
+    img_uri = ak.file_data_uri(src)          # the untouched original, bit for bit
+    layers.append(ak.rest_layer(img_uri))   # every loop passes exactly through it
     scene = {"title": TITLE, "width": W, "height": H, "loop": LOOP, "source": img_uri, "layers": layers}
     if wind:
         scene["wind"] = wind.to_scene()

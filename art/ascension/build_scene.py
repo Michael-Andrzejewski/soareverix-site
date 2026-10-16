@@ -26,6 +26,9 @@ The piece is driven by a wind field: three gusts per 12 s loop sweep left to rig
                   t = 0 each sits exactly where the artist put it
   sparks          light motes thrown up from the triangle and the heart
   debris          a few large dark fragments close to the camera, crossing in gusts
+  rest            the untouched source (the file's own bytes) at the loop point: the loop
+                  wakes from the exact original and settles back into it, so frame 0 is
+                  the picture bit for bit
 """
 import os
 import sys
@@ -287,8 +290,10 @@ def main():
                                  spin=rng.uniform(-3, 3), wr=0.003, **W_))
     layers.append({"id": "debris", "type": "particles", "shape": "diamond", "grow": True, "items": items})
 
+    source_uri = ak.file_data_uri(os.path.join(HERE, "source.webp"))
+    layers.append(ak.rest_layer(source_uri, hold=0.15, fade=0.85))
     scene = {"title": "Ascension", "width": W, "height": H, "loop": LOOP, "wind": wind.to_scene(),
-             "source": ak.to_data_uri(img, "WEBP", quality=92), "layers": layers}
+             "source": source_uri, "layers": layers}
     ak.write_scene_js(os.path.join(HERE, "scene.js"), scene)
     ak.install_page(HERE, scene["title"])
 

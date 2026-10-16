@@ -526,6 +526,21 @@ def install_page(art_dir, title):
         f.write(html)
 
 
+def file_data_uri(path):
+    """The file's own bytes as a data URI (no re-encode), e.g. the untouched source picture."""
+    ext = os.path.splitext(path)[1].lower().lstrip(".")
+    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}[ext]
+    with open(path, "rb") as f:
+        return f"data:{mime};base64," + base64.b64encode(f.read()).decode()
+
+
+def rest_layer(source_uri, hold=0.15, fade=0.85):
+    """Top layer showing the untouched source around the loop point, so the loop
+    passes exactly through the original (frame 0 is the picture, bit for bit)."""
+    return {"id": "rest", "type": "image", "src": source_uri,
+            "alpha": {"wave": "rest", "hold": hold, "fade": fade}}
+
+
 def write_scene_js(path, scene):
     """Scene data as a JS file (window.SCENE = {...}) so pages work from file:// too."""
     with open(path, "w") as f:

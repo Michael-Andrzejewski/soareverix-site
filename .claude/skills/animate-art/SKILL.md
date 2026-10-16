@@ -8,7 +8,8 @@ description: Turn a still artwork (illustration, digital painting, poster) into 
 Make a still picture move without losing it. The original pixels stay the base
 layer (the "plate"). Only what must move is cut out and rebuilt as particles,
 and every effect is an overlay. The composition stays the artist's in every
-frame, and frame 0 can be made nearly identical to the source.
+frame, and every loop passes exactly through the original: frame 0 is the
+source picture bit for bit (the `rest` layer, below).
 
 Worked example: `art/ascension/` (a figure dissolving into diamonds under a
 glowing triangle, in a gusting wind). Read its `build_scene.py` before starting
@@ -143,6 +144,14 @@ dark glow puffs under it to keep the core smooth. Calibrate the count: render
 only plate + cloud (`capture.mjs --off ...`) and match the region's mean
 luminance to the source (here 34 vs 35).
 
+**Exact match at the loop point**: put `ak.rest_layer(ak.file_data_uri(source))`
+on top. It shows the untouched source (the file's own bytes, never re-encoded)
+within `hold` s of the loop point and eases out over `fade` s. Schedule the
+calm there (no gusts within ~2 s), so the picture wakes up, storms, and settles
+back into the exact original. Verify with a max-abs-diff of frame 0 against the
+decoded source: it must be 0. An MP4 cannot be bit-exact (4:2:0 compression);
+expect about 44 dB PSNR there at CRF 18.
+
 Seamless loop rules: every `life` and every wave `k` must divide `loop` (12 s
 works well: lives of 2, 3, 4, 6 and 12 s). Sample colours from the source;
 never invent a palette. Seed every RNG. `ak.install_page(dir, title)` copies the
@@ -154,8 +163,10 @@ engine and the titled viewer page.
   moving subject. Look for smears, streaks and seams.
 - `capture.mjs ... --off layerA,layerB` isolates layers for calibration.
 - `compare.py --src source --frames dir` gives the metrics. A gentle loop holds
-  SSIM above 0.92 every frame. A dramatic one sits around 0.80 (ascension v2:
-  0.79 to 0.84), and it should still read as the same picture.
+  SSIM above 0.92 every frame. A dramatic one sits around 0.80 mid-storm
+  (ascension v2: 0.79 to 0.84) and must still read as the same picture; with
+  the rest layer, SSIM is 1.0 at the loop point and frame 0 differs from the
+  source in 0 pixels.
 - Check every consecutive frame step: the maximum should be near the median (no
   pops), and the seam step (last frame to first) should be typical. `pipeline.sh`
   prints the seam check.
@@ -228,5 +239,7 @@ The source is 827x1026. 67 diamonds are set loose and 10 components stay in the
 plate. The triangle was fitted to 0.06 px median residual and is equilateral.
 The head plume is 6,000 diamonds plus 70 soft core puffs. In total there are 20
 layers and about 9,600 particles on a 12 s loop with gusts at 2.6, 5.4 and 7.8 s.
-SSIM against the source runs 0.79 to 0.84, the largest frame step is 3.4
-against a 2.6 median, and the seam step is 1.5. The MP4 is 13.6 MB at CRF 18, 60 fps.
+Frame 0 is identical to the source (0 of 848,502 pixels differ), and the loop
+rests on the exact original from 11.85 s to 0.15 s. Mid-storm SSIM runs 0.79 to
+0.84. The largest frame step is 3.4 against a 2.6 median. The MP4 is about 13 MB at
+CRF 18, 60 fps, and its frame 0 decodes at 44 dB PSNR against the source.
