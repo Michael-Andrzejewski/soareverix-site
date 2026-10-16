@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{TITLE}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the artwork owns the screen; a slim rail underneath carries the name, loop clock and controls.
+   Deliberately single-theme: the piece lives in the dark, so the surround is a deep indigo in either host theme. */
+:root {
+  --void: #08061a;        /* surround, hue-biased toward the art's indigo */
+  --rail: #0f0b2b;        /* control surfaces */
+  --ink: #e9e5ff;         /* primary text */
+  --muted: #9089c4;       /* secondary text */
+  --line: rgba(170, 150, 255, 0.24);
+  --halo: #c6b6ff;        /* accent: the triangle's lavender halo */
+  --core: #f0f8ec;        /* the triangle's white core, used for focus */
+  --display: "Syncopate", "Eurostile", "Arial Black", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+:root { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--ink);
+  font: 13px/1.5 var(--mono);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+.stage {
+  position: relative;
+  min-height: 0;
+  padding-block: 16px 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+}
+.frame { position: relative; min-height: 0; min-width: 0; }
+.frame canvas, .frame img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.frame img { opacity: 0; transition: opacity 120ms linear; pointer-events: none; }
+.frame.comparing img { opacity: 1; }
+.badge {
+  position: absolute; left: 50%; top: 12px; transform: translateX(-50%);
+  font: 500 11px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink); background: rgba(8, 6, 26, 0.72); border: 1px solid var(--line);
+  padding: 6px 10px; border-radius: 3px;
+}
+.rail {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px;
+  padding-block: 10px max(14px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--void);
+}
+.name { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.name h1 {
+  margin: 0; font: 700 15px/1 var(--display); letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--ink);
+}
+.name p { margin: 0; color: var(--muted); font-size: 12px; }
+.clock { font-variant-numeric: tabular-nums; color: var(--halo); }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; position: relative; }
+button, summary {
+  font: 500 12px/1 var(--mono); letter-spacing: 0.04em;
+  color: var(--ink); background: var(--rail); border: 1px solid var(--line); border-radius: 3px;
+  padding: 9px 12px; cursor: pointer; user-select: none; -webkit-user-select: none;
+}
+button:hover, summary:hover { border-color: var(--halo); }
+button:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
+#compare[aria-pressed="true"] { background: var(--halo); color: var(--void); border-color: var(--halo); }
+details { position: relative; }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+.layers {
+  position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 2;
+  width: min(280px, calc(100vw - 32px));
+  max-height: min(60vh, 460px); overflow: auto;
+  background: var(--rail); border: 1px solid var(--line); border-radius: 4px;
+  padding: 10px 12px; display: grid; gap: 4px;
+}
+.layers label { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; color: var(--ink); cursor: pointer; padding: 3px 0; }
+.layers small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.layers input { accent-color: var(--halo); margin: 0; }
+.capture .rail, .capture .badge { display: none; }
+.capture .stage { padding: 0; }
+@media (max-width: 520px) {
+  .name p { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .frame img { transition: none; }
+}
+</style>
+</head>
+<body>
+<main class="stage">
+  <div class="frame" id="frame">
+    <canvas id="art" role="img" aria-label="Animated artwork"></canvas>
+    <img id="original" alt="The original still image">
+    <span class="badge" id="badge" hidden>Original</span>
+  </div>
+</main>
+<footer class="rail">
+  <div class="name">
+    <h1 id="title">{{TITLE}}</h1>
+    <p><span class="clock" id="clock">00.00</span> / <span id="loop">12</span> s loop · <span id="summary"></span></p>
+  </div>
+  <div class="controls">
+    <button id="play" type="button">Pause</button>
+    <button id="compare" type="button" aria-pressed="false" title="Hold, or press O">Hold for original</button>
+    <details id="layers-box">
+      <summary>Layers</summary>
+      <div class="layers" id="layers"></div>
+    </details>
+  </div>
+</footer>
+<script src="animator.js"></script>
+<script src="scene.js"></script>
+<script>
+(async () => {
+  const S = window.SCENE;
+  const qs = new URLSearchParams(location.search);
+  const capture = qs.has('capture');
+  if (capture) document.body.classList.add('capture');
+  const off = new Set((qs.get('off') || '').split(',').filter(Boolean));
+  for (const l of S.layers) if (off.has(l.id)) l.off = true;
+
+  const canvas = document.getElementById('art');
+  canvas.setAttribute('aria-label', `${S.title}, animated`);
+  document.getElementById('title').textContent = S.title;
+  document.getElementById('loop').textContent = S.loop;
+  const orig = document.getElementById('original');
+  orig.src = S.source;
+
+  // Render a little above native when the art is shown large, so particles stay crisp.
+  let scale = Number(qs.get('scale')) || 1;
+  if (!qs.get('scale') && !capture) {
+    const box = document.getElementById('frame').getBoundingClientRect();
+    const fit = Math.min(box.width / S.width, box.height / S.height) * (window.devicePixelRatio || 1);
+    scale = Math.min(2, Math.max(1, Math.round(fit * 4) / 4));
+  }
+  const player = await ArtAnimator.create(canvas, S, { scale, preserve: capture, renderer: qs.get('renderer') || undefined });
+  window.renderAt = (t) => player.render(t);
+  window.sceneReady = true;
+
+  const moving = S.layers.filter(l => l.items).reduce((n, l) => n + l.items.length, 0);
+  const lifted = (S.layers.find(l => l.id === 'drift') || { items: [] }).items.length;
+  document.getElementById('summary').textContent = lifted
+    ? `${lifted} of the artist's diamonds set loose, ${moving.toLocaleString()} moving parts`
+    : `${moving.toLocaleString()} moving parts`;
+
+  const clock = document.getElementById('clock');
+  const fmt = (t) => (((t % S.loop) + S.loop) % S.loop).toFixed(2).padStart(5, '0');
+  const frozen = Number(qs.get('t')) || 0;
+  if (capture) { player.render(frozen); return; }
+
+  // Clock readout follows the animation without touching the engine.
+  let start = performance.now(), pausedAt = frozen, playing = false, raf = 0;
+  const tick = (now) => {
+    const t = (now - start) / 1000;
+    player.render(t);
+    clock.textContent = fmt(t);
+    raf = requestAnimationFrame(tick);
+  };
+  const playBtn = document.getElementById('play');
+  function play() { if (playing) return; playing = true; start = performance.now() - pausedAt * 1000; raf = requestAnimationFrame(tick); playBtn.textContent = 'Pause'; }
+  function pause() { if (!playing) return; playing = false; cancelAnimationFrame(raf); pausedAt = (performance.now() - start) / 1000; playBtn.textContent = 'Play'; }
+  playBtn.addEventListener('click', () => (playing ? pause() : play()));
+
+  const frame = document.getElementById('frame'), badge = document.getElementById('badge'), cmp = document.getElementById('compare');
+  const showOrig = (on) => { frame.classList.toggle('comparing', on); badge.hidden = !on; cmp.setAttribute('aria-pressed', String(on)); };
+  cmp.addEventListener('pointerdown', (e) => { e.preventDefault(); showOrig(true); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) cmp.addEventListener(ev, () => showOrig(false));
+  cmp.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); showOrig(true); } });
+  cmp.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') showOrig(false); });
+  window.addEventListener('keydown', (e) => {
+    if (e.target.closest && e.target.closest('button, input, summary')) return;
+    if (e.key === 'o' || e.key === 'O') showOrig(true);
+    if (e.key === ' ') { e.preventDefault(); playing ? pause() : play(); }
+  });
+  window.addEventListener('keyup', (e) => { if (e.key === 'o' || e.key === 'O') showOrig(false); });
+
+  const box = document.getElementById('layers');
+  for (const l of S.layers) {
+    const lab = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = !l.off; cb.id = `layer-${l.id}`;
+    cb.addEventListener('change', () => { l.off = !cb.checked; if (!playing) player.render(pausedAt); });
+    const name = document.createElement('span'); name.textContent = l.id;
+    const n = document.createElement('small'); n.textContent = l.items ? l.items.length : (l.blend === 'lighter' ? 'glow' : 'image');
+    lab.append(cb, name, n);
+    box.append(lab);
+  }
+
+  // Still frame (reduced motion, or ?t= for screenshots): show it and wait for Play.
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || qs.has('t')) { player.render(pausedAt); clock.textContent = fmt(pausedAt); playBtn.textContent = 'Play'; }
+  else play();
+})();
+</script>
+</body>
+</html>

@@ -38,3 +38,7 @@ Click, Enter, or Space skips the intro. `prefers-reduced-motion` skips it automa
 3. Add `soareverix.com` as a custom domain on the project once DNS is on Cloudflare.
 
 Every push to main deploys automatically.
+
+## Art
+
+`art/ascension/` is an animated version of the glowing-triangle figure piece: the head tears into rising smoke and diamond fragments in a gusting wind (open `art/ascension/index.html`; hold the button or press O to compare with the original). It is built by `art/ascension/build_scene.py` with the reusable `animate-art` toolkit in `.claude/skills/animate-art/`; see its `SKILL.md` for the process. `.claude/skills/animate-art/scripts/pipeline.sh art/ascension` regenerates the MP4.
