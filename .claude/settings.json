@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/goal.py\"; [ -f \"$f\" ] || f=$(ls \"$CLAUDE_PROJECT_DIR\"/*/.claude/hooks/goal.py 2>/dev/null | head -n 1); [ -z \"$f\" ] || exec python3 \"$f\" hook",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
