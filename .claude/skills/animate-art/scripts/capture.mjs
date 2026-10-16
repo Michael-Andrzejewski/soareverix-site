@@ -59,7 +59,8 @@ for (let i = 0; i < list.length; i++) {
     window.renderAt(t);
     return document.getElementById('art').toDataURL('image/png');
   }, list[i]);
-  const name = times.length ? `t${list[i].toFixed(2)}.png` : `f${String(i).padStart(5, '0')}.png`;
+  // zero-padded so stills sort by time (t003.00 before t010.50)
+  const name = times.length ? `t${list[i].toFixed(2).padStart(6, '0')}.png` : `f${String(i).padStart(5, '0')}.png`;
   fs.writeFileSync(path.join(outdir, name), Buffer.from(dataUrl.split(',')[1], 'base64'));
   if (!times.length && i % 60 === 0) console.log(`frame ${i}/${list.length}`);
 }

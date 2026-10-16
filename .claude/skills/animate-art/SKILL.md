@@ -17,6 +17,10 @@ Worked examples, read the nearest one's `build_scene.py` before starting:
 - `art/maelstrom/`: a figure at the eye of a painted vortex; the whole painting
   swirls while the camera dives in and pulls back out (camera moves, see
   "Camera moves: swirl and zoom").
+- `art/constellation/`: a figure on a platform under a web of golden lines and
+  stars. The web draws itself out of the planet's horizon, line by line, while the
+  camera pulls back from the figure, then withdraws the same way (see "Growing a
+  structure: reveal by activation").
 
 ## Calibrate the intensity first
 
@@ -238,6 +242,47 @@ move the camera instead of only the parts:
 - Too much `shutter` turns brushwork into smooth rings. About 0.025 s keeps the
   strokes readable at the loop point and still smears at full spin.
 
+## Growing a structure: reveal by activation
+
+For pictures with a drawn structure (a network, vines, cracks, lightning, a
+circuit, a mandala), build it up instead of moving it:
+- **Split** the structure off the plate. A white top-hat (17 px ellipse at 2x)
+  finds thin bright lines and dots; the web is the one huge connected component,
+  and off-line dots join it by colour (warm added light, top-hat R over B > 1.1)
+  while white ones stay as background stars. Faint and out-of-focus lines need a
+  ridge filter (`skimage.filters.sato`) with hysteresis, run again with wider
+  sigmas on the cleaned plate, keeping only straight pieces (PCA width < 2.2 px).
+  Saturated star cores are flat, so the top-hat skips their centres: fill small
+  holes in the mask (< 3000 px). Glow halos around bright nodes need their own
+  mask (`t41 > 30` near the cores).
+- **Fill** the plate with `ak.smooth_fill` (push-pull membrane), not
+  `guided_fill`: under soft sky, directional fills paint blotches into large halo
+  holes. Network RGBA = `ak.unmix(master, plate)` inside the mask, so the
+  full reveal composes back to the original (41 dB here).
+- **Activation**: geodesic distance from the seeds (`skimage.graph.MCP_Geometric`,
+  cost 1 on the structure, 5 across empty sky, high through the subject),
+  normalised by the main web only (a stray far piece otherwise compresses
+  everything), mapped into 0.03 to 0.9 so every flash finishes before G = 1.
+  Stored at 1x as 16 bits in R (high) and G (low) of a PNG, sampled NEAREST.
+- **Engine**: `scene.grow = {hold, ease}` sweeps G 0 -> 1 -> 0 once per loop. A
+  `reveal` layer shows each pixel once G passes its level and glows the front
+  (gated to near-opaque cores: the fringe alpha of an unmixed line is noisy and a
+  glow amplifies it into speckle). `nodes` layers flash sprites as G passes their
+  level: node flares (gaussian pulse), and comets of sparks spaced 3.5 px along
+  the line skeleton (`decay: 'exp'`, tight pulse).
+- **Pull-back camera**: `camera = {drive: 'grow', cx, cy, zmax, log: true, hold,
+  ease, roll}` zooms about a fixed point near the subject, close at the loop point
+  and at 1x when the structure is complete, so mid-loop is the original picture.
+  Put the sky on `parallax` 0.85 and the subject on 1.0: the subject is cut out
+  (dark mask, small holes filled, the bright gap between the legs kept) and only a
+  thin band behind it is ever revealed.
+- **Pacing**: `ease: 3` (smoothstep) spends more of the loop in motion than
+  smootherstep. Use light holds (0.04 / 0.08 of a half loop); 30 s loops grow for
+  about 10 s.
+- **The start**: tie a horizon glow at the seeds to `wave: 'grow'` with a negative
+  amp and rising motes to `growrate`, so light gathers at the source before the
+  lines leave it.
+
 ## Engine reference
 
 `engine/animator.js` is a pure function of time. `ArtAnimator.create(canvas,
@@ -247,6 +292,9 @@ particles cost about 5 ms per frame even in software. Canvas2D is the fallback
 (about 45 ms per frame for 10k). The scene format is documented at the top of
 the file. `engine/template.html` adds the controls and these URL parameters:
 `?capture`, `?t=3.5`, `?off=a,b`, `?scale=2`, `?renderer=canvas2d`.
+Drivers: `scene.wind` (gusts), `scene.camera` (swirl + zoom, or `drive: 'grow'`
+pull-back), `scene.grow` (structure growth G). Anim waves: `sin01`, `sin`, `beat`,
+`wind`, `rest`, `zoom`, `grow`, `growrate`.
 
 ## Pitfalls already hit (do not repeat)
 
@@ -269,11 +317,18 @@ the file. `engine/template.html` adds the controls and these URL parameters:
 - An odd width cannot be 4:2:0; pad by smearing the edge column.
 - Canvas `toDataURL` frames are exact (WebGL needs `preserveDrawingBuffer`,
   which `?capture` sets). Page screenshots are only for UI checks.
+- `capture.mjs --times` used to name stills `t3.00.png`, `t10.50.png`, which sort
+  by name as t10 before t3 and scrambled a contact sheet. Names are now zero-padded
+  (`t003.00.png`); still label sheets from the times, not the file order.
+- `guided_fill` used to fall back to Telea on the original image, so bright hole
+  pixels leaked into unresolved fills. It now inpaints from the filled values.
+- Glowing a revealed overlay by its alpha lights up its noisy fringe; gate glows to
+  alpha > ~0.55.
 
 ## Files
 
 ```
-scripts/artkit.py         library: masks, shape extraction, guided fill, profile guides, unmix,
+scripts/artkit.py         library: masks, shape extraction, guided fill, smooth fill, profile guides, unmix,
                           row_span, upscale, polar_outpaint, glows, Wind, particles, export,
                           install_page
 scripts/extract_shapes.py exploration CLI for a new picture

@@ -290,8 +290,14 @@ def guided_fill(img, hole, lengths=(41, 81, 161, 321), angles=range(0, 180, 15),
         gm = ring & guide_mask
         best[gm] = guide[gm]
         todo &= ~gm
-    if todo.any():  # nothing qualified anywhere: plain inpaint for those pixels
-        tel = cv2.inpaint(img, todo.astype(np.uint8) * 255, 7, cv2.INPAINT_TELEA).astype(np.float32)
+    if todo.any():  # nothing qualified anywhere: plain inpaint for those pixels, from the
+        # already-filled neighbours (never from the original hole pixels)
+        base = imf.copy()
+        done = hole & ring & ~todo
+        base[done] = best[done]
+        unres = (todo & hole) | (hole & ~ring)
+        tel = cv2.inpaint(np.clip(base, 0, 255).astype(np.uint8), unres.astype(np.uint8) * 255, 7,
+                          cv2.INPAINT_TELEA).astype(np.float32)
         best[todo] = tel[todo]
     resid = np.clip(imf - best + 128, 0, 255).astype(np.uint8)
     resid[~ring] = 128
@@ -299,6 +305,33 @@ def guided_fill(img, hole, lengths=(41, 81, 161, 321), angles=range(0, 180, 15),
     out = imf.copy()
     out[hole] = (best + rf * resid_gain)[hole]
     return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def smooth_fill(img, hole, exclude=None):
+    """Membrane fill (push-pull): holes take the smooth interpolation of what surrounds them.
+
+    For soft backgrounds (sky, haze, glow) under removed overlays: no streaks or blotches,
+    however big the hole. Pixels in `exclude` are neither filled nor used as a source.
+    guided_fill is the better choice where straight edges must carry through a hole.
+    """
+    f = img.astype(np.float32)
+    w = (~hole).astype(np.float32)
+    if exclude is not None:
+        w *= (~exclude).astype(np.float32)
+    cs, ws = [f * w[..., None]], [w]
+    while min(ws[-1].shape) > 2:
+        h, wd = ws[-1].shape
+        size = (max(1, wd // 2), max(1, h // 2))
+        cs.append(cv2.resize(cs[-1], size, interpolation=cv2.INTER_AREA))
+        ws.append(cv2.resize(ws[-1], size, interpolation=cv2.INTER_AREA))
+    val = cs[-1] / np.maximum(ws[-1], 1e-6)[..., None]
+    for c, wl in zip(cs[-2::-1], ws[-2::-1]):
+        up = cv2.resize(val, (wl.shape[1], wl.shape[0]), interpolation=cv2.INTER_LINEAR)
+        a = np.clip(wl * 4, 0, 1)[..., None]
+        val = a * (c / np.maximum(wl, 1e-6)[..., None]) + (1 - a) * up
+    out = f.copy()
+    out[hole] = val[hole]
+    return np.clip(np.round(out), 0, 255).astype(np.uint8)
 
 
 def upscale(img, factor=2, sharpen=0.35, sigma=1.2):
