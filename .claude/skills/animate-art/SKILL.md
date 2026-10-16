@@ -381,6 +381,6 @@ PSNR and SSIM 0.985 against the source (41 dB at 1x). The seam step is 0.016 aga
 a 0.75 median, because the loop point sits in the quiet hold. Optical flow over the
 growth is 0.015 H/s with 8% of the frame moving: calm by design ("slowly
 connecting"). Most of the change is lines appearing, which flow does not count.
-The MP4 is 25 MB at CRF 20, 60 fps, 1644x1096, and its decoded colour is within
+The MP4 is 25 MB at CRF 15, 60 fps, 1644x1096, and its decoded colour is within
 1.4 levels of the PNG frames.
 
