@@ -366,3 +366,21 @@ inner twist. There are 9 layers and about 1,950 particles, rendered at 900x1158 
 8.1, so the loop is seamless with no pops. SSIM against the still is 0.66 at the loop
 point and about 0.28 at full zoom, as expected for a camera move. The MP4 is 11.3 MB
 at CRF 20.
+
+## Worked example numbers (art/constellation)
+
+The source is 1095x730, decomposed at 2x. The network mask covers about 530k
+master pixels: the web (one 225k px component), 1,400 golden dots, faint and
+soft lines, and node halos. The plate is filled with `smooth_fill` in 4 s. The
+activation runs from 0.03 at the horizon seeds to 0.9 in the top left. The camera
+pulls back from 1.9x about (300, 600) to 1x, and the sky sits at parallax 0.85.
+There are 10 layers and about 5,400 sprites (node flares, line sparks, stars,
+motes, bokeh) on a 30 s loop. The lines grow for about 9 s (2 to 11 s), hold
+complete around 15 s, and withdraw by 28 s. The mid-loop frame scores 39.3 dB
+PSNR and SSIM 0.985 against the source (41 dB at 1x). The seam step is 0.016 against
+a 0.75 median, because the loop point sits in the quiet hold. Optical flow over the
+growth is 0.015 H/s with 8% of the frame moving: calm by design ("slowly
+connecting"). Most of the change is lines appearing, which flow does not count.
+The MP4 is 25 MB at CRF 20, 60 fps, 1644x1096, and its decoded colour is within
+1.4 levels of the PNG frames.
+
