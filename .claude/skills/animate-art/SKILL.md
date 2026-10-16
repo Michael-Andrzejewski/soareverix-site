@@ -441,11 +441,12 @@ the wave starts at the figure's chest (268, 400) and ends at the blue star
 (653.6, 217.6), whose one line runs last, from 0.84 to 0.95 of the growth. The intro
 is 15 s (also offered at 3 s): 1 s of light gathering around the figure, then
 about 11 s of drawing while the camera pulls back from 1.8x about (300, 600). The
-blue star flares at about 13 s. The final frame scores 35.7 dB PSNR and SSIM 0.964
-against the source at 1x. That is lower than the earlier loop's 39 dB because the
+blue star flares at about 13 s. The final frame scores 36.8 dB PSNR and SSIM 0.967
+against the source (1920x1280, downscaled to 1x). That is lower than the earlier loop's 39 dB because the
 HD master is sharper than the source; the 2x Lanczos master scored higher by being
 as soft as the source. There are 13 layers and about 13,300 sprites. The MP4s are
-1920x1280 at 60 fps.
+1920x1280 at 60 fps and CRF 15: 16.3 MB for 15 s and 4.3 MB for 3 s. The largest
+frame-to-frame step is 1.1 (3 s version: 4.1), so nothing pops.
 
 The first version (a 30 s loop growing from the planet's horizon, revealing the
 golden stars along with the lines) is in git history, at commit 5ebcfbb.
