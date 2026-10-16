@@ -18,9 +18,10 @@ Worked examples, read the nearest one's `build_scene.py` before starting:
   swirls while the camera dives in and pulls back out (camera moves, see
   "Camera moves: swirl and zoom").
 - `art/constellation/`: a figure on a platform under a web of golden lines and
-  stars. The web draws itself out of the planet's horizon, line by line, while the
-  camera pulls back from the figure, then withdraws the same way (see "Growing a
-  structure: reveal by activation").
+  stars. An HD intro for a website title page: every star is in the sky from the
+  start, and the lines draw themselves star to star in a wave from the figure to
+  the blue star while the camera pulls back; hovering a star afterwards lights its
+  lines (see "Growing a structure", "HD masters" and "Intros and hover").
 
 ## Calibrate the intensity first
 
@@ -279,9 +280,69 @@ circuit, a mandala), build it up instead of moving it:
 - **Pacing**: `ease: 3` (smoothstep) spends more of the loop in motion than
   smootherstep. Use light holds (0.04 / 0.08 of a half loop); 30 s loops grow for
   about 10 s.
-- **The start**: tie a horizon glow at the seeds to `wave: 'grow'` with a negative
-  amp and rising motes to `growrate`, so light gathers at the source before the
-  lines leave it.
+- **The start**: tie a glow at the source (a horizon, the subject's backlight) to
+  `wave: 'grow'` with a negative amp and motes leaving it to `growrate`, so light
+  gathers at the source before the lines leave it.
+
+### Lines between stars: the structure as a graph
+
+When the structure is stars joined by straight lines, and the stars should stay
+put while only the lines draw (as the constellation's owner asked), extract the
+graph and time the lines from it:
+- **Stars**: a difference of gaussians (sigma 2 and 6 at 2x) minus its best
+  average along any of 12 line directions. A line keeps its response along
+  itself and cancels; a star does not. Peaks above 14 near the web; within 18 px a
+  weak peak is the same star. Add stars the test misses by hand (the blue star's
+  diffraction spikes read as lines).
+- **Lines**: for every star pair under 900 px, sample the segment (minus 6 px
+  discs) on line evidence (`sato > 3` or top-hat `> 18`): at least 93% covered, no
+  gap over 4 px, a 48-sample prefilter first. Drop a segment that passes within
+  5 px of a third star (it is two lines). Then join the two lines of a weak star
+  that a line runs straight through (within 10 degrees). 219 stars and 367 lines
+  here; `graph.json` carries them for the website.
+- **Order**: any field over the stars works. Here a wave goes from the figure to
+  the blue star: f = a / (a + b), with a and b the distances to each, is 0 at the
+  figure and reaches 1 only at the blue star. It is rank-equalised over the lines'
+  pixels, so the drawing keeps an even pace, and the blue star's one line is
+  held back to run last, alone, with its own flare.
+- **Timing per pixel**: a line leaves its earlier star when that star connects
+  and arrives as the later one connects; when both connect at nearly the same
+  time it grows from both ends at a floor speed. Off-graph line pixels (frame
+  edges, behind the subject) continue from the nearest timed pixel.
+- **Keep the stars in the sky**: the line mask runs through every star it joins,
+  so removing it takes the stars out with it. Model each star radially (the
+  median of each ring around it ignores the few angles where lines cross), add
+  that glow above its background onto the filled plate, and give the star's own
+  disc to the reveal layer. Before its lines arrive, the star is a soft, clean
+  point; when they arrive, it gets its exact pixels back.
+- Unmix the line layer (`ak.unmix` against the filled plate) rather than
+  using the master's colours with a coverage alpha: a hard alpha leaves halos
+  of plate colour around every line at the front.
+
+## HD masters (super-resolution)
+
+The camera starts zoomed in, so the master needs more detail than the source.
+Lanczos only enlarges the blur. `scripts/superres.py` runs Real-ESRGAN x4 with
+onnxruntime (torch's wheel index is blocked in these containers; PyPI is not),
+reading the `.pth` weights with a small unpickler and building the RRDBNet graph
+as ONNX in memory. The full 1095x730 source takes about 130 s on 4 cores.
+GAN detail is crisp but flattens glows into hard discs, so keep the GAN's high
+frequencies over the Lanczos low ones: `esrgan - blur(esrgan, 3) + blur(lanczos, 3)`.
+Save the result as `source_x4.webp` next to the source, so builds do not need
+the weights. Render textures above 4096 px in column tiles; mark big textures
+`mip: true` so shrinking them does not shimmer.
+
+## Intros and hover
+
+- `scene.intro = seconds`: the drivers (grow, camera, and anything on `zoom`,
+  `grow` or `growrate`) play once from 0 and hold their last state; particles keep
+  their own loops, so a finished page still breathes. `scene.durations: [15, 3]`
+  adds a length toggle, and `?duration=3` plays the same intro faster.
+  `capture.mjs --query duration=3 --seconds 3` renders that version.
+- A `links` layer (`stars`, `lines`) plus the template's pointer handling: once
+  the intro has finished, hovering a star lights it, its lines (carried straight
+  through any star a line merely passes) and the stars at their ends, with a
+  pulse running out along each line. `player.focus(i)` drives it from elsewhere.
 
 ## Engine reference
 
@@ -324,6 +385,10 @@ pull-back), `scene.grow` (structure growth G). Anim waves: `sin01`, `sin`, `beat
   pixels leaked into unresolved fills. It now inpaints from the filled values.
 - Glowing a revealed overlay by its alpha lights up its noisy fringe; gate glows to
   alpha > ~0.55.
+- A pointer on an `object-fit: contain` canvas must be mapped through the
+  letterbox, not by the element's box: the picture is centred inside it.
+- Protecting star pixels in a line mask fails if a later pass adds line pixels
+  again. Apply the protection last, or better, model the stars (above).
 
 ## Files
 
@@ -335,6 +400,7 @@ scripts/extract_shapes.py exploration CLI for a new picture
 scripts/capture.mjs       deterministic frame capture (Playwright), --times / --off / --scale
 scripts/compare.py        PSNR/SSIM/MAE + side-by-side and contact sheets
 scripts/motion.py         optical-flow motion intensity, to compare pieces (frame heights/s)
+scripts/superres.py       Real-ESRGAN x4 without torch (onnx + onnxruntime), for HD masters
 scripts/screenshot.mjs    viewer page screenshot at any viewport
 scripts/encode.sh         PNG frames -> MP4 (BT.709, even size, faststart)
 scripts/bundle.py         inline scripts -> single HTML (--fragment for Artifact)
@@ -369,18 +435,18 @@ at CRF 20.
 
 ## Worked example numbers (art/constellation)
 
-The source is 1095x730, decomposed at 2x. The network mask covers about 530k
-master pixels: the web (one 225k px component), 1,400 golden dots, faint and
-soft lines, and node halos. The plate is filled with `smooth_fill` in 4 s. The
-activation runs from 0.03 at the horizon seeds to 0.9 in the top left. The camera
-pulls back from 1.9x about (300, 600) to 1x, and the sky sits at parallax 0.85.
-There are 10 layers and about 5,400 sprites (node flares, line sparks, stars,
-motes, bokeh) on a 30 s loop. The lines grow for about 9 s (2 to 11 s), hold
-complete around 15 s, and withdraw by 28 s. The mid-loop frame scores 39.3 dB
-PSNR and SSIM 0.985 against the source (41 dB at 1x). The seam step is 0.016 against
-a 0.75 median, because the loop point sits in the quiet hold. Optical flow over the
-growth is 0.015 H/s with 8% of the frame moving: calm by design ("slowly
-connecting"). Most of the change is lines appearing, which flow does not count.
-The MP4 is 25 MB at CRF 15, 60 fps, 1644x1096, and its decoded colour is within
-1.4 levels of the PNG frames.
+The source is 1095x730. Detection runs at 2x; the HD master is Real-ESRGAN 4x
+(4380x2920), stored as a 0.9 MB WebP. The graph has 219 stars and 367 lines;
+the wave starts at the figure's chest (268, 400) and ends at the blue star
+(653.6, 217.6), whose one line runs last, from 0.84 to 0.95 of the growth. The intro
+is 15 s (also offered at 3 s): 1 s of light gathering around the figure, then
+about 11 s of drawing while the camera pulls back from 1.8x about (300, 600). The
+blue star flares at about 13 s. The final frame scores 35.7 dB PSNR and SSIM 0.964
+against the source at 1x. That is lower than the earlier loop's 39 dB because the
+HD master is sharper than the source; the 2x Lanczos master scored higher by being
+as soft as the source. There are 13 layers and about 13,300 sprites. The MP4s are
+1920x1280 at 60 fps.
+
+The first version (a 30 s loop growing from the planet's horizon, revealing the
+golden stars along with the lines) is in git history, at commit 5ebcfbb.
 

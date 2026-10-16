@@ -80,7 +80,12 @@ button, summary {
 }
 button:hover, summary:hover { border-color: var(--halo); }
 button:focus-visible, summary:focus-visible, input:focus-visible { outline: 2px solid var(--core); outline-offset: 2px; }
-#compare[aria-pressed="true"] { background: var(--halo); color: var(--void); border-color: var(--halo); }
+#compare[aria-pressed="true"], .lengths button[aria-pressed="true"] { background: var(--halo); color: var(--void); border-color: var(--halo); }
+.lengths { display: inline-flex; gap: 0; }
+.lengths button { border-radius: 0; font-variant-numeric: tabular-nums; }
+.lengths button:first-child { border-radius: 3px 0 0 3px; }
+.lengths button:last-child { border-radius: 0 3px 3px 0; margin-left: -1px; }
+canvas.pointing { cursor: pointer; }
 details { position: relative; }
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
@@ -115,7 +120,7 @@ summary::-webkit-details-marker { display: none; }
 <footer class="rail">
   <div class="name">
     <h1 id="title">{{TITLE}}</h1>
-    <p><span class="clock" id="clock">00.00</span> / <span id="loop">12</span> s loop · <span id="summary"></span></p>
+    <p><span class="clock" id="clock">00.00</span> / <span id="loop">12</span> · <span id="summary"></span></p>
   </div>
   <div class="controls">
     <button id="play" type="button">Pause</button>
@@ -140,7 +145,11 @@ summary::-webkit-details-marker { display: none; }
   const canvas = document.getElementById('art');
   canvas.setAttribute('aria-label', `${S.title}, animated`);
   document.getElementById('title').textContent = S.title;
-  document.getElementById('loop').textContent = S.loop;
+  // An intro plays once and holds its last frame (?duration=3 replays it faster); a loop repeats.
+  const intro = S.intro || 0;
+  let dur = intro ? Number(qs.get('duration')) || intro : S.loop;
+  let speed = intro ? intro / dur : 1;
+  document.getElementById('loop').textContent = intro ? `${dur} s intro` : `${S.loop} s loop`;
   const orig = document.getElementById('original');
   orig.src = S.source;
 
@@ -152,32 +161,96 @@ summary::-webkit-details-marker { display: none; }
     scale = Math.min(2, Math.max(1, Math.round(fit * 4) / 4));
   }
   const player = await ArtAnimator.create(canvas, S, { scale, preserve: capture, renderer: qs.get('renderer') || undefined });
-  window.renderAt = (t) => player.render(t);
+  window.renderAt = (t) => player.render(t * speed);
   window.sceneReady = true;
 
   const moving = S.layers.filter(l => l.items).reduce((n, l) => n + l.items.length, 0);
   const lifted = (S.layers.find(l => l.id === 'drift') || { items: [] }).items.length;
   document.getElementById('summary').textContent = lifted
     ? `${lifted} of the artist's diamonds set loose, ${moving.toLocaleString()} moving parts`
-    : `${moving.toLocaleString()} moving parts`;
+    : S.layers.some((l) => l.type === 'links')
+      ? `${moving.toLocaleString()} moving parts · hover a star once it finishes`
+      : `${moving.toLocaleString()} moving parts`;
 
   const clock = document.getElementById('clock');
-  const fmt = (t) => (((t % S.loop) + S.loop) % S.loop).toFixed(2).padStart(5, '0');
+  const fmt = (t) => (intro ? Math.min(t, dur) : ((t % S.loop) + S.loop) % S.loop).toFixed(2).padStart(5, '0');
   const frozen = Number(qs.get('t')) || 0;
-  if (capture) { player.render(frozen); return; }
+  if (capture) { player.render(frozen * speed); return; }
 
   // Clock readout follows the animation without touching the engine.
   let start = performance.now(), pausedAt = frozen, playing = false, raf = 0;
   const tick = (now) => {
     const t = (now - start) / 1000;
-    player.render(t);
+    player.render(t * speed);
     clock.textContent = fmt(t);
+    if (intro && t >= dur && playBtn.textContent !== 'Replay') playBtn.textContent = 'Replay';
     raf = requestAnimationFrame(tick);
   };
   const playBtn = document.getElementById('play');
   function play() { if (playing) return; playing = true; start = performance.now() - pausedAt * 1000; raf = requestAnimationFrame(tick); playBtn.textContent = 'Pause'; }
   function pause() { if (!playing) return; playing = false; cancelAnimationFrame(raf); pausedAt = (performance.now() - start) / 1000; playBtn.textContent = 'Play'; }
-  playBtn.addEventListener('click', () => (playing ? pause() : play()));
+  function replay() { start = performance.now(); pausedAt = 0; playBtn.textContent = 'Pause'; if (!playing) play(); }
+  playBtn.addEventListener('click', () => (playBtn.textContent === 'Replay' ? replay() : playing ? pause() : play()));
+
+  // An intro can offer lengths (scene.durations, seconds): the same intro, played faster.
+  if (intro && S.durations) {
+    const seg = document.createElement('div');
+    seg.className = 'lengths';
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Intro length');
+    for (const d of S.durations) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.id = `length-${d}`;
+      b.textContent = `${d} s`;
+      b.setAttribute('aria-pressed', String(d === dur));
+      b.addEventListener('click', () => {
+        dur = d; speed = intro / d;
+        document.getElementById('loop').textContent = `${d} s intro`;
+        for (const o of seg.children) o.setAttribute('aria-pressed', String(o === b));
+        replay();
+      });
+      seg.append(b);
+    }
+    playBtn.before(seg);
+  }
+
+  // Stars to hover (a links layer): once the intro is done, a star lights up with its lines.
+  const linkLayer = S.layers.find((l) => l.type === 'links');
+  if (linkLayer && player.focus) {
+    const done = () => !intro || (playing ? (performance.now() - start) / 1000 : pausedAt) >= dur;
+    const pick = (e) => {
+      // the canvas is object-fit: contain, so the picture may be letterboxed inside its box
+      const r = canvas.getBoundingClientRect();
+      const k = Math.min(r.width / S.width, r.height / S.height);
+      const x = (e.clientX - r.left - (r.width - S.width * k) / 2) / k;
+      const y = (e.clientY - r.top - (r.height - S.height * k) / 2) / k;
+      let best = -1, bd = (e.pointerType === 'touch' ? 22 : 12) ** 2;
+      linkLayer.stars.forEach(([sx, sy], i) => {
+        const d = (sx - x) ** 2 + (sy - y) ** 2;
+        if (d < bd) { bd = d; best = i; }
+      });
+      return best;
+    };
+    // while paused, keep drawing as long as a star is lit or fading
+    let still = 0;
+    const stillLoop = () => {
+      still = 0;
+      if (playing) return;
+      player.render(pausedAt * speed);
+      if (player.focusBusy()) still = requestAnimationFrame(stillLoop);
+    };
+    const wake = () => { if (!playing && !still) still = requestAnimationFrame(stillLoop); };
+    const point = (e) => {
+      const i = done() ? pick(e) : -1;
+      player.focus(i);
+      canvas.classList.toggle('pointing', i >= 0);
+      wake();
+    };
+    canvas.addEventListener('pointermove', point);
+    canvas.addEventListener('pointerdown', point);
+    canvas.addEventListener('pointerleave', () => { player.focus(-1); canvas.classList.remove('pointing'); wake(); });
+  }
 
   const frame = document.getElementById('frame'), badge = document.getElementById('badge'), cmp = document.getElementById('compare');
   const showOrig = (on) => { frame.classList.toggle('comparing', on); badge.hidden = !on; cmp.setAttribute('aria-pressed', String(on)); };
@@ -197,7 +270,7 @@ summary::-webkit-details-marker { display: none; }
     const lab = document.createElement('label');
     const cb = document.createElement('input');
     cb.type = 'checkbox'; cb.checked = !l.off; cb.id = `layer-${l.id}`;
-    cb.addEventListener('change', () => { l.off = !cb.checked; if (!playing) player.render(pausedAt); });
+    cb.addEventListener('change', () => { l.off = !cb.checked; if (!playing) player.render(pausedAt * speed); });
     const name = document.createElement('span'); name.textContent = l.id;
     const n = document.createElement('small'); n.textContent = l.items ? l.items.length : (l.blend === 'lighter' ? 'glow' : 'image');
     lab.append(cb, name, n);
@@ -206,7 +279,8 @@ summary::-webkit-details-marker { display: none; }
 
   // Still frame (reduced motion, or ?t= for screenshots): show it and wait for Play.
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce || qs.has('t')) { player.render(pausedAt); clock.textContent = fmt(pausedAt); playBtn.textContent = 'Play'; }
+  if (reduce && intro && !qs.has('t')) pausedAt = dur;  // reduced motion: show the finished picture
+  if (reduce || qs.has('t')) { player.render(pausedAt * speed); clock.textContent = fmt(pausedAt); playBtn.textContent = 'Play'; }
   else play();
 })();
 </script>

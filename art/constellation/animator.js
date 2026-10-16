@@ -5,13 +5,15 @@
  * life and every wave frequency divides scene.loop.
  *
  * Scene format (built by artkit.py):
- *   { width, height, loop, wind?, layers: [ ... ] }
+ *   { width, height, loop, intro?, wind?, layers: [ ... ] }
+ * intro  seconds: play the drivers (grow, camera, and the waves that follow them) once from 0 to
+ *        `intro` and hold their final state; particles keep their loops, so a finished page stays alive.
  * wind  { T, G: [n samples of gust strength over one loop], F: [running integral of G], FT,
  *         gmin, gmax, dir: [dx, dy], front: px/s, sweep: 'right'|'up', ground }
  *       Gust fronts travel at `front` px/s, left to right (sweep 'right') or rising from y =
  *       ground (sweep 'up', an updraft). A particle with susceptibility wd is pushed by
  *       wd * (F(now) - F(birth)) along dir, so gusts bend paths and the loop stays exact.
- * Layer types:
+ * Layer types (image, vortex and reveal take mip: true to mipmap a texture stored above display size):
  *   image      { src, blend?, alpha?: Anim, x?, y?, w?, h? }
  *   particles  { shape: 'diamond'|'square'|'circle'|'glow', blend?, alpha?: Anim, grow?: bool, items: [P] }
  *              grow: born by growing from a point, die by shrinking (sh), short alpha fades at the ends.
@@ -39,6 +41,9 @@
  *                falling over w1. Sparks along a line with spaced g give a comet running down the line.
  * Any image / particles / orbit layer with camera: true is zoomed and rolled with the camera;
  * parallax p uses zoom^p (p > 1 feels closer to the lens).
+ *   links      { stars: [[x, y]...], lines: [[a, b]...], c?: [r,g,b], camera?, parallax? }  interactive:
+ *                player.focus(i) lights star i, its lines and the stars they reach, with a pulse
+ *                of light running out along each line; focus(-1) lets it fade.
  * grow   { hold: [h0, h1], ease?: 3|5 }  the growth driver G(t): a triangle wave over the loop (0 at the loop
  *        point, 1 at mid-loop) through smoothstep (ease 3) or smootherstep (5, default), held at 0 for h0
  *        and at 1 for h1 (fractions of half a loop). Smootherstep lingers longer near 0 and 1.
@@ -177,12 +182,12 @@
     };
   }
 
-  function anim(spec, t, loop, wind, cam, grow) {
+  function anim(spec, t, loop, wind, cam, grow, td = t) {
     if (spec == null) return 1;
     if (typeof spec === 'number') return spec;
-    if (spec.wave === 'zoom') return (spec.base || 0) + (spec.amp || 0) * (cam ? cam.I(t) : 0);
-    if (spec.wave === 'grow') return (spec.base || 0) + (spec.amp || 0) * grow.v(t);
-    if (spec.wave === 'growrate') return (spec.base || 0) + (spec.amp || 0) * grow.rate(t);
+    if (spec.wave === 'zoom') return (spec.base || 0) + (spec.amp || 0) * (cam ? cam.I(td) : 0);
+    if (spec.wave === 'grow') return (spec.base || 0) + (spec.amp || 0) * grow.v(td);
+    if (spec.wave === 'growrate') return (spec.base || 0) + (spec.amp || 0) * grow.rate(td);
     if (spec.wave === 'wind') return (spec.base || 0) + (spec.amp || 0) * (wind ? wind.Gn(t) : 0);
     if (spec.wave === 'rest') {
       const d = Math.min(t, loop - t), h = spec.hold || 0;
@@ -397,14 +402,16 @@ void main(){
     };
     return {
       kind: 'webgl2',
-      texture(img, nearest) {
+      texture(img, nearest, mip) {
         const t = gl.createTexture();
         const f = nearest ? gl.NEAREST : gl.LINEAR;
         gl.bindTexture(gl.TEXTURE_2D, t);
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !nearest);
         gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, f);
+        // mip: smooth minification for textures stored above display size (no shimmer when shrunk)
+        if (mip && !nearest) gl.generateMipmap(gl.TEXTURE_2D);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip && !nearest ? gl.LINEAR_MIPMAP_LINEAR : f);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, f);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -604,7 +611,7 @@ void main(){
     for (const layer of scene.layers) {
       if (layer.type === 'image' || layer.type === 'vortex' || layer.type === 'reveal') {
         layer._img = await loadImage(layer.src);
-        layer._tex = R.texture(layer._img);
+        layer._tex = R.texture(layer._img, false, layer.mip);
       }
       if (layer.type === 'reveal') layer._act = R.texture(await loadImage(layer.act), true);
       if (layer.type === 'path') layer._tab = pathTable(layer.points);
@@ -613,11 +620,12 @@ void main(){
         it._g = it.c[1] / 255;
         it._b = it.c[2] / 255;
       }
-      maxInst = Math.max(maxInst, (layer.items || []).length);
+      maxInst = Math.max(maxInst, (layer.items || []).length, layer.type === 'links' ? 8192 : 0);
     }
     const buf = new Float32Array(Math.max(1, maxInst) * 10);
     let count = 0;
     const push = (x, y, rx, ry, ang, shape, r, g, b, a) => {
+      if (count * 10 >= buf.length) return;
       const o = count * 10;
       buf[o] = x; buf[o + 1] = y; buf[o + 2] = rx; buf[o + 3] = ry; buf[o + 4] = ang; buf[o + 5] = shape;
       buf[o + 6] = r; buf[o + 7] = g; buf[o + 8] = b; buf[o + 9] = a;
@@ -691,9 +699,9 @@ void main(){
       }
     }
 
-    function nodes(layer, tt, la) {
+    function nodes(layer, tt, la, td) {
       const shape = SHAPES[layer.shape || 'glow'];
-      const G = grow.v(tt);
+      const G = grow.v(td);
       const [w0, w1] = layer.pulse || [0.004, 0.03];
       const expo = layer.decay === 'exp', base = layer.base || 0, soft = layer.soft || 0.02, swell = layer.swell || 0;
       for (const it of layer.items) {
@@ -707,7 +715,83 @@ void main(){
       }
     }
 
-    function applyCamera(layer, tt) {
+    // ---- interactive highlight of one star and its lines (links layers); wall-clock timed,
+    // so it animates whether or not the scene is playing
+    const wall = () => performance.now() / 1000;
+    let focusStar = -1, focusAt = -1e9, lastStar = -1, lastAt = -1e9;
+    function focus(i) {
+      if (i === focusStar) return;
+      if (focusStar >= 0) { lastStar = focusStar; lastAt = wall(); }
+      focusStar = i;
+      focusAt = wall();
+    }
+    const focusBusy = () => focusStar >= 0 || wall() - lastAt < 0.4;
+    // the painted line from star i through j: carried on through any star it passes straight
+    function run(layer, i, j) {
+      const pts = [i, j];
+      for (let guard = 0; guard < 12; guard++) {
+        const [a, b] = [pts[pts.length - 2], pts[pts.length - 1]];
+        const [ax, ay] = layer.stars[a], [bx, by] = layer.stars[b];
+        const dx = bx - ax, dy = by - ay, dl = Math.hypot(dx, dy);
+        let next = -1, best = 0.985;
+        for (const k of layer._adj[b]) {
+          if (k === a) continue;
+          const [kx, ky] = layer.stars[k];
+          const c = ((kx - bx) * dx + (ky - by) * dy) / (Math.hypot(kx - bx, ky - by) * dl + 1e-9);
+          if (c > best) { best = c; next = k; }
+        }
+        if (next < 0) break;
+        pts.push(next);
+      }
+      return pts;
+    }
+    function linkStar(layer, i, tt, a, intro) {
+      if (!layer._adj) {
+        layer._adj = layer.stars.map(() => []);
+        for (const [u, v] of layer.lines) { layer._adj[u].push(v); layer._adj[v].push(u); }
+      }
+      const [r, g, b] = (layer.c || [255, 230, 185]).map((v) => v / 255);
+      const [x0, y0] = layer.stars[i];
+      push(x0, y0, 18, 18, 0, SHAPES.glow, r, g, b, Math.min(1, a));
+      push(x0, y0, 6, 6, 0, SHAPES.glow, 1, 1, 1, Math.min(1, a));
+      const grown = Math.min(1, intro / 0.35);         // the lines light from the star outward
+      const head = frac((tt - focusAt) / 1.4);          // and a pulse runs out along each
+      for (const j of layer._adj[i]) {
+        const pts = run(layer, i, j);
+        let total = 0;
+        const segs = [];
+        for (let q = 1; q < pts.length; q++) {
+          const [ax, ay] = layer.stars[pts[q - 1]], [bx, by] = layer.stars[pts[q]];
+          const len = Math.hypot(bx - ax, by - ay);
+          segs.push([ax, ay, bx, by, total, len]);
+          total += len;
+        }
+        for (const [ax, ay, bx, by, s0, len] of segs) {
+          const n = Math.max(2, Math.floor(len / 1.5));
+          for (let k = 0; k <= n; k++) {
+            const f = (s0 + (k / n) * len) / total;
+            if (f > grown) break;
+            const p = Math.exp(-(((f - head) / 0.05) ** 2));
+            push(ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n, 2.6 + 3 * p, 2.6 + 3 * p, 0, SHAPES.glow,
+                 r, g, b, Math.min(1, a * (0.55 + 0.45 * p)));
+          }
+        }
+        if (grown >= 1) {
+          const [ex, ey] = layer.stars[pts[pts.length - 1]];
+          push(ex, ey, 11, 11, 0, SHAPES.glow, r, g, b, Math.min(1, 0.9 * a));
+        }
+      }
+    }
+    function links(layer) {
+      const tt = wall();
+      if (focusStar >= 0) linkStar(layer, focusStar, tt, smooth(0, 0.25, tt - focusAt), tt - focusAt);
+      if (lastStar >= 0 && lastStar !== focusStar) {
+        const a = 1 - smooth(0, 0.35, tt - lastAt);
+        if (a > 0.01) linkStar(layer, lastStar, tt, a, 1e9);
+      }
+    }
+
+    function applyCamera(layer, tt) {  // tt: the driver time
       const [a, b, c, d, tx, ty, Z, rl] = cam.xf(tt, layer.parallax);
       for (let n = 0; n < count; n++) {
         const o = n * 10, x = buf[o], y = buf[o + 1];
@@ -721,17 +805,19 @@ void main(){
 
     function render(t) {
       const tt = frac(t / loop) * loop;
+      // driver time: the loop time, or for an intro the time clamped to [0, intro]
+      const td = scene.intro ? Math.min(Math.max(t, 0), scene.intro) : tt;
       R.begin();
       for (const layer of scene.layers) {
         if (layer.off) continue;
-        const la = anim(layer.alpha, tt, loop, wind, cam, grow);
+        const la = anim(layer.alpha, tt, loop, wind, cam, grow, td);
         if (la <= 0.001) continue;
         if (layer.type === 'reveal') {
-          R.reveal(layer, Math.min(1, la), layer.camera && cam ? cam.xf(tt, layer.parallax) : null, grow.v(tt));
+          R.reveal(layer, Math.min(1, la), layer.camera && cam ? cam.xf(td, layer.parallax) : null, grow.v(td));
           continue;
         }
         if (layer.type === 'image') {
-          R.image(layer, Math.min(1, la), layer.camera && cam ? cam.xf(tt, layer.parallax) : null);
+          R.image(layer, Math.min(1, la), layer.camera && cam ? cam.xf(td, layer.parallax) : null);
           continue;
         }
         if (layer.type === 'vortex') {
@@ -747,7 +833,8 @@ void main(){
         count = 0;
         if (layer.type === 'particles') particles(layer, tt, la);
         else if (layer.type === 'orbit') orbit(layer, tt, la);
-        else if (layer.type === 'nodes') nodes(layer, tt, la);
+        else if (layer.type === 'nodes') nodes(layer, tt, la, td);
+        else if (layer.type === 'links') links(layer);
         else if (layer.type === 'path') {
           const [fi, fo] = layer.fade || [0.1, 0.2];
           const shape = SHAPES[layer.shape || 'glow'];
@@ -759,13 +846,13 @@ void main(){
             push(x, y, it.r, it.r, 0, shape, it._r, it._g, it._b, Math.min(1, a));
           }
         }
-        if (layer.camera && cam) applyCamera(layer, tt);
+        if (layer.camera && cam) applyCamera(layer, td);
         R.instances(buf, count, layer.blend);
       }
       R.end();
     }
 
-    return { render, loop, renderer: R.kind, layers: scene.layers, wind, camera: cam, grow };
+    return { render, loop, renderer: R.kind, layers: scene.layers, wind, camera: cam, grow, focus, focusBusy };
   }
 
   window.ArtAnimator = { create };

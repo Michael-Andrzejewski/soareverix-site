@@ -2,7 +2,7 @@
 // Render frames of an animate-art page deterministically with headless Chromium.
 //
 //   node capture.mjs <page.html> <outdir> [--fps 30] [--seconds 12] [--start 0]
-//                    [--times 0,3,6] [--scale 1] [--off layerA,layerB]
+//                    [--times 0,3,6] [--scale 1] [--off layerA,layerB] [--query duration=3]
 //
 // The page must expose window.renderAt(t) and set window.sceneReady (template.html
 // does both when opened with ?capture). Frames are written as PNG straight from
@@ -35,6 +35,7 @@ const seconds = Number(opt('seconds', 12));
 const start = Number(opt('start', 0));
 const scale = Number(opt('scale', 1));
 const off = opt('off', '');
+const query = opt('query', '');  // extra page parameters, e.g. duration=3 for an intro
 const times = opt('times', '')
   .split(',')
   .filter(Boolean)
@@ -48,7 +49,7 @@ const p = await ctx.newPage();
 const errors = [];
 p.on('pageerror', (e) => errors.push(String(e)));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-const url = 'file://' + path.resolve(page) + `?capture=1&scale=${scale}` + (off ? `&off=${off}` : '');
+const url = 'file://' + path.resolve(page) + `?capture=1&scale=${scale}` + (off ? `&off=${off}` : '') + (query ? `&${query}` : '');
 await p.goto(url);
 await p.waitForFunction(() => window.sceneReady === true, null, { timeout: 60000 });
 

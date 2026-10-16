@@ -2,3 +2,6 @@ numpy
 pillow
 opencv-python-headless
 scikit-image
+scipy
+onnx              # superres.py only
+onnxruntime       # superres.py only
