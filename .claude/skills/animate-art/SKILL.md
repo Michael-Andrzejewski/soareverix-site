@@ -11,9 +11,12 @@ and every effect is an overlay. The composition stays the artist's in every
 frame, and every loop passes exactly through the original: frame 0 is the
 source picture bit for bit (the `rest` layer, below).
 
-Worked example: `art/ascension/` (a figure dissolving into diamonds under a
-glowing triangle, in a gusting wind). Read its `build_scene.py` before starting
-a new piece; it uses every technique below.
+Worked examples, read the nearest one's `build_scene.py` before starting:
+- `art/ascension/`: a figure dissolving into diamonds under a glowing triangle,
+  in a storm-force updraft (particles, plate refill, wind).
+- `art/maelstrom/`: a figure at the eye of a painted vortex; the whole painting
+  swirls while the camera dives in and pulls back out (camera moves, see
+  "Camera moves: swirl and zoom").
 
 ## Calibrate the intensity first
 
@@ -203,10 +206,37 @@ engine and the titled viewer page.
   Artifact tool (republish the same file path to keep the URL). Send the MP4
   and a labelled comparison sheet with SendUserFile.
 
+## Camera moves: swirl and zoom
+
+For pictures with a centre of attention (a vortex, tunnel, eye, flower, galaxy),
+move the camera instead of only the parts:
+- `scene.camera = {cx, cy, zmax, revs, omega0, twist, r0, roll, shutter}`. Zoom
+  goes 1 -> zmax -> 1 once per loop. The swirl turns exactly `revs` times per loop
+  (speed omega0 at the loop point, fastest at full zoom), and inner rings run up to
+  `twist` rad ahead (exp(-r / r0)), tightening on the way in and relaxing on the way
+  out. Everything lines up again at the loop point, so the loop is exact.
+- A `vortex` layer draws the whole frame with a shader: polar swirl, zoom, roll,
+  rotational and zoom motion blur (`shutter` s), a chromatic fringe and a vignette;
+  `gain` lifts exposure at full zoom so a dark centre still reads.
+- Rotating a rectangle exposes its corners. `ak.polar_outpaint(img, centre, R)`
+  continues every ring around the full circle (ping-pong reflection of the
+  covered arcs), keeping the original pixels exact inside the frame.
+- Zooming magnifies: build from `ak.upscale(src, 2)` and render the video at
+  `SCALE=1.5`.
+- Cut anything that must not spin (the figure) out of the master with
+  `guided_fill` + `unmix`, and draw it as an `image` layer with `camera: true`, so
+  it only zooms.
+- Particles: `orbit` layers spiral around the centre with the swirl (`m` times its
+  speed, inward at rate `k`) and draw as streaks along their motion. `parallax > 1`
+  makes a layer feel closer to the lens. Keep streaks short (`st` 0.3 to 1) and
+  flecks faint, or the painting turns into a sci-fi starfield.
+- Too much `shutter` turns brushwork into smooth rings. About 0.025 s keeps the
+  strokes readable at the loop point and still smears at full spin.
+
 ## Engine reference
 
 `engine/animator.js` is a pure function of time. `ArtAnimator.create(canvas,
-scene, {scale, preserve, renderer})` returns `{render(t), renderer, wind}`.
+scene, {scale, preserve, renderer})` returns `{render(t), renderer, wind, camera}`.
 WebGL2 draws all particles of a layer in one instanced call, so about 10k
 particles cost about 5 ms per frame even in software. Canvas2D is the fallback
 (about 45 ms per frame for 10k). The scene format is documented at the top of
@@ -239,14 +269,15 @@ the file. `engine/template.html` adds the controls and these URL parameters:
 
 ```
 scripts/artkit.py         library: masks, shape extraction, guided fill, profile guides, unmix,
-                          row_span, glows, Wind, particles, export, install_page
+                          row_span, upscale, polar_outpaint, glows, Wind, particles, export,
+                          install_page
 scripts/extract_shapes.py exploration CLI for a new picture
 scripts/capture.mjs       deterministic frame capture (Playwright), --times / --off / --scale
 scripts/compare.py        PSNR/SSIM/MAE + side-by-side and contact sheets
 scripts/screenshot.mjs    viewer page screenshot at any viewport
 scripts/encode.sh         PNG frames -> MP4 (BT.709, even size, faststart)
 scripts/bundle.py         inline scripts -> single HTML (--fragment for Artifact)
-scripts/pipeline.sh       build -> capture -> compare -> seam check -> encode -> bundle
+scripts/pipeline.sh       build -> capture -> compare -> seam check -> encode -> bundle (SCALE=1.5)
 engine/animator.js        the renderer (WebGL2 + Canvas2D fallback)
 engine/template.html      the viewer page ({{TITLE}} filled by install_page)
 templates/build_scene_starter.py  zero-edit starting point for a new picture (wind on by default)
@@ -263,3 +294,14 @@ SSIM against the source runs 0.76 to 0.78 (busy storm). The seam step is 4.39
 against a 4.49 median and the largest step is 5.53, so there are no pops. The MP4
 is 14.5 MB at CRF 20, 60 fps. With the rest layer on (v2), frame 0 was identical
 to the source (0 of 848,502 pixels differ).
+
+## Worked example numbers (art/maelstrom)
+
+The source is 600x771, upscaled 2x and outpainted to a 2190 px canvas. The swirl
+and zoom centre on the figure at (312, 372). The camera zooms 1x -> 2.8x -> 1x
+while the vortex turns 3 times per 12 s loop (0.8 to 2.3 rad/s), with 1.6 rad of
+inner twist. There are 9 layers and about 1,950 particles, rendered at 900x1158 and
+60 fps. Frame steps run around a 7.7 median with a max of 8.7, and the seam step is
+8.1, so the loop is seamless with no pops. SSIM against the still is 0.66 at the loop
+point and about 0.28 at full zoom, as expected for a camera move. The MP4 is 11.3 MB
+at CRF 20.

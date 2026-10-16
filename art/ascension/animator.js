@@ -22,7 +22,21 @@
  *              column: x offset amp * h * sin(2pi (k t/loop + y/wl)), k waves per loop.
  *              stretch: draw each particle stretch times taller than wide (motion streaks).
  *   path       { points: [[x,y]...], shape, blend?, alpha?: Anim, fade: [fi, fo], items: [{k, p, r, c, a}] }
- * Anim  { base, amp, k, p, wave: 'sin01'|'beat'|'sin'|'wind'|'rest' }   value = base + amp * wave(k*t/loop + p)
+ *   vortex     { src: canvas image, texC: [x, y] canvas px of the swirl centre, up: canvas px per scene px,
+ *                vignette?, ca?, gain? (exposure lift at full zoom) }   the whole frame, swirled and zoomed by scene.camera (WebGL shader with
+ *                rotational + zoom motion blur; Canvas2D fallback rotates rigidly)
+ *   orbit      { shape, blend?, camera?, parallax?, core: [r0, r1], items: [O] }  particles spiralling
+ *                around the camera centre with the swirl; drawn as streaks along their motion
+ * Any image / particles / orbit layer with camera: true is zoomed and rolled with the camera;
+ * parallax p uses zoom^p (p > 1 feels closer to the lens).
+ * camera { cx, cy, zmax, revs, omega0, twist, r0, roll, shutter }  (one zoom in + out per loop)
+ *        zoom Z = 1 + (zmax-1) I(t), I = 0.5 - 0.5 cos(2 pi t / loop): 1 at the loop point, zmax mid-loop.
+ *        swirl angle A(t) = integral of omega0 + omega1 I, omega1 chosen so A(loop) = 2 pi revs, so the
+ *        vortex turns `revs` whole times per loop and spins fastest while zoomed in. Inner rings get an
+ *        extra twist * I(t) * exp(-r / r0): the vortex tightens on the way in and relaxes on the way out.
+ * O     { r, th, l, p, c, a, m: swirl multiplier, w: extra rad/s, k: inward rate 1/s, sz, st: streak, fi, fo }
+ * Anim  { base, amp, k, p, wave: 'sin01'|'beat'|'sin'|'wind'|'rest'|'zoom' }   value = base + amp * wave(k*t/loop + p)
+ *       'zoom' is the camera's zoom progress I(t), 0 at the loop point and 1 at full zoom.
  *       'wind' is the normalised gust strength at time t (ignores k and p).
  *       'rest' is 1 within `hold` s of the loop point, easing to 0 over the next `fade` s, on
  *       both sides. Put the untouched source on top with it and every loop passes exactly
@@ -73,9 +87,36 @@
     return wind;
   }
 
-  function anim(spec, t, loop, wind) {
+  function makeCamera(c, loop) {
+    if (!c) return null;
+    const T = loop, w = TAU / T, O0 = c.omega0 || 0;
+    const O1 = ((TAU * (c.revs || 0) - O0 * T) * 2) / T;
+    const I = (t) => 0.5 - 0.5 * Math.cos(w * t);
+    const Ip = (t) => 0.5 * w * Math.sin(w * t);
+    const zmax = c.zmax || 1;
+    return {
+      cx: c.cx, cy: c.cy, shutter: c.shutter || 0, r0: c.r0 || 100,
+      I,
+      zoom: (t) => 1 + (zmax - 1) * I(t),
+      zoomRate: (t) => (zmax - 1) * Ip(t),
+      A: (t) => O0 * t + O1 * (t / 2 - Math.sin(w * t) / (2 * w)),
+      Arate: (t) => O0 + O1 * I(t),
+      twist: (t) => (c.twist || 0) * I(t),
+      twistRate: (t) => (c.twist || 0) * Ip(t),
+      roll: (t) => (c.roll || 0) * Math.sin(w * t),
+      // world -> screen affine for a layer: [a, b, c, d, tx, ty]
+      xf(t, parallax) {
+        const Z = Math.pow(this.zoom(t), parallax || 1), rl = this.roll(t);
+        const a = Z * Math.cos(rl), b = -Z * Math.sin(rl), cc = Z * Math.sin(rl), d = Z * Math.cos(rl);
+        return [a, b, cc, d, c.cx - (a * c.cx + b * c.cy), c.cy - (cc * c.cx + d * c.cy), Z, rl];
+      },
+    };
+  }
+
+  function anim(spec, t, loop, wind, cam) {
     if (spec == null) return 1;
     if (typeof spec === 'number') return spec;
+    if (spec.wave === 'zoom') return (spec.base || 0) + (spec.amp || 0) * (cam ? cam.I(t) : 0);
     if (spec.wave === 'wind') return (spec.base || 0) + (spec.amp || 0) * (wind ? wind.Gn(t) : 0);
     if (spec.wave === 'rest') {
       const d = Math.min(t, loop - t), h = spec.hold || 0;
@@ -178,16 +219,48 @@ void main(){
 }`);
     const pI = program(`#version 300 es
 layout(location=0) in vec2 aCorner;
-uniform vec4 uRect; uniform vec2 uScene;
+uniform vec4 uRect; uniform vec2 uScene; uniform vec4 uXf; uniform vec2 uXt;
 out vec2 vUV;
 void main(){
   vec2 wp = uRect.xy + aCorner * uRect.zw;
+  wp = vec2(uXf.x * wp.x + uXf.y * wp.y, uXf.z * wp.x + uXf.w * wp.y) + uXt;
   vUV = aCorner;
   gl_Position = vec4(wp.x / uScene.x * 2.0 - 1.0, 1.0 - wp.y / uScene.y * 2.0, 0.0, 1.0);
 }`, `#version 300 es
 precision highp float;
 in vec2 vUV; uniform sampler2D uTex; uniform float uAlpha; out vec4 o;
 void main(){ o = texture(uTex, vUV) * uAlpha; }`);
+    const pV = program(`#version 300 es
+layout(location=0) in vec2 aCorner;
+uniform vec2 uScene;
+out vec2 vP;
+void main(){ vP = aCorner * uScene; gl_Position = vec4(aCorner.x * 2.0 - 1.0, 1.0 - aCorner.y * 2.0, 0.0, 1.0); }`, `#version 300 es
+precision highp float;
+in vec2 vP; out vec4 o;
+uniform sampler2D uTex; uniform vec2 uTexSize, uTexC, uC, uScene; uniform float uUp;
+uniform float uZoom, uRoll, uRot, uTwist, uR0, uArc, uArcTw, uZb, uCa, uVig, uExp;
+vec3 samp(float r, float a){ return texture(uTex, (uTexC + uUp * r * vec2(cos(a), sin(a))) / uTexSize).rgb; }
+void main(){
+  vec2 d = (vP - uC) / uZoom;
+  float cr = cos(uRoll), sr = sin(uRoll);
+  d = vec2(cr * d.x + sr * d.y, -sr * d.x + cr * d.y);
+  float r = length(d), th = atan(d.y, d.x);
+  float tw = exp(-r / uR0);
+  float base = th - (uRot + uTwist * tw);
+  float arc = uArc + uArcTw * tw;
+  vec3 acc = vec3(0.0); float ws = 0.0;
+  for (int i = 0; i < 16; i++) {
+    float f = float(i) / 15.0, w = 1.0 - 0.6 * f;
+    acc += samp(r * (1.0 + uZb * f), base + arc * f) * w; ws += w;
+  }
+  vec3 col = acc / ws;
+  float ca = uCa * length(vP - uC) / uScene.y;
+  col.r = mix(col.r, samp(r * (1.0 + ca), base).r, 0.6);
+  col.b = mix(col.b, samp(r * (1.0 - ca), base).b, 0.6);
+  vec2 q = (vP / uScene - 0.5) * 2.0;
+  col *= uExp * (1.0 - uVig * smoothstep(0.45, 1.5, length(q)));
+  o = vec4(col, 1.0);
+}`);
 
     const quad = (pts) => {
       const b = gl.createBuffer();
@@ -223,7 +296,10 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
     let instCap = 0;
 
     const uP = { scene: gl.getUniformLocation(pP, 'uScene'), px: gl.getUniformLocation(pP, 'uPx') };
-    const uI = { rect: gl.getUniformLocation(pI, 'uRect'), scene: gl.getUniformLocation(pI, 'uScene'), tex: gl.getUniformLocation(pI, 'uTex'), alpha: gl.getUniformLocation(pI, 'uAlpha') };
+    const uI = { rect: gl.getUniformLocation(pI, 'uRect'), scene: gl.getUniformLocation(pI, 'uScene'), tex: gl.getUniformLocation(pI, 'uTex'), alpha: gl.getUniformLocation(pI, 'uAlpha'),
+      xf: gl.getUniformLocation(pI, 'uXf'), xt: gl.getUniformLocation(pI, 'uXt') };
+    const uV = {};
+    for (const n of ['uTex', 'uTexSize', 'uTexC', 'uC', 'uScene', 'uUp', 'uZoom', 'uRoll', 'uRot', 'uTwist', 'uR0', 'uArc', 'uArcTw', 'uZb', 'uCa', 'uVig', 'uExp']) uV[n] = gl.getUniformLocation(pV, n);
 
     const blend = (mode) => {
       if (mode === 'lighter') gl.blendFunc(gl.ONE, gl.ONE);
@@ -249,7 +325,7 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.enable(gl.BLEND);
       },
-      image(layer, alpha) {
+      image(layer, alpha, xf) {
         gl.useProgram(pI);
         gl.bindVertexArray(vaoI);
         blend(layer.blend);
@@ -259,6 +335,24 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
         gl.uniform1f(uI.alpha, alpha);
         gl.uniform2f(uI.scene, scene.width, scene.height);
         gl.uniform4f(uI.rect, layer.x || 0, layer.y || 0, layer.w || layer._img.width, layer.h || layer._img.height);
+        const m = xf || [1, 0, 0, 1, 0, 0];
+        gl.uniform4f(uI.xf, m[0], m[1], m[2], m[3]);
+        gl.uniform2f(uI.xt, m[4], m[5]);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      },
+      vortex(layer, v) {
+        gl.useProgram(pV);
+        gl.bindVertexArray(vaoI);
+        gl.blendFunc(gl.ONE, gl.ZERO);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, layer._tex);
+        gl.uniform1i(uV.uTex, 0);
+        gl.uniform2f(uV.uTexSize, layer._img.width, layer._img.height);
+        gl.uniform2f(uV.uTexC, layer.texC[0], layer.texC[1]);
+        gl.uniform2f(uV.uC, v.cx, v.cy);
+        gl.uniform2f(uV.uScene, scene.width, scene.height);
+        gl.uniform1f(uV.uUp, layer.up || 1);
+        for (const k of ['uZoom', 'uRoll', 'uRot', 'uTwist', 'uR0', 'uArc', 'uArcTw', 'uZb', 'uCa', 'uVig', 'uExp']) gl.uniform1f(uV[k], v[k]);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       },
       instances(buf, count, mode) {
@@ -312,10 +406,23 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, scene.width, scene.height);
       },
-      image(layer, alpha) {
+      image(layer, alpha, xf) {
         ctx.globalCompositeOperation = layer.blend || 'source-over';
         ctx.globalAlpha = Math.min(1, alpha);
+        if (xf) ctx.setTransform(scale * xf[0], scale * xf[2], scale * xf[1], scale * xf[3], scale * xf[4], scale * xf[5]);
         ctx.drawImage(layer._img, layer.x || 0, layer.y || 0, layer.w || layer._img.width, layer.h || layer._img.height);
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      },
+      vortex(layer, v) {  // fallback: rigid swirl + zoom, no twist or blur
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        ctx.translate(v.cx, v.cy);
+        ctx.scale(v.uZoom, v.uZoom);
+        ctx.rotate(v.uRoll + v.uRot);
+        const up = layer.up || 1;
+        ctx.drawImage(layer._img, -layer.texC[0] / up, -layer.texC[1] / up, layer._img.width / up, layer._img.height / up);
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
       },
       instances(buf, count, mode) {
         ctx.globalCompositeOperation = mode || 'source-over';
@@ -360,6 +467,7 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
     canvas.height = Math.round(scene.height * scale);
     const loop = scene.loop;
     const wind = makeWind(scene.wind);
+    const cam = makeCamera(scene.camera, loop);
     let R = null;
     if (opts.renderer !== 'canvas2d') {
       try {
@@ -373,7 +481,7 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
 
     let maxInst = 0;
     for (const layer of scene.layers) {
-      if (layer.type === 'image') {
+      if (layer.type === 'image' || layer.type === 'vortex') {
         layer._img = await loadImage(layer.src);
         layer._tex = R.texture(layer._img);
       }
@@ -439,19 +547,64 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
       }
     }
 
+    function orbit(layer, tt, la) {
+      const shape = SHAPES[layer.shape || 'square'];
+      const sh = cam.shutter, Ar = cam.Arate(tt), A0 = cam.A(tt);
+      const [c0, c1] = layer.core || [0, 0];
+      for (const it of layer.items) {
+        const ph = frac(tt / it.l + it.p);
+        const s = ph * it.l;
+        let a = it.a * la;
+        if (it.fi) a *= smooth(0, it.fi, ph);
+        if (it.fo) a *= 1 - smooth(1 - it.fo, 1, ph);
+        const m = it.m == null ? 1 : it.m;
+        const rad = it.r * Math.exp(-(it.k || 0) * s);
+        if (c1 > c0) a *= smooth(c0, c1, rad);
+        if (a <= 0.004) continue;
+        const ang = it.th + m * (A0 - cam.A(tt - s)) + (it.w || 0) * s;
+        const vt = rad * (m * Ar + (it.w || 0)), vr = rad * (it.k || 0);
+        const st = it.st == null ? 1 : it.st;
+        push(cam.cx + rad * Math.cos(ang), cam.cy + rad * Math.sin(ang),
+             it.sz + vr * sh * st * 0.5, it.sz + vt * sh * st * 0.5, ang, shape, it._r, it._g, it._b, Math.min(1, a));
+      }
+    }
+
+    function applyCamera(layer, tt) {
+      const [a, b, c, d, tx, ty, Z, rl] = cam.xf(tt, layer.parallax);
+      for (let n = 0; n < count; n++) {
+        const o = n * 10, x = buf[o], y = buf[o + 1];
+        buf[o] = a * x + b * y + tx;
+        buf[o + 1] = c * x + d * y + ty;
+        buf[o + 2] *= Z;
+        buf[o + 3] *= Z;
+        buf[o + 4] += rl;
+      }
+    }
+
     function render(t) {
       const tt = frac(t / loop) * loop;
       R.begin();
       for (const layer of scene.layers) {
         if (layer.off) continue;
-        const la = anim(layer.alpha, tt, loop, wind);
+        const la = anim(layer.alpha, tt, loop, wind, cam);
         if (la <= 0.001) continue;
         if (layer.type === 'image') {
-          R.image(layer, Math.min(1, la));
+          R.image(layer, Math.min(1, la), layer.camera && cam ? cam.xf(tt, layer.parallax) : null);
+          continue;
+        }
+        if (layer.type === 'vortex') {
+          const Z = cam.zoom(tt), sh = cam.shutter;
+          R.vortex(layer, {
+            cx: cam.cx, cy: cam.cy, uZoom: Z, uRoll: cam.roll(tt), uRot: cam.A(tt), uTwist: cam.twist(tt),
+            uR0: cam.r0, uArc: cam.Arate(tt) * sh, uArcTw: cam.twistRate(tt) * sh,
+            uZb: (cam.zoomRate(tt) / Z) * sh, uCa: layer.ca || 0, uVig: layer.vignette || 0,
+            uExp: 1 + (layer.gain || 0) * cam.I(tt),
+          });
           continue;
         }
         count = 0;
         if (layer.type === 'particles') particles(layer, tt, la);
+        else if (layer.type === 'orbit') orbit(layer, tt, la);
         else if (layer.type === 'path') {
           const [fi, fo] = layer.fade || [0.1, 0.2];
           const shape = SHAPES[layer.shape || 'glow'];
@@ -463,12 +616,13 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
             push(x, y, it.r, it.r, 0, shape, it._r, it._g, it._b, Math.min(1, a));
           }
         }
+        if (layer.camera && cam) applyCamera(layer, tt);
         R.instances(buf, count, layer.blend);
       }
       R.end();
     }
 
-    return { render, loop, renderer: R.kind, layers: scene.layers, wind };
+    return { render, loop, renderer: R.kind, layers: scene.layers, wind, camera: cam };
   }
 
   window.ArtAnimator = { create };

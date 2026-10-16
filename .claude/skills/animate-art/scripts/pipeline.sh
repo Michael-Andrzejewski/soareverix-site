@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One command from build script to verified MP4.
-#   pipeline.sh <artdir> [fps=60] [seconds=<scene loop>]
+#   pipeline.sh <artdir> [fps=60] [seconds=<scene loop>]      SCALE=1.5 renders above source size
 # Expects <artdir>/build_scene.py and <artdir>/source.* ; writes into <artdir>/out/:
 #   frames/  review/ (metrics + sheets)  <name>.mp4  <name>.poster.png  <name>.html (single file)
 set -euo pipefail
@@ -16,7 +16,7 @@ seconds=${3:-$(python3 -c "import json,re;s=open('$dir/scene.js').read();print(j
 
 echo "== capture ${seconds}s at ${fps} fps"
 rm -rf "$out/frames"
-node "$KIT/capture.mjs" "$dir/index.html" "$out/frames" --fps "$fps" --seconds "$seconds"
+node "$KIT/capture.mjs" "$dir/index.html" "$out/frames" --fps "$fps" --seconds "$seconds" --scale "${SCALE:-1}"
 
 echo "== compare against $src"
 python3 "$KIT/compare.py" --src "$src" --frames "$out/frames" --out "$out/review" --every "$fps" | tail -3

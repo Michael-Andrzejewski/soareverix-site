@@ -301,6 +301,91 @@ def guided_fill(img, hole, lengths=(41, 81, 161, 321), angles=range(0, 180, 15),
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
+def upscale(img, factor=2, sharpen=0.35, sigma=1.2):
+    """Lanczos upscale with a mild unsharp mask, for scenes the camera zooms into."""
+    H, W = img.shape[:2]
+    up = cv2.resize(img, (int(W * factor), int(H * factor)), interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+    if sharpen:
+        blur = cv2.GaussianBlur(up, (0, 0), sigma)
+        up = up + sharpen * (up - blur)
+    return np.clip(up, 0, 255).astype(np.uint8)
+
+
+def polar_outpaint(img, center, radius, n_theta=4096, smooth_rows=3):
+    """Square canvas of side 2*radius centred on `center`, original pixels kept inside
+    the source rectangle, the rest continued around each ring.
+
+    For rotating a picture of concentric structure (a vortex, a tunnel, a flower): along
+    every circle around the centre, the arcs the source covers are reflected (ping-pong)
+    across the gaps, blending from both ends, so the rings carry on with their own
+    texture. `center` should be whole pixels. Returns (canvas uint8, canvas centre (x, y),
+    (x0, y0) where the source's top-left corner sits on the canvas).
+    """
+    H, W = img.shape[:2]
+    cx, cy = center
+    R = int(np.ceil(radius))
+    nr = R + 2
+    th = np.arange(n_theta) * 2 * np.pi / n_theta
+    rr = np.arange(nr, dtype=np.float32)
+    mapx = (cx + rr[:, None] * np.cos(th)[None, :]).astype(np.float32)
+    mapy = (cy + rr[:, None] * np.sin(th)[None, :]).astype(np.float32)
+    P = cv2.remap(img.astype(np.float32), mapx, mapy, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    valid = (mapx >= 0) & (mapx <= W - 1) & (mapy >= 0) & (mapy <= H - 1)
+    filled = P.copy()
+
+    def pingpong(j, n):
+        if n <= 1:
+            return np.zeros_like(j)
+        m = j % (2 * (n - 1))
+        return np.where(m < n, m, 2 * (n - 1) - m)
+
+    for ri in range(nr):
+        v = valid[ri]
+        if v.all():
+            continue
+        if not v.any():  # past every corner: carry the last ring outward
+            filled[ri] = filled[ri - 1]
+            continue
+        start = int(np.argmax(v))  # rotate the ring so it begins on a covered sample
+        vv = np.roll(v, -start)
+        row = np.roll(P[ri], -start, axis=0)
+        out = row.copy()
+        n = len(vv)
+        runs, i = [], 0
+        while i < n:
+            j = i
+            while j < n and vv[j] == vv[i]:
+                j += 1
+            runs.append((bool(vv[i]), i, j))
+            i = j
+        for k, (isv, a0, b0) in enumerate(runs):
+            if isv:
+                continue
+            g = b0 - a0
+            left, right = runs[k - 1], runs[(k + 1) % len(runs)]
+            lidx = left[2] - 1 - pingpong(np.arange(g), left[2] - left[1])
+            ridx = right[1] + pingpong(np.arange(g)[::-1], right[2] - right[1])
+            w = ((np.arange(g) + 0.5) / g)[:, None]
+            out[a0:b0] = row[lidx % n] * (1 - w) + row[ridx % n] * w
+        filled[ri] = np.roll(out, start, axis=0)
+    if smooth_rows > 1:  # soften row-to-row jumps in the synthesised part only
+        sm = cv2.blur(filled, (1, smooth_rows))
+        filled = np.where(valid[..., None], filled, sm)
+    # back to cartesian
+    S = 2 * R
+    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
+    dx, dy = xx - R, yy - R
+    pr = np.sqrt(dx * dx + dy * dy)
+    pt = (np.arctan2(dy, dx) % (2 * np.pi)) * n_theta / (2 * np.pi)
+    Fp = np.concatenate([filled, filled[:, :1]], axis=1)  # wrap theta
+    synth = cv2.remap(Fp, pt, pr, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+    # paste the untouched source back where it exists (centre must be whole pixels)
+    x0, y0 = int(round(R - cx)), int(round(R - cy))
+    canvas = synth.copy()
+    canvas[y0:y0 + H, x0:x0 + W] = img.astype(np.float32)
+    return np.clip(canvas, 0, 255).astype(np.uint8), (float(R), float(R)), (x0, y0)
+
+
 # ---------------------------------------------------------------- overlays
 def glow_rgba(mask, color, sigmas=(6, 24), weights=(0.6, 0.4), gain=1.0):
     """Soft glow from a binary emission mask -> RGBA uint8 (colour fixed, alpha = glow)."""
