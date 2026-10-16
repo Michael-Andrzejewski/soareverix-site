@@ -27,8 +27,14 @@ Unless the request says gentle, aim for clearly visible motion:
   particles around it
 - there are thousands of fragments, at several depths (far, faint and slow;
   near, dark and fast)
-- events have rhythm: calm, then gusts of different strengths, then calm
+- events have rhythm: surges of different strengths (calm-then-gust if asked
+  for gusts; a storm that never drops if asked for a seamless storm)
 - light sources respond to the events (glow surges with each gust)
+- get the direction right. Ascension went through "blowing sideways" before
+  the wanted "storm-force wind rising upward around the figure, not diagonal".
+  A rising storm is `Wind(..., dir=(0, -1), sweep="up", ground=H, base=0.75,
+  steady_flutter=0.6)`: the floor never drops, surges rise from the ground up,
+  and sideways motion is only turbulence (sway, waver)
 
 ## What you get
 
@@ -127,13 +133,17 @@ Layers draw back to front. Types:
   - `phase=p`: steady state.
   Set `grow: true` on a layer of crisp shapes so they grow in and shrink away;
   alpha fades turn them grey on bright grounds. Set `bend: {amp, yBot, H, cup}`
-  to sway a whole layer like a plume rooted at yBot.
+  to sway a whole layer like a plume rooted at yBot in a sideways wind, or
+  `waver: {amp, k, wl, yBot, H}` for ripples rising up a smoke column in an
+  updraft. `stretch: 16` with `shape: 'square'` makes thin motion streaks (faint,
+  additive, fast) that show the wind itself.
 - `path`: particles running along a polyline (`k` laps per loop).
 - **Wind**: `wind = ak.Wind(LOOP, gusts=[(strength, peak_s, width_s), ...])`,
   then `scene["wind"] = wind.to_scene()`. A particle with `wd` (px per unit
-  gust-second) is pushed by the integral of the gust since its birth. Gusts sweep
-  left to right at `front` px/s. Python and JS share the same tables, so
-  placement at t = 0 is exact. Keep about 2 s of calm around t = 0.
+  gust-second) is pushed by the integral of the gust since its birth. Gust fronts
+  sweep left to right (`sweep="right"`) or rise from the ground (`sweep="up"`) at
+  `front` px/s. Python and JS share the same tables, so placement at t = 0 is
+  exact. With the rest layer, keep about 2 s of calm around t = 0.
 
 **Turning a textured mass into rising smoke** (the ascension head): cut the mass
 out (`row_span`), unmix it, and rebuild it as a steady-state cloud of thousands
@@ -144,13 +154,15 @@ dark glow puffs under it to keep the core smooth. Calibrate the count: render
 only plate + cloud (`capture.mjs --off ...`) and match the region's mean
 luminance to the source (here 34 vs 35).
 
-**Exact match at the loop point**: put `ak.rest_layer(ak.file_data_uri(source))`
+**Exact match at the loop point** (optional): put `ak.rest_layer(ak.file_data_uri(source))`
 on top. It shows the untouched source (the file's own bytes, never re-encoded)
 within `hold` s of the loop point and eases out over `fade` s. Schedule the
 calm there (no gusts within ~2 s), so the picture wakes up, storms, and settles
 back into the exact original. Verify with a max-abs-diff of frame 0 against the
 decoded source: it must be 0. An MP4 cannot be bit-exact (4:2:0 compression);
-expect about 44 dB PSNR there at CRF 18.
+expect about 44 dB PSNR there at CRF 18. The cost: the motion dies down and
+dissolves into the still every loop, which reads as a reset. For a continuous
+storm leave it off (ascension does, `REST = False`); the loop is still seamless.
 
 Seamless loop rules: every `life` and every wave `k` must divide `loop` (12 s
 works well: lives of 2, 3, 4, 6 and 12 s). Sample colours from the source;
@@ -170,6 +182,9 @@ engine and the titled viewer page.
 - Check every consecutive frame step: the maximum should be near the median (no
   pops), and the seam step (last frame to first) should be typical. `pipeline.sh`
   prints the seam check.
+- Check the direction of motion with a long exposure: average 0.5 s of frames
+  (`capture.mjs --fps 60 --seconds 0.5 --start 4`, then mean them). Every moving
+  thing leaves a trail; in an updraft they must all be vertical.
 - `screenshot.mjs page.html out.png --w 1440 --h 900 --dpr 2` and
   `--w 390 --h 844 --dpr 2` check the viewer page and horizontal overflow.
 - Render one frame with `?renderer=canvas2d` and compare it with WebGL2 (mean
@@ -178,8 +193,12 @@ engine and the titled viewer page.
   with the PNG frames: mean RGB shift under 0.5.
 
 ### 6. Deliver
-- MP4: `encode.sh frames out.mp4 60 18`. Busy scenes are large at CRF 15
-  (ascension v2: 20 MB; 13.6 MB at CRF 18).
+- MP4: `encode.sh frames out.mp4 60 20`. Busy scenes are large at CRF 15
+  (ascension v3: 26 MB; 14.5 MB at CRF 20).
+- For players that do not loop, chain the loop:
+  `ffmpeg -stream_loop 2 -i out.mp4 -c copy -movflags +faststart out-36s.mp4`.
+  The decoded step at the join should equal the step at an internal keyframe
+  (ascension: 5.87 vs 5.88), so the join is invisible.
 - Web: `bundle.py index.html page.html --fragment`, then publish with the
   Artifact tool (republish the same file path to keep the URL). Send the MP4
   and a labelled comparison sheet with SendUserFile.
@@ -237,9 +256,10 @@ templates/build_scene_starter.py  zero-edit starting point for a new picture (wi
 
 The source is 827x1026. 67 diamonds are set loose and 10 components stay in the
 plate. The triangle was fitted to 0.06 px median residual and is equilateral.
-The head plume is 6,000 diamonds plus 70 soft core puffs. In total there are 20
-layers and about 9,600 particles on a 12 s loop with gusts at 2.6, 5.4 and 7.8 s.
-Frame 0 is identical to the source (0 of 848,502 pixels differ), and the loop
-rests on the exact original from 11.85 s to 0.15 s. Mid-storm SSIM runs 0.79 to
-0.84. The largest frame step is 3.4 against a 2.6 median. The MP4 is about 13 MB at
-CRF 18, 60 fps, and its frame 0 decodes at 44 dB PSNR against the source.
+The head plume is 6,000 diamonds plus 70 soft core puffs. In total there are 21
+layers and about 9,800 particles on a 12 s loop in a never-calm updraft with
+surges at 1.2, 4.3, 7.2 and 10.0 s.
+SSIM against the source runs 0.76 to 0.78 (busy storm). The seam step is 4.39
+against a 4.49 median and the largest step is 5.53, so there are no pops. The MP4
+is 14.5 MB at CRF 20, 60 fps. With the rest layer on (v2), frame 0 was identical
+to the source (0 of 848,502 pixels differ).

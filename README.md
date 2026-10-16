@@ -41,4 +41,4 @@ Every push to main deploys automatically.
 
 ## Art
 
-`art/ascension/` is an animated version of the glowing-triangle figure piece: the head tears into rising smoke and diamond fragments in a gusting wind (open `art/ascension/index.html`; hold the button or press O to compare with the original). It is built by `art/ascension/build_scene.py` with the reusable `animate-art` toolkit in `.claude/skills/animate-art/`; see its `SKILL.md` for the process. `.claude/skills/animate-art/scripts/pipeline.sh art/ascension` regenerates the MP4.
+`art/ascension/` is an animated version of the glowing-triangle figure piece: the head rises as smoke and diamond fragments climb around the figure in a storm-force updraft, in a seamless 12 s loop (open `art/ascension/index.html`; hold the button or press O to compare with the original). It is built by `art/ascension/build_scene.py` with the reusable `animate-art` toolkit in `.claude/skills/animate-art/`; see its `SKILL.md` for the process. `.claude/skills/animate-art/scripts/pipeline.sh art/ascension` regenerates the MP4.

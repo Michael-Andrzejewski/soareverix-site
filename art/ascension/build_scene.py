@@ -4,31 +4,33 @@
     python3 art/ascension/build_scene.py      # writes scene.js, animator.js, index.html, debug/
     .claude/skills/animate-art/scripts/pipeline.sh art/ascension   # + frames, review, mp4
 
-The piece is driven by a wind field: three gusts per 12 s loop sweep left to right
-(calm at t = 0, so the first frame is the original). Layers, back to front:
+The piece is driven by a storm-force updraft: the wind never drops, and four uneven
+surges per 12 s loop rise from the ground up through the figure. Everything climbs; the
+only sideways motion is turbulence. The loop is continuous (no calm, no reset), so it
+repeats seamlessly. Layers, back to front:
   plate           source with the free diamonds and the head plume cut out and refilled
   bg-shimmer      mosaic tiles breathing in the purple field
   far-fragments   big faint diamonds drifting up in the distance (depth)
-  tri-glow        the triangle's halo, surging with every gust
+  tri-glow        the triangle's halo, surging with every updraft pulse
   tri-sweep       light running around the band
   ground-shimmer  tiles flickering in the pile at the bottom
   body-twinkle    granular specks across the figure
   heart           chest triangle heartbeat (lub-dub every 3 s) + motes
   plume-core      soft dark puffs keeping the head's middle a smooth deep navy
   plume           the head itself, rebuilt as a churning cloud of its own diamonds that
-                  rise continuously, sway as one with each gust and climb off the top
+                  rise continuously, ripple like a smoke column and climb off the top
   smoke           soft dark puffs torn off the plume
   trail           specks + glints racing up the zigzag into the apex
-  ground-lift     tiles ripped off the pile by gusts
+  ground-lift     tiles ripped off the pile by the updraft
   shed            specks torn off shoulders and arms
   dissolve        fragments stripped off the head's edges
   drift           every diamond the artist drew loose, now carried by the wind; at
                   t = 0 each sits exactly where the artist put it
   sparks          light motes thrown up from the triangle and the heart
-  debris          a few large dark fragments close to the camera, crossing in gusts
-  rest            the untouched source (the file's own bytes) at the loop point: the loop
-                  wakes from the exact original and settles back into it, so frame 0 is
-                  the picture bit for bit
+  updraft         faint light streaks racing up around the figure: the wind itself
+  debris          large dark fragments close to the camera, shooting up from below
+Optional (REST = True): the untouched source at the loop point, so every loop passes
+exactly through the original picture. Off here: it reads as the storm resetting.
 """
 import os
 import sys
@@ -61,8 +63,9 @@ TRI_INNER = [(415.54, 149.35), (679.12, 605.78), (151.89, 605.83)]
 TRI_CENTER = [tuple((np.array(o) + np.array(i)) / 2) for o, i in zip(TRI_OUTER, TRI_INNER)]
 TRI_CENTER = [(float(x), float(y)) for x, y in TRI_CENTER + TRI_CENTER[:1]]
 
-# Wind: (strength, peak time s, width s). Calm from ~10.2 s through 0.5 s.
-GUSTS = [(0.6, 2.6, 0.7), (0.85, 5.4, 0.6), (1.0, 7.8, 0.8)]
+# Updraft surges on top of a storm that never drops: (strength, peak time s, width s).
+GUSTS = [(0.5, 1.2, 0.55), (0.8, 4.3, 0.7), (0.6, 7.2, 0.6), (0.9, 10.0, 0.75)]
+REST = False         # True: every loop passes exactly through the original (reads as a reset)
 PLUME_N = 6000       # diamonds in the head cloud (calibrated so its darkness matches the source)
 
 
@@ -72,7 +75,8 @@ def main():
     H, W = img.shape[:2]
     L = ak.luma(img)
     yy, xx = np.mgrid[0:H, 0:W]
-    wind = ak.Wind(LOOP, GUSTS, base=0.12, dir=(1.0, -0.3), front=520.0)
+    wind = ak.Wind(LOOP, GUSTS, base=0.75, dir=(0.0, -1.0), front=900.0, sweep="up", ground=float(H),
+                   steady_flutter=0.6)
 
     # ------------------------------------------------------------ masks
     ink_abs, ink = ak.ink_masks(img, ink_lum=42, rel=0.55, bg_kernel=81)
@@ -101,7 +105,7 @@ def main():
     ink_map = np.zeros_like(img, np.float32)
     alpha_map = np.zeros((H, W), np.float32)
     ink_map[span], alpha_map[span] = head_ink, head_alpha
-    BEND = {"amp": 55.0, "yBot": float(PLUME_BOT), "H": float(PLUME_BOT - PLUME_TOP), "cup": 380.0}
+    WAVER = {"amp": 9.0, "k": 3, "wl": 170.0, "yBot": float(PLUME_BOT), "H": float(PLUME_BOT - PLUME_TOP)}
 
     front = cv2.GaussianBlur((mass | keep).astype(np.float32), (0, 0), 2.0)
     tri_glow = ak.glow_rgba(band, (190, 165, 255), sigmas=(6, 18, 50), weights=(0.25, 0.4, 0.4), gain=1.3)
@@ -185,7 +189,7 @@ def main():
                                 vy=-rng.uniform(12, 26) * (1 + 0.5 * hup), life=float(rng.choice([3.0, 4.0])),
                                 phase=rng.random(), fade_in=0.25, fade_out=0.45, wd=rng.uniform(8, 20),
                                 sway=rng.uniform(2, 5), sway_cycles=1, sway_phase=rng.random(), **W_))
-    layers.append({"id": "plume-core", "type": "particles", "shape": "glow", "bend": BEND, "items": core})
+    layers.append({"id": "plume-core", "type": "particles", "shape": "glow", "waver": WAVER, "items": core})
     pts = ak.sample_points(zone, PLUME_N, rng, weight=alpha_map ** 1.6)
     items = []
     for x, y in pts:
@@ -202,7 +206,7 @@ def main():
                                  fade_in=0.12, fade_out=0.45, shrink=1.0, wd=rng.uniform(10, 28) * (1 + 2 * hup),
                                  spin=rng.uniform(-0.8, 0.8), sway=rng.uniform(1, 3), sway_cycles=1,
                                  sway_phase=rng.random(), **W_))
-    layers.append({"id": "plume", "type": "particles", "shape": "diamond", "grow": True, "bend": BEND, "items": items})
+    layers.append({"id": "plume", "type": "particles", "shape": "diamond", "grow": True, "waver": WAVER, "items": items})
 
     # ------------------------------------------------------------ smoke puffs torn off the plume
     edge = ak.edge_band(head, 10)
@@ -215,7 +219,7 @@ def main():
                                  vy=-rng.uniform(25, 55), ay=-rng.uniform(5, 20), life=float(rng.choice([3.0, 4.0])),
                                  born_at=tb, fade_in=0.15, fade_out=0.55, grow=1.3,
                                  wd=rng.uniform(60, 110), sway=rng.uniform(3, 8), sway_cycles=1, sway_phase=rng.random(), **W_))
-    layers.append({"id": "smoke", "type": "particles", "shape": "glow", "bend": BEND, "items": items})
+    layers.append({"id": "smoke", "type": "particles", "shape": "glow", "waver": WAVER, "items": items})
 
     # ------------------------------------------------------------ zigzag trail flow
     trail_items = [{"k": int(rng.choice([2, 3])), "p": float(i / 40 + rng.random() * 0.02), "r": float(rng.uniform(1.4, 3.2)),
@@ -234,11 +238,11 @@ def main():
         for (x, y), c, tb in zip(pts, cols, births):
             r = rng.uniform(*big) if rng.random() < big_frac else rmin + (rmax - rmin) * rng.random() ** 2
             out.append(ak.particle(x, y, r, np.minimum(c, 90) * darken, alpha=rng.uniform(0.85, 1.0),
-                                   vx=np.sign(x - CX + rng.normal(0, 8)) * rng.uniform(2, 14), vy=-rng.uniform(*vy),
+                                   vx=np.sign(x - CX + rng.normal(0, 8)) * rng.uniform(0, 6), vy=-rng.uniform(*vy),
                                    ay=-rng.uniform(*ay), life=float(rng.choice(lives)), born_at=tb,
                                    fade_in=0.08, fade_out=fo, shrink=1.0, wd=rng.uniform(*wd),
                                    spin=rng.uniform(-spin, spin), wr=0.004,
-                                   sway=rng.uniform(2, 6), sway_cycles=1, sway_phase=rng.random(), **W_))
+                                   sway=rng.uniform(3, 9), sway_cycles=float(rng.choice([1, 2])), sway_phase=rng.random(), **W_))
         return {"id": layer_id, "type": "particles", "shape": "diamond", "grow": True, "items": out}
 
     # ------------------------------------------------------------ ground lift / shoulder shed / head dissolve
@@ -250,7 +254,7 @@ def main():
     wgt = 1.0 + 2.0 * np.clip((430 - yy) / 180.0, 0, 1)
     dissolve = fragments("dissolve", head_edge, 900, 1.0, 4.5, (30, 70), (10, 30), (50, 110), [3.0, 4.0, 6.0],
                          1.5, 0.3, weight=wgt, big_frac=0.07, big=(4.5, 8.0), spin=3.0)
-    dissolve["bend"] = BEND
+    dissolve["waver"] = WAVER
     layers.append(dissolve)
 
     # ------------------------------------------------------------ drift: the artist's own diamonds, in the wind
@@ -258,7 +262,7 @@ def main():
     for s in shapes:
         x, y, r = s["x"], s["y"], s["r"]
         slow = 0.55 if r >= 9 else 1.0
-        items.append(ak.particle(x, y, r, s["color"], alpha=1.0, vx=np.sign(x - CX) * rng.uniform(1, 6) * slow,
+        items.append(ak.particle(x, y, r, s["color"], alpha=1.0, vx=np.sign(x - CX) * rng.uniform(0, 3) * slow,
                                  vy=-rng.uniform(16, 36) * slow, life=6.0 if r < 9 else LOOP,
                                  fade_in=0.12, fade_out=0.25, shrink=1.0, wd=rng.uniform(25, 55) * slow,
                                  spin=rng.uniform(-0.5, 0.5), wr=0.003,
@@ -279,19 +283,34 @@ def main():
                                  sway=rng.uniform(2, 6), sway_cycles=2, sway_phase=rng.random(), **W_))
     layers.append({"id": "sparks", "type": "particles", "shape": "glow", "blend": "lighter", "items": items})
 
-    # ------------------------------------------------------------ near-camera debris
+    # ------------------------------------------------------------ updraft streaks: the wind itself
     items = []
-    births = wind.gust_times(rng, 36, power=3.0, floor=0.02)
+    for _ in range(150):
+        side = rng.random()
+        x = rng.uniform(190, 330) if side < 0.4 else rng.uniform(500, 650) if side < 0.8 else rng.uniform(60, 770)
+        y = rng.uniform(150, H + 80)
+        items.append(ak.particle(x, y, rng.uniform(0.45, 0.85), (196, 178, 255), alpha=rng.uniform(0.1, 0.22),
+                                 vy=-rng.uniform(260, 420), life=float(rng.choice([1.0, 1.5])), phase=rng.random(),
+                                 fade_in=0.25, fade_out=0.45, wd=40.0, sway=rng.uniform(1, 4), sway_cycles=1,
+                                 sway_phase=rng.random(), **W_))
+    layers.append({"id": "updraft", "type": "particles", "shape": "square", "blend": "lighter", "stretch": 16,
+                   "items": items})
+
+    # ------------------------------------------------------------ near-camera debris, shooting up from below
+    items = []
+    births = wind.gust_times(rng, 44, power=2.0, floor=0.1)
     for tb in births:
-        x, y = rng.uniform(-80, 420), rng.uniform(520, H + 60)
-        items.append(ak.particle(x, y, rng.uniform(6, 17), (12, 8, 32), alpha=0.96, vx=rng.uniform(50, 120),
-                                 vy=-rng.uniform(50, 110), ay=-rng.uniform(0, 20), life=float(rng.choice([3.0, 4.0])),
+        x, y = rng.uniform(-20, W + 20), rng.uniform(H * 0.55, H + 60)
+        items.append(ak.particle(x, y, rng.uniform(6, 17), (12, 8, 32), alpha=0.96, vx=rng.normal(0, 12),
+                                 vy=-rng.uniform(90, 170), ay=-rng.uniform(0, 30), life=float(rng.choice([3.0, 4.0])),
                                  born_at=tb, fade_in=0.06, fade_out=0.3, shrink=1.0, wd=rng.uniform(100, 180),
-                                 spin=rng.uniform(-3, 3), wr=0.003, **W_))
+                                 spin=rng.uniform(-3, 3), wr=0.003, sway=rng.uniform(4, 12), sway_cycles=1,
+                                 sway_phase=rng.random(), **W_))
     layers.append({"id": "debris", "type": "particles", "shape": "diamond", "grow": True, "items": items})
 
     source_uri = ak.file_data_uri(os.path.join(HERE, "source.webp"))
-    layers.append(ak.rest_layer(source_uri, hold=0.15, fade=0.85))
+    if REST:
+        layers.append(ak.rest_layer(source_uri, hold=0.15, fade=0.85))
     scene = {"title": "Ascension", "width": W, "height": H, "loop": LOOP, "wind": wind.to_scene(),
              "source": source_uri, "layers": layers}
     ak.write_scene_js(os.path.join(HERE, "scene.js"), scene)

@@ -7,16 +7,20 @@
  * Scene format (built by artkit.py):
  *   { width, height, loop, wind?, layers: [ ... ] }
  * wind  { T, G: [n samples of gust strength over one loop], F: [running integral of G], FT,
- *         gmin, gmax, dir: [dx, dy], front: px/s }
- *       Gusts sweep left to right at `front` px/s. A particle with susceptibility wd is pushed
- *       by wd * (F(now) - F(birth)) along dir, so gusts bend paths and the loop stays exact.
+ *         gmin, gmax, dir: [dx, dy], front: px/s, sweep: 'right'|'up', ground }
+ *       Gust fronts travel at `front` px/s, left to right (sweep 'right') or rising from y =
+ *       ground (sweep 'up', an updraft). A particle with susceptibility wd is pushed by
+ *       wd * (F(now) - F(birth)) along dir, so gusts bend paths and the loop stays exact.
  * Layer types:
  *   image      { src, blend?, alpha?: Anim, x?, y?, w?, h? }
  *   particles  { shape: 'diamond'|'square'|'circle'|'glow', blend?, alpha?: Anim, grow?: bool, items: [P] }
  *              grow: born by growing from a point, die by shrinking (sh), short alpha fades at the ends.
  *              bend: { amp, yBot, H, cup } sways the whole layer with the gusts like a plume rooted
- *              at yBot: offset amp * h^1.6 * (G - gmin), h = height above yBot / H, the gust
- *              reaching height h after (yBot - y) / cup seconds.
+ *              at yBot: offset amp * h^1.6 * (G - gmin) along wind.dir.x, h = height above yBot / H,
+ *              the gust reaching height h after (yBot - y) / cup seconds.
+ *              waver: { amp, k, wl, yBot, H } ripples rising up the layer like a flame or smoke
+ *              column: x offset amp * h * sin(2pi (k t/loop + y/wl)), k waves per loop.
+ *              stretch: draw each particle stretch times taller than wide (motion streaks).
  *   path       { points: [[x,y]...], shape, blend?, alpha?: Anim, fade: [fi, fo], items: [{k, p, r, c, a}] }
  * Anim  { base, amp, k, p, wave: 'sin01'|'beat'|'sin'|'wind'|'rest' }   value = base + amp * wave(k*t/loop + p)
  *       'wind' is the normalised gust strength at time t (ignores k and p).
@@ -50,6 +54,9 @@
       dir: w.dir,
       front: w.front,
       gmin,
+      delay(x, y) {
+        return w.sweep === 'up' ? ((w.ground || 0) - y) / w.front : x / w.front;
+      },
       G(t) {
         const x = frac(t / T) * n, i = Math.floor(x), f = x - i;
         return G[i % n] * (1 - f) + G[(i + 1) % n] * f;
@@ -392,6 +399,8 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
       const grow = !!layer.grow;
       const k = grow ? 0.3 : 1;
       const bend = wind && layer.bend;
+      const wav = layer.waver;
+      const stretch = layer.stretch || 1;
       for (const it of layer.items) {
         const ph = frac(tt / it.l + it.p);
         const s = ph * it.l;
@@ -413,8 +422,12 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
         }
         if (bend) {
           const h = Math.min(1.6, Math.max(0, (bend.yBot - y) / bend.H));
-          const g = wind.G(tt - x / wind.front - (bend.yBot - y) / (bend.cup || 400)) - wind.gmin;
+          const g = wind.G(tt - wind.delay(x, y) - (bend.yBot - y) / (bend.cup || 400)) - wind.gmin;
           x += bend.amp * Math.pow(h, 1.6) * g * wind.dir[0];
+        }
+        if (wav) {
+          const h = Math.min(1.6, Math.max(0, (wav.yBot - y) / wav.H));
+          x += wav.amp * h * Math.sin(TAU * (((wav.k || 1) * tt) / loop + y / (wav.wl || 200)));
         }
         if (it.spin) ang += it.spin * s;
         let r = it.r;
@@ -422,7 +435,7 @@ void main(){ o = texture(uTex, vUV) * uAlpha; }`);
         if (it.sh && it.fo) r *= 1 - it.sh * smooth(1 - it.fo, 1, ph);
         if (grow && it.fi) r *= smooth(0, it.fi, ph);
         if (r < 0.12) continue;
-        push(x, y, r, r, ang, shape, it._r, it._g, it._b, Math.min(1, a));
+        push(x, y, r, r * stretch, ang, shape, it._r, it._g, it._b, Math.min(1, a));
       }
     }
 

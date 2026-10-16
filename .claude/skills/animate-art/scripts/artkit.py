@@ -371,11 +371,15 @@ class Wind:
 
     G(t): gust strength. F(t): its running integral. A particle with susceptibility wd
     born at age s ago is displaced wd * (F(t - wt) - F(t - wt - s)) along `dir`, where
-    wt = x / front delays the gust by how far right it sits (gusts sweep left to right).
+    wt = delay(x, y) is when the gust front reaches it:
+      sweep='right'  fronts cross the frame left to right (wt = x / front)
+      sweep='up'     an updraft: fronts rise from y = ground (wt = (ground - y) / front)
+    base sets the floor: small for gusts out of calm air, high for a storm that never
+    drops. steady_flutter adds buffeting to the floor too, not only inside gusts.
     """
 
     def __init__(self, loop, gusts, base=0.12, flutter=((0.22, 17, 0.4), (0.12, 29, 0.0)),
-                 dir=(1.0, -0.28), front=520.0, n=2400):
+                 dir=(1.0, -0.28), front=520.0, n=2400, sweep="right", ground=0.0, steady_flutter=0.0):
         self.T, self.n = float(loop), int(n)
         t = np.arange(n) * self.T / n
         env = np.zeros(n)
@@ -383,8 +387,8 @@ class Wind:
             for m in (-1, 0, 1):
                 env += amp * np.exp(-0.5 * ((t - mu - m * self.T) / sig) ** 2)
         g = base + env
-        for amp, k, ph in flutter:  # gustiness only while a gust blows
-            g += amp * env * np.sin(2 * np.pi * (k * t / self.T + ph))
+        for amp, k, ph in flutter:  # gustiness while a gust blows (+ on the floor if steady)
+            g += amp * (env + steady_flutter * base) * np.sin(2 * np.pi * (k * t / self.T + ph))
         self.Gt = np.maximum(g, 0.03)
         dt = self.T / n
         F = np.zeros(n)
@@ -392,7 +396,11 @@ class Wind:
         self.Ft = F
         self.FT = float(F[-1] + dt * (self.Gt[-1] + self.Gt[0]) / 2)
         self.dir, self.front = [float(dir[0]), float(dir[1])], float(front)
+        self.sweep, self.ground = sweep, float(ground)
         self.gmin, self.gmax = float(self.Gt.min()), float(self.Gt.max())
+
+    def delay(self, x, y):
+        return (self.ground - y) / self.front if self.sweep == "up" else x / self.front
 
     def G(self, t):
         x = (np.asarray(t, float) / self.T % 1.0) * self.n
@@ -420,7 +428,8 @@ class Wind:
     def to_scene(self):
         r = lambda a: [round(float(v), 5) for v in a]
         return {"T": self.T, "G": r(self.Gt), "F": r(self.Ft), "FT": round(self.FT, 5),
-                "gmin": round(self.gmin, 5), "gmax": round(self.gmax, 5), "dir": self.dir, "front": self.front}
+                "gmin": round(self.gmin, 5), "gmax": round(self.gmax, 5), "dir": self.dir, "front": self.front,
+                "sweep": self.sweep, "ground": self.ground}
 
 
 # ---------------------------------------------------------------- particles
@@ -439,7 +448,7 @@ def particle(x, y, r, color, alpha=1.0, vx=0.0, vy=0.0, ay=0.0, life=12.0, phase
     """
     wt = 0.0
     if wind is not None and wd:
-        wt = x / wind.front
+        wt = wind.delay(x, y)
     if born_at is not None:
         phase = (-born_at / life) % 1.0
     if at_phase is not None:
