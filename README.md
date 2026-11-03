@@ -38,6 +38,8 @@ Videos live in `video/`, posters in `images/`. Two Cloudflare Pages limits shape
 - Each file must be 25 MiB or smaller, or the whole deploy fails. Encode a web copy first and keep the full-quality master elsewhere.
 - Pages ignores `Range` headers on static files, and Safari and iPhones need a 206 reply to play an MP4. `functions/video/[[path]].js` serves everything under `/video/` with byte ranges.
 
+To replace a video, give the new one a new filename and update `index.html`. On soareverix.com browsers may keep a video for 4 hours, and a swap at the same URL can leave them mixing old and new bytes, which makes the player fail when it seeks.
+
 To test the Function locally, run `npx wrangler pages dev .`. The plain Python server above does not run it.
 
 ## Deploy (Cloudflare Pages)

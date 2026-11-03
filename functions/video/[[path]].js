@@ -38,9 +38,10 @@ export async function onRequest(context) {
     size = bytes.byteLength;
   }
 
-  // Cache-Control stays as the asset layer sets it, which revalidates every time.
-  // A longer lifetime makes browsers mix old and new bytes after a video is
-  // replaced at the same URL, and the player then fails when it seeks.
+  // Cache-Control stays as the asset layer sets it. On soareverix.com the CDN still
+  // raises the browser lifetime to 4 hours, so browsers can mix old and new bytes
+  // after a swap at the same URL, and the player fails when it seeks. To replace a
+  // video, give the new one a new filename.
   const headers = new Headers(asset.headers);
   headers.set('Accept-Ranges', 'bytes');
   headers.set('Content-Length', String(size));
