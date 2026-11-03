@@ -2,7 +2,7 @@
 
 The personal site of Michael Andrzejewski (Soareverix). It is now a single conversation with **Karyon**, the Seed, Kernel, and attempted CEV of Michael, behind gold-on-black ASCII art that changes with the topic.
 
-1. **Intro.** *Era of Intelligence* plays: two ASCII eyes appear and open, an eclipse passes, and at 0:04 the site cuts straight back to the eyes.
+1. **Intro.** *Era of Intelligence* plays: two ASCII eyes appear and open, an eclipse passes, and at 0:04 the site cuts straight back to the eyes, now live and in the same place on screen.
 2. **Greeting.** Karyon's opening line types out beneath the eyes, then the chat bar and a few suggested questions fade in.
 3. **Conversation.** Karyon answers about Michael (streamed), and repaints the background with a `paint_background` tool call when the topic moves: a figure watching the horizon for philosophy, a ringed planet with satellites for Diversified Utopia, a neural network under a lens for alignment research, and so on.
 
@@ -17,8 +17,10 @@ public/                      static site (Cloudflare Pages output directory)
   assets/app.js              intro sequence, chat client
   assets/karyon.css
   admin.html                 log viewer (needs ADMIN_TOKEN)
-  media/                     put the Era of Intelligence video here
+  video/                     Era of Intelligence: the full film and the 4-second intro clip
+  images/                    the film's poster
 functions/                   Cloudflare Pages Functions
+  video/[[path]].js          serves /video/* with byte ranges (Safari needs them)
   api/chat.js                POST /api/chat: Claude call, tool loop, streaming, logging
   api/status.js              GET /api/status: is Karyon awake / within budget
   api/admin/conversations/   GET log list and full transcripts (Bearer ADMIN_TOKEN)
@@ -87,14 +89,28 @@ The repo is already connected to Pages. After merging:
    npx wrangler pages secret put LOG_SALT --project-name soareverix-site
    ```
    `ADMIN_TOKEN` and `LOG_SALT` should each be a long random string (`openssl rand -hex 32`).
-4. **The video.** Put the first few seconds of *Era of Intelligence* at `public/media/era-of-intelligence.mp4` (and/or `.webm`). The site cuts to the live eyes at 4.0 s and the video plays muted, so trim it and drop the audio:
-   ```bash
-   ffmpeg -i era-of-intelligence.mov -t 4.3 -an -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart public/media/era-of-intelligence.mp4
-   ```
-   Pages serves files up to 25 MiB. Without the file, the same beats are drawn live by the ASCII engine.
-5. **Plan:** the Workers free plan allows 10 ms of CPU per request. A streamed reply usually fits, but if replies cut off with error 1102, move to Workers Paid.
+4. **Plan:** the Workers free plan allows 10 ms of CPU per request. A streamed reply usually fits, but if replies cut off with error 1102, move to Workers Paid.
 
-Settings in `wrangler.toml` `[vars]`: `DAILY_LIMIT_USD`, `KARYON_MODEL`, `KARYON_ECONOMY_MODEL`, `KARYON_ECONOMY_AFTER_USD`, `KARYON_EFFORT`, `KARYON_ECONOMY_EFFORT`, `KARYON_FALLBACKS`, `MAX_MESSAGES_PER_VISITOR_PER_DAY`, `MAX_TURNS_PER_CONVERSATION`, `MAX_MESSAGE_CHARS`.
+## Video
+
+`public/video/era-of-intelligence.mp4` is the full 38-second silent film. "Watch Era of Intelligence" in the footer plays it with the poster from `public/images/`. The intro plays `era-of-intelligence-intro.mp4`, which is the film's first 4.25 seconds re-encoded without audio (1.7 MB), so visitors don't download 24 MB just to see the opening:
+
+```bash
+ffmpeg -i public/video/era-of-intelligence.mp4 -t 4.25 -an -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -profile:v high -movflags +faststart public/video/era-of-intelligence-intro.mp4
+```
+
+At 4.0 s the page hides the clip and shows the live eyes, laid out where the video's eyes are on that screen (`layoutFor('hero')` in `public/assets/ascii.js`). If the clip can't start within 2.5 seconds, or the visitor prefers reduced motion, the engine draws the same beats on the same timing.
+
+Two Cloudflare Pages limits shape this:
+
+- Each file must be 25 MiB or smaller, or the whole deploy fails. Encode a web copy first and keep the full-quality master elsewhere.
+- Pages ignores `Range` headers on static files, and Safari and iPhones need a 206 reply to play an MP4. `functions/video/[[path]].js` serves everything under `/video/` with byte ranges.
+
+To replace a video, give the new one a new filename and update `public/index.html`. On soareverix.com browsers may keep a video for 4 hours, and a swap at the same URL can leave them mixing old and new bytes, which makes the player fail when it seeks.
+
+## Settings
+
+In `wrangler.toml` `[vars]`: `DAILY_LIMIT_USD`, `KARYON_MODEL`, `KARYON_ECONOMY_MODEL`, `KARYON_ECONOMY_AFTER_USD`, `KARYON_EFFORT`, `KARYON_ECONOMY_EFFORT`, `KARYON_FALLBACKS`, `MAX_MESSAGES_PER_VISITOR_PER_DAY`, `MAX_TURNS_PER_CONVERSATION`, `MAX_MESSAGE_CHARS`.
 
 ## Run locally
 

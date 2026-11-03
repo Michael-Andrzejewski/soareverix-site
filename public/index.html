@@ -18,9 +18,9 @@
 <canvas id="ascii" aria-hidden="true"></canvas>
 <canvas id="glow" aria-hidden="true"></canvas>
 <div id="shade" aria-hidden="true"></div>
+<!-- The first seconds of Era of Intelligence (public/video/era-of-intelligence.mp4), silent. -->
 <video id="intro-video" muted playsinline preload="auto" aria-hidden="true" tabindex="-1">
-  <source src="media/era-of-intelligence.webm" type="video/webm">
-  <source src="media/era-of-intelligence.mp4" type="video/mp4">
+  <source src="video/era-of-intelligence-intro.mp4" type="video/mp4">
 </video>
 <div id="flash" aria-hidden="true"></div>
 
@@ -52,8 +52,19 @@
   <footer>
     <span>Conversations are recorded.</span>
     <a href="https://github.com/Michael-Andrzejewski" rel="me">GitHub</a>
+    <button type="button" id="film-open">Watch Era of Intelligence</button>
     <button type="button" id="replay">Replay intro</button>
   </footer>
+</div>
+
+<div id="film" role="dialog" aria-modal="true" aria-label="Era of Intelligence" hidden>
+  <figure>
+    <video id="film-video" controls playsinline preload="none" width="1920" height="1080" poster="images/era-of-intelligence.jpg" aria-label="Era of Intelligence, a 38-second silent film in gold ASCII art">
+      <source src="video/era-of-intelligence.mp4" type="video/mp4">
+    </video>
+    <figcaption><strong>Era of Intelligence</strong><span>2026 · Gold ASCII · 38 seconds · Silent</span></figcaption>
+  </figure>
+  <button type="button" id="film-close" aria-label="Close the film">×</button>
 </div>
 
 <p id="skip" aria-hidden="true">click to skip</p>

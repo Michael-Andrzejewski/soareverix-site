@@ -169,10 +169,10 @@
     const half = ew / 2;
     const xo = x0 + side * half;
     const xi = x0 - side * half;
-    const yo = y0 - ew * 0.04;
-    const yi = y0 + ew * 0.02;
-    const up = ew * 0.3 * o;
-    const lo = ew * 0.17 * o;
+    const yo = y0 - ew * 0.07;
+    const yi = y0 + ew * 0.05;
+    const up = ew * 0.36 * o;
+    const lo = ew * 0.22 * o;
     const upper = () => {
       g.moveTo(xi, yi);
       g.bezierCurveTo(lerp(xi, xo, 0.26), y0 - up, lerp(xi, xo, 0.7), y0 - up * 0.98, xo, yo);
@@ -191,8 +191,8 @@
     // A shorter pair from the inner corner.
     fadeLine(g, xi + side * ew * 0.01, yi, xi - side * ew * 0.16, yi + ew * 0.02, 0.4, 0, cw * 0.4);
     // Brow arc.
-    g.strokeStyle = grey(0.3);
-    g.lineWidth = cw * 0.55;
+    g.strokeStyle = grey(0.14);
+    g.lineWidth = cw * 0.45;
     g.beginPath();
     g.moveTo(lerp(xi, xo, 0.04), y0 - ew * 0.2 - up * 0.65);
     g.quadraticCurveTo(lerp(xi, xo, 0.45), y0 - ew * 0.34 - up * 0.95, xo + side * ew * 0.12, yo - ew * 0.16 - up * 0.3);
@@ -206,13 +206,13 @@
       g.closePath();
       g.clip();
       g.globalCompositeOperation = 'source-over';
-      const ix = x0 + gx * ew * 0.15;
-      const iy = y0 - ew * 0.012 + gy * ew * 0.05;
-      const ri = ew * 0.2;
+      const ix = x0 - side * ew * 0.04 + gx * ew * 0.15;
+      const iy = y0 + ew * 0.02 + gy * ew * 0.05;
+      const ri = ew * 0.16;
       // Sclera, darker toward the corners.
       const sc = g.createRadialGradient(ix, iy, ri * 0.8, ix, iy, half * 1.05);
-      sc.addColorStop(0, grey(0.24));
-      sc.addColorStop(1, grey(0.05));
+      sc.addColorStop(0, grey(0.46));
+      sc.addColorStop(1, grey(0.2));
       g.fillStyle = sc;
       g.fillRect(x0 - half - 4, y0 - up - 4, ew + 8, up + lo + 8);
       // Iris.
@@ -291,8 +291,8 @@
     g.stroke();
     // Lashes along the upper lid.
     if (open01 > 0.15) {
-      g.strokeStyle = grey(0.6);
-      g.lineWidth = cw * 0.4;
+      g.strokeStyle = grey(0.42);
+      g.lineWidth = cw * 0.38;
       for (let k = 0; k < 8; k++) {
         const u = 0.45 + k * 0.075;
         const px = lerp(xi, xo, u);
@@ -335,14 +335,15 @@
   SCENES.eclipse = {
     init: (opts) => ({ intro: opts.phase === 'intro' }),
     draw(g, L, s, t) {
-      const R = L.size * 0.15;
+      const cover01 = s.intro ? smooth(0, 1.3, t) : 1;
+      const R = L.size * 0.15 * (1 + 0.6 * (1 - cover01));
       const x = L.cx;
       const y = L.cy;
       starfield(g, L, s, t, 90, 0.35);
-      const off = s.intro ? R * 2.4 * (1 - smooth(0, 1.75, t)) : 0;
+      const off = R * 2.4 * (1 - cover01);
       const cover = 1 - clamp(off / (2 * R), 0, 1);
       const corona = smooth(0.82, 1, cover);
-      const flare = s.intro ? Math.exp(-Math.pow((t - 1.62) / 0.12, 2)) : 0;
+      const flare = s.intro ? Math.exp(-Math.pow((t - 1.2) / 0.1, 2)) : 0;
       g.globalCompositeOperation = 'lighter';
       glow(g, x, y, R * 2.5, 0.13 * corona + 0.02, 1);
       glow(g, x, y, R * 1.45, 0.42 * corona, 1);
@@ -1567,9 +1568,13 @@
           ? { W, H, cw, ch, cx: W / 2, cy: H * 0.18, size: Math.min(W * 1.0, H * 0.42) }
           : { W, H, cw, ch, cx: W / 2, cy: H * 0.24, size: Math.min(W * 0.8, H * 0.72) };
       }
-      return narrow
-        ? { W, H, cw, ch, cx: W / 2, cy: H * 0.3, size: Math.min(W * 1.02, H * 0.75) }
-        : { W, H, cw, ch, cx: W / 2, cy: H * 0.38, size: Math.min(W * 0.94, H * 1.4) };
+      // Hero: the eyes sit exactly where they are in the Era of Intelligence
+      // video as it is letterboxed on this screen (eye centers at 28% and 72%
+      // of the frame width, lids centered 46% down), so the cut back to them
+      // lines up. y0 sits a little lower because the upper lid arcs higher.
+      const vw = Math.min(W, (H * 16) / 9);
+      const vh = (vw * 9) / 16;
+      return { W, H, cw, ch, cx: W / 2, cy: (H - vh) / 2 + vh * 0.49, size: vw * 0.815 };
     }
 
     setMode(mode, instant = false) {

@@ -76,14 +76,42 @@ async function chat(message, conversation_id) {
   run('npx', ['wrangler', 'pages', 'dev', 'public', '--port', String(PORT)]);
   await waitFor(`${BASE}/api/status`);
 
-  // ---- UI: intro, greeting, question, streamed reply, repaint ----
+  // ---- video: byte ranges, and the real intro clip cutting to the live eyes ----
+  for (const f of ['era-of-intelligence-intro.mp4', 'era-of-intelligence.mp4']) {
+    const r = await fetch(`${BASE}/video/${f}`, { headers: { Range: 'bytes=0-99' } });
+    await r.arrayBuffer();
+    check(r.status === 206 && /^bytes 0-99\//.test(r.headers.get('content-range') || ''), `/video/${f} answers byte ranges`);
+  }
   const browser = await chromium.launch();
+  {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    await page.goto(`${BASE}/`);
+    const h264 = await page.evaluate(() => document.createElement('video').canPlayType('video/mp4; codecs="avc1.640028"'));
+    if (h264) {
+      await page.waitForFunction(() => document.querySelector('#intro-video').classList.contains('playing'), null, { timeout: 10000 });
+      await page.waitForFunction(() => !document.body.classList.contains('intro'), null, { timeout: 10000 });
+      const at = await page.evaluate(() => document.querySelector('#intro-video').currentTime);
+      check(Math.abs(at - 4) < 0.15, 'intro video cuts to the live eyes at 0:04', `${at.toFixed(2)} s`);
+      await page.waitForFunction(() => !document.body.classList.contains('awaiting'), null, { timeout: 15000 });
+      await page.click('#film-open');
+      await page.waitForFunction(() => document.querySelector('#film-video').currentTime > 0.5, null, { timeout: 10000 });
+      await page.keyboard.press('Escape');
+      check(await page.evaluate(() => document.querySelector('#film').hidden), 'full film plays from the footer and closes with Escape');
+    } else {
+      console.log('SKIP  this Chromium build cannot play H.264, so the video intro was not checked');
+    }
+    await page.close();
+  }
+
+  // ---- UI: drawn intro, greeting, question, streamed reply, repaint ----
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(`${BASE}/?novideo`);
-  await page.waitForTimeout(2600);
-  check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eclipse'), 'intro reaches the eclipse');
+  const reached = await page
+    .waitForFunction(() => window.__karyon.engine.sceneName === 'eclipse', null, { timeout: 9000 })
+    .then(() => true, () => false);
+  check(reached, 'drawn intro reaches the eclipse');
   await page.screenshot({ path: `${SHOTS}/1-eclipse.png` });
   await page.waitForFunction(() => !document.body.classList.contains('intro'), null, { timeout: 6000 });
   check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes'), 'cuts back to the eyes after the eclipse');

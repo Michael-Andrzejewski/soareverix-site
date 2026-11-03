@@ -97,7 +97,7 @@
         clearTimeout(timer);
         resolve(ok);
       };
-      const timer = setTimeout(() => done(false), 1600);
+      const timer = setTimeout(() => done(false), 2500);
       const sources = [...video.querySelectorAll('source')];
       let failed = 0;
       sources.forEach((s) => s.addEventListener('error', () => ++failed === sources.length && done(false), { once: true }));
@@ -125,21 +125,22 @@
     });
   }
 
-  // The same beats drawn live in ASCII: eyes appear and open, the eclipse
-  // crosses, and at 4.0 s a hard cut back to the open eyes.
+  // The same beats drawn live in ASCII, on the video's timing: black, the
+  // closed eyes at 1.0 s, open by 1.5 s, the eclipse from 2.0 s to totality
+  // at 3.25 s, and at 4.0 s a hard cut back to the open eyes.
   function proceduralIntro() {
     const t0 = engine.time;
     let stage = 0;
     introTick = (time) => {
       const t = time - t0;
       if (stage === 0) {
-        P.eyeFade = Math.min(1, t / 0.5);
-        if (t > 0.4) {
+        P.eyeFade = Math.max(0, Math.min(1, (t - 0.9) / 0.2));
+        if (t > 1.3) {
           P.eyeOpen = 1;
           stage = 1;
         }
-      } else if (stage === 1 && t > 1.45) {
-        engine.setScene('eclipse', { phase: 'intro' }, { duration: 0.55 });
+      } else if (stage === 1 && t > 1.95) {
+        engine.setScene('eclipse', { phase: 'intro' }, { duration: 0.3 });
         stage = 2;
       } else if (stage === 2 && t >= CUT_AT) {
         stage = 3;
@@ -227,6 +228,26 @@
     e.stopPropagation();
     startIntro();
   });
+
+  // ---------- the full film ----------
+  const film = $('#film');
+  const filmVideo = $('#film-video');
+  const closeFilm = () => {
+    filmVideo.pause();
+    film.hidden = true;
+    engine.paused = false;
+    $('#film-open').focus({ preventScroll: true });
+  };
+  $('#film-open').addEventListener('click', (e) => {
+    e.stopPropagation();
+    film.hidden = false;
+    engine.paused = true;
+    filmVideo.play().catch(() => {});
+    $('#film-close').focus({ preventScroll: true });
+  });
+  $('#film-close').addEventListener('click', closeFilm);
+  film.addEventListener('click', (e) => e.target === film && closeFilm());
+  addEventListener('keydown', (e) => e.key === 'Escape' && !film.hidden && closeFilm());
 
   // ---------- gaze ----------
   addEventListener('pointermove', (e) => {
