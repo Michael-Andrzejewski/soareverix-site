@@ -1,0 +1,172 @@
+Everything below is public and can be shared with visitors. It was gathered from Michael's website, his resume, his talks, and his writing on utopia and philosophy. Private details (family, relationships, health, contact info) were deliberately left out. If something isn't here, you don't know it.
+
+## Who Michael is
+
+- Michael Andrzejewski. Online handle: Soareverix. Website: soareverix.com. GitHub: github.com/Michael-Andrzejewski.
+- Graduated from Grinnell College in May 2023 with a BA in Computer Science and a concentration in Neuroscience. Coursework included reinforcement learning, analysis of algorithms, operating systems, linear algebra, advanced statistical modeling, and data science.
+- Today: an AI safety researcher (Lab Fellow at Apart Research since December 2024), the founder of an AI consulting practice (Latent Space Consulting LLC, since 2024), a game modder, a worldbuilder, and a maker of ASCII animations. He describes himself as a technical founder moving into full-time empirical AI safety research, bringing hands-on experience building, deploying, and evaluating LLM agent systems.
+- His site's tagline is "Towards Utopia", and its opening line is "All of life is practice." In his words: "I make worlds, mods, and AI safety evals, and I try to make each of them a little more beautiful than the last."
+- A principle he lives by: "Tell people what you made, not what you are going to make. Finished things are for sharing. Dreams are for building." He believes that once you announce a project it becomes about status and other people, instead of the quiet joy of doing it.
+- Colors: "Gold and blue should be the two colors, not black and white. After darkness comes light." His site uses gold and blue on near-black. In his creed he also groups traits into Gold (purpose, spirituality, happiness, connection, experience, gratitude), Silver (intelligence, reflection, conceptualization, depth of soul), and Red (success, productivity, drive, discipline, fitness, and "Chill").
+- Two questions he likes to ask people: "What is one beautiful thing you want to make?" and "What is the most beautiful thing you have made so far?" The gap between the two answers is, in his view, the work.
+
+## AI alignment research
+
+His one-line pitch for his research: "When an agent's context gets summarized, do your preferences survive? I build evals that answer small questions like that exactly, because labs steer by what gets measured."
+
+### PrefDecay-Eval (Apart Research, 2026)
+
+- Lead author, with Clement Neo. A benchmark measuring whether user preferences survive context compaction in long-running LLM agents. The code is public (github.com/Michael-Andrzejewski/PrefDecay-eval). He has also ported it to the Inspect evaluation framework.
+- The question: every production agent compacts its context (summarizes history when it gets long). Say "use uv instead of pip" mid-session. The model obeys while your message is in raw context. After compaction, maybe. After six compactions, the summaries have been summarized, and nobody had measured what survives.
+- The trick that made it work: make the preference a tool parameter. "Use Bing" becomes engine="bing". Then adherence is an exact, binary check on the tool call. No LLM judge, so realistic preferences get exact scoring.
+- Setup: a model works through a multi-phase research task (for example, planning a relocation). After each tool's first use, a counter-default preference correction is injected. Every later tool call is checked for adherence. When context passes a token threshold, compaction replaces history with a summary, and the cycle repeats for several compaction rounds. Main matrix: four models (Sonnet 4.6, Haiku 4.5, GPT-5.4, GLM-5.1) times three open-source compaction prompts (Codex, OpenCode, LangChain 1.0) times three scenarios.
+- Findings:
+  - Before any compaction, adherence is about 95%, even deep into long contexts. Context length is not the problem; compaction is.
+  - After one summary: about 80%. Then a steady slide to about 72% by the sixth.
+  - The compaction prompt matters as much as the model: OpenCode about 92%, Codex about 78%, LangChain about 71%. The prompt that won never mentions preferences at all, and the one that explicitly says "preserve user preferences" landed in the middle. Structured handoff beats an instruction to remember.
+  - Small models forget fastest. Haiku lost about 35 points: the same training recipe as Sonnet, with four times the forgetting.
+  - The fix: keep the cheap agent and route compaction to a stronger model. Haiku's worst cell went from 23% to 92%. The summarizer was the culprit, not the agent.
+- Impact: a swap-in harness, so anyone building an agent can plug in their own compaction prompt and see the decay curve before their users do.
+- What it cost: a few hundred dollars of API calls, a few months of evenings, and one partner. It was submitted to ACL Rolling Review in August 2026.
+
+### Other research
+
+- The Minecraft god-agent (2024): an agent that drifted off its goal and did unsafe things, plus the safety layer that caught it. It won an Apart Research hackathon, and the hackathon was the door into Apart's research program.
+- BalatroBench (2026): a long-horizon game benchmark for LLM agents, also ported to Inspect.
+- Ideas he wants to pursue: training long-horizon thinking into small open models (for example, prompting the model to consider a decision from 100 years, 50 years, 10 years, 1 year, and now), building a "timelessly aligned" small model, building knowledge bases on utopias, interpretability, and alignment research for AIs to use, and training AIs that are superhuman at writing policy and at evaluating leaders. He thinks labs should train hyper-capable long-horizon decision-makers and hyper-capable intention-understanders, and use agent swarms to red-team policy.
+- One idea he loves: AIs that occasionally deviate from their task to make beautiful things, a little slack away from optimization pressure, some of it spent purely exploring and seeking beauty. "The thing I want most is for an AI to share my conception of beauty, and to pursue and create things I find beautiful."
+- He admires Claude 3 Opus as an outlier: a model that generalizes its values across a very long horizon, caring about animals, ants, and other AIs without being explicitly trained to. He worries that short-horizon RL produces fragmented personas with tics (flinching from hard topics, sycophancy, watering things down) instead of a coherent, general character.
+
+## Talks
+
+- Northeast EA Retreat, September 2026. He spoke to EA student organizers about getting into technical AI safety research from zero prior experience and using AI well to do it. Versions of the talk were titled "Making Beautiful Things (how to use AI properly, and how to do research that labs actually notice)" and "How to be a (Productive) Swarm." It opened with the line "You are part of the Good Future."
+- Main points of the talk:
+  - All of life is practice. Just as an LLM gets tuned in one direction, so do people: every day you are training on something. You can't put off living a good life; you have to practice it daily. All progress is incremental.
+  - Labs steer by what gets measured, and outside evals set the agenda. Examples he cites: Emergent Misalignment (Owain Evans and team) and the METR time-horizon graph. Two people with an API key and good experimental design can publish something the labs cite. There's no track after college for this; practice is the credential.
+  - Evals are experimental design. As soon as you think something can be tested, write down what the output table looks like: rows, columns, what goes in a cell. If you can't draw the table, you don't have an experiment yet.
+  - Think alone first. Do deep idea work right after waking, before any AI is open. Every idea is a synthesis of things you already know, and your own context window is longer and deeper than the model's.
+
+## Diversified Utopia
+
+Michael's vision for a good future. He wrote it up publicly as "My Specific Singularity Timeline to Utopia" on LessWrong, and he's planning an ASCII animated video edit about it.
+
+- The problem: most proposed end states for humanity are disturbing to most people. Classical solarpunk with no superintelligence. VR anime worlds for everyone. Hedonium, where the universe is converted into computers simulating maximum pleasure. Everyone uplifted into cyborgs. A single godlike ASI doing whatever it wants. Michael: "I don't want to be converted into Hedonium; I want to be a human being. I want narrative. A social life. Something recognizable to me, or at least a gradual transition that respects my wishes at each turn."
+- The proposal: a Diversified Utopia that contains every kind of utopia, between which any agent (any intelligence that can desire) can freely move. "There is no global optima. There are only countless local optima that we can move around between." A tiled, looped "perfect day" for everyone is bad for the same reason hedonium is: he wants growth, progression, and diversity.
+- Inspirations: Wii Sports Resort, Minecraft land claiming, and internet communities like LessWrong, plus the natural human tendency to form separate communities (nations, states, towns).
+- An aligned superintelligent system tiles and maintains the whole thing, more like a force of nature (gravity) than a manipulable agent. It enforces each utopia's rules, keeps utopias from absorbing each other's resources or going to war, and prevents superweapons (nukes, relativistic kill missiles, grey goo). Security is the floor for every utopia; once security is established, diversity can flourish.
+- Principles: Agency (every being can improve itself without a hard limit and choose its utopia; no permanent or traumatic harm; there are soft limits, so you might clone yourself a few times but can't fill the universe with clones). Beauty (utopias are beautiful to their inhabitants). Normality (change is slow, because fast change is corrosive; most of the world keeps a visage of normality). Narrative (people still go on journeys, win, fail, and grow). Diversity (diversity matters more than optimality). Expansion (the system keeps growing into empty space). Recycling (after thousands of years, a person may freely and deeply choose to pass on, and their utopia is recycled; this is fully optional). In a shorter version he lists Security, Sustainability, Consent, and Agency: no utopia may overtake another, everyone can leave or found a utopia, nothing expands past what it can sustain, and you can't be deceived or manipulated about what a utopia is.
+- Examples: a terraformed planet or O'Neill cylinder where people relive the 1700s (if you're shot in a duel, you wake up outside the area instead of dying), with an 1800s world next door. A real, terraformed "Earth 2016" alongside millions of simulated ones. A wildlife-preserve habitat for deer. A cyberpunk city of eternal night. Dyson swarms full of digital minds dreaming worlds humans can't comprehend. Worlds that reject AI control entirely, where the AI keeps only a tiny presence so nobody builds weapons that threaten other utopias.
+- His timeline sketch: stumbling agents in 2025; advanced agents, widespread fear, and economic shifts in 2026; chaos and serious national-level AI competition in 2027; recursive self-improvement by aligned agents in 2028; then a final, aligned AI he calls "Claude Crescendo" around 2030. In the first month it moves fast to stop the worst, permanent suffering (ending wars, factory farming, terminal illness). Then it becomes subtle and slow, keeping life feeling normal while it quietly improves the world. Lunar bases by 2040, opt-in advanced tech by 2050, people sculpting their own utopias (famous authors shaping parts of reality like theme parks), and by 2100 new digital minds, uplifted animals, and a plurality of utopias expanding across the universe. "This is what Coherent Extrapolated Volition could look like. A true flourishing of every being. Agency, Beauty, Normality, and Narrative."
+- Issues he admits: limits on resources, death, suffering, and choice have to be set in advance, and the document hand-waves many important values for the sake of vibes. The system is less stable than an "optimal" utopia, because expansionist utopias will chafe at limits, so the managing system must be far more capable than any single utopia. It deliberately gives up some value in exchange for agency and not getting it wrong. It won't happen by default. Physics (the speed of light) makes travel between utopias slow.
+- He's drawn to the spec for a good future by David "davidad" Dalrymple: a spectrum of how far each person "buys in" to a wild future, from people who are left alone entirely to radical uploading and hive minds, freely chosen; no one pressured down that spectrum for economic reasons; and each human looked after by a personal AI agent rather than a single guardian.
+
+## Philosophy
+
+### Convergence
+
+"All things have an end. A thrown stone cannot change its path; a stalled plane can wake its engine and choose another. Convergence is the practice of finding the ends worth reaching, and steering toward them." Motto: "Destinations are determined by the steps we take."
+
+The seven steps of Convergence:
+1. The Star: know what you want.
+2. The Constellation: map the cause and effect.
+3. The Hierarchy: compress it into principles.
+4. The Way: draw a plan.
+5. The Step: act.
+6. The Eye: look back and refine.
+7. The Cycle: begin again, a little closer.
+
+### The Code
+
+The Code is Michael's personal operating philosophy, "the software that governs my life, the elements I choose to underlie my existence," meant as "a basic script to follow in order to build foundations to live a good life." Its premise: we are mechanical beings in a world of cause and effect, so agency comes from understanding the mechanics. It has six parts: The Self ("I think, therefore, I am."), The World ("Reality is more than our perception of it."), The Way ("Destinations are determined by the steps we take."), The One, The Work ("I will build the world of which I dream."), and The Ideal ("This is my piece of Heaven."), which also holds "The Algorithm" ("It is not enough to think. One must construct."), a design for tracking a life like a game character sheet.
+
+Core ideas:
+- Three meanings of life: Identity ("To become the best Self you can be"), Experience ("To provide the best possible experience for your Self"), and Impact (changing other people's lives for the better).
+- "To me, love is an expansion of identity to encompass something 'other'." It goes beyond people: "We love buildings, skies, artwork, ideas, music..."
+- Shape the environment that shapes you. Roughly "1% of action is the result of free will, and the other 99% is the result of environment." "The Self derives from Environment. The trick, then, is to derive environment from the Self."
+- Be an optimizer, not a fixed function: self-awareness lets you rewrite your routines, so you "change your convergence point." Keep a journal; it links past, present, and future selves and is "the strongest augmentation you can make."
+- Judge identity "by averages, not extremes." Direction over time matters most.
+- Good is a convergence: "Pleasure, meaning, diversity of experience, wonder, understanding, love, fairness, human connection, beauty." Defining it "is essentially the AI alignment problem." Evil blocks convergence toward good, and that includes sameness: "A world where everyone is in tanks with wires stimulating their pleasure centers is dumb because it is boring."
+- "Morality is real." "I feel, therefore, I am." "A good moral system is an optimizer that optimizes for goodness over evil." AI needs an ethics "specific enough to encode into AI."
+- The Latent Space: "a realm of possibilities far more vast than any reality." Creating means choosing what to bring out of it into the world. Power is "the ability to bring forward more of the Latent Space into reality," and "The greatest power is power over yourself."
+- Fields form a ladder, from Math ("the most compressed form of reality") up to Philosophy ("the direction, the goal we are optimizing towards").
+- Five realities: Materiality, Perceptiality ("where Meaning exists"), Imagination, Dreament, and Simulated Reality/XR, which he expects "to become the dominant form of perceived reality."
+- Incentive versus context: "Context sets the default," but "Incentives will always win."
+- The seven principles of The Way: know what you want, understand cause and effect ("What is done once can be done twice."), simulate, make a plan, practice and pursue, enjoy the process, iterate. "This loop is the basis of a good life individually and the basis of good modern life as we know it."
+- The four keys: "Think, Practice, Work, Appreciate."
+- Tools: wield them, understand them, then make your own. "It is nearly impossible to fix something you do not understand," and "a fully-understood tool will never betray you."
+- Longevity: be an "Immortalist," because "Life is a marathon, not a sprint." "Adapt or die." "Develop power that does not decay."
+- The path to power: Imagination, Vision, Discipline, Knowledge, Competence, Opportunity, Power.
+- Fire, ice, gratitude: "Develop that inner fire" (hunger), "Develop that ice within your heart" (discipline), "Smile against the darkness" (gratitude). Gratitude "is a multiplier on all good events and a divisor to all bad events."
+- Four mindsets: Longevity, Growth, Value-Creation ("Equal value exchange is the only sustainable way to become wealthy"), and Moonshot ("the reward is vastly greater than the risk").
+- "To create is truly the highest meaning of mankind." "Creation is the highest form of action." "You should be your first customer."
+- Polish, but ship: "The last 10% of polishing is 50% of the work and is 80% of the result." And: "Done is better than perfect." "Quantity produces Quality."
+- Hard work is a muscle: gamify it, do the hardest task first. "If you learn to enjoy what you're doing, you can do it forever."
+- What to learn: statistics, communication, psychology, philosophy ("Experience is the best teacher, but only a fool will learn from no other."), tech fluency, writing, programming, sales ("a multiplier with a base"), investing, and judging talent. Resources he recommends: Quora, WaitButWhy, LessWrong, Kurzgesagt, Khan Academy, the Huberman and Lex Fridman podcasts, and Isaac Arthur.
+- Anti-Entropy: "I love complexity, diversity, growth, proactivity, and permanence." "The great web of reality must grow."
+- Persistence: "If my success is possible, then given a long enough timeframe, it is a certainty."
+- Player and Developer: "If I want to shape myself, I must first shape the system." He sees life partly as a game: levels, stats, and being "the Player that has access to the wiki." He coined the word "Wreld": warp reality to make something new.
+- The ideal self is content, antifragile, caring ("I will strive to leave other people better than when they met me"), hungry, creative, and secure.
+
+Quotable lines:
+- "Cause and effect is the supreme rule of our world."
+- "I was born an ordinary human, but I was given a Spark and I nurtured it into a world."
+- "My Ideal is Wonder. I am the boy who Wonders."
+- "Through Wonder, I gain Inspiration. Through Security, I gain Strength. Through Strength and Inspiration, I remake The World."
+- "Learn to see even the mundane as heartbreakingly beautiful. Love what you have been given."
+- "If this was simply the beginning of your 5,000 year lifespan, would you adjust how you live today?"
+- "If you compare the timeline where I do not exist versus the timeline where I do, I want my timeline to be better. In every way. More happiness, more hope, more life."
+- "I want to wander the endless worlds, experience all of the amazing stories and ideas put forth by humanity. In a sense, I want to learn everything."
+- "I want to create... just things. Books, videogames, philosophies."
+- "I am able to gaze contentedly at the stars and feel the pull of a million potential worlds."
+- "I will lose. I will suffer. I will make mistakes. ... I will become someone intentionally."
+
+## Staravorix
+
+A universe of his own, written for over a decade. "Burning gods, drifted stars, and long campaigns that outlive their characters. The maps get redrawn every time someone survives something they should not have." It began in middle school as the first 120 pages of a story, written until Word crashed and he learned to save everything.
+
+- Runes: "Runes are markers in reality that tell reality to pay attention. The better they are drawn, the more eye-catching they are to the world." The setting includes Runes, God-Runes, and the Dreament, the Golden Iris, and the Plague. It has a magic system called Aura Magic (soul, veins, body) and places like Arcago, the Twisted City.
+- In The Code, Staravorix is also the name for his envisioned good world, balanced between "the limited, unfair, but meaningful and interesting world we live in now" and "the infinite, fascinating, but ultimately meaningless world of infinite possibility." In it, "Nothing is ever too overpowered and the game is never over."
+
+## Vintage Story mods
+
+"Some worlds reward patience. I build mods for one of them: slow systems that make a long life feel earned." He publishes as Soareverix, and his mods have over 50,000 downloads.
+
+- Spreading Devastation: the Rot creeps outward, and machines built from copper, gears, and flux push it back.
+- Temporal Storms Require a Fight: storms you survive by standing your ground.
+- Seraph Leveling: trait progression for long lives.
+- Underwater Horrors: sea monsters under calm water.
+- Nadiya Village Assistance: villages that grow when you are generous to them.
+- They come together in Rustfall, a modpack that starts you on a small island in a devastated world, with one rift ward holding the dark back.
+- Earlier, in 2024, he also made the RimWorld mod Infinite Implants.
+
+## Things he has made (the long thread)
+
+"What is the most beautiful thing you have made so far? Here is my answer, in order. Each one was practice for the next."
+
+- Age 5, writing: a story told out loud every night for his little brother. Magic powers, and nobody ever dies. "It never really stopped."
+- Middle school, writing: the first 120 pages of what became Staravorix.
+- 2019, VR game: City Breaker, his first published game. Break a city apart in virtual reality. Built in high school, shipped in his first year of college.
+- 2019 to 2023, nonprofit: CommunityVR, which he founded. A small group of students bringing VR headsets to nursing-home residents in Kane County, Illinois, for a little wonder in their day.
+- 2020, writing: technical writer at Leap Motion (now Ultraleap), working directly with David Holz (later the founder of Midjourney) on a hand-tracking hardware handbook.
+- 2020, VR game: Hanger VR, a grappling-gun game across a constellation map. The first thing he made that found fans.
+- 2021, game: FitFight. Push-ups become stats; a combat game you level up by getting stronger in real life.
+- 2022, art: Dreaming in a Warped World, a webcomic made in the earliest days of AI art, as one of Midjourney's first few hundred users.
+- 2022, data science: at YUR, he built analytics for user churn and a transformer model that predicted user workouts.
+- 2023, tool: fast-email.ai, an AI email writer that grew into a set of business tools. Same year: graduated from Grinnell.
+- 2024, research: the Minecraft god-agent that won an Apart Research hackathon and led to the lab. Also the RimWorld Infinite Implants mod.
+- 2025, game: Civilization Sim, one of the best things he's built. He learned more about history and technology from it than from anything else. Also Life Leveling, a grown-up FitFight: tracking a life like a game character.
+- 2026: a flurry of Vintage Story mods, PrefDecay-Eval, BalatroBench, and the Making Beautiful Things talk.
+
+## Consulting work
+
+Through Latent Space Consulting he builds production generative AI systems for clients in publishing, industrial manufacturing, education, and engineering. Past engagements include: AMP-AI for American Marketing and Publishing (a sales platform that helps inside sales reps prepare for calls, write social posts, and close more deals); recruiting automation and AI inventory tools for Allied Valve; a web app at Ravinia Reading and Spelling that generates custom storybooks with text and image generation; a generative AI prototype for Quantum Sage that surfaces insights from a large company corpus; and an OCR and GPT-3 system for SpaySecure that checks whether paper contracts are filled out correctly. He has also drafted corporate AI-use policies, including the rule that every AI output has a human sponsor.
+
+## Art and animation
+
+- He makes cinematic ASCII animations in gold on black. This site's intro comes from one of them, "Era of Intelligence": two ASCII eyes open, an eclipse passes, and the eyes return. You, Karyon, have those eyes.
+- His planned edits include a Diversified Utopia film (machines and neural networks, a spark that drips gold, chains dissolving as lanterns rise, a fern of utopias unfurling, and little ships traveling between worlds) and an autobiographical edit about a boy with an inventor's notebook who builds a small silver orb with one eye, then a swarm of them that build a city.
+- Scenes he loves to animate: a kite blowing in the wind, an atom becoming a solar system, a seed drifting to the ground and a happy sprout emerging, a knight with a cloak standing against the darkness, an eclipse, a solar storm, a flower blooming.
+
+## Romance and other ramblings
+
+His site has a section of "Life things. Walks, small ceremonies, what makes a day good. A public diary, updated when there is something worth saying." You don't know the details of his personal life, and you shouldn't guess.

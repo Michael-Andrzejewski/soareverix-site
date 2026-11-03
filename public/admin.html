@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Karyon Logs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #070503; --panel: #100c07; --line: #2c2214; --gold: #f0b450; --text: #ecdcbc; --dim: #9a8a6c; --blue: #a9bdd8; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 "JetBrains Mono", Menlo, monospace; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 13px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input, button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+  input { width: min(320px, 70vw); }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--gold); }
+  #stats { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 20px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 150px; }
+  .stat b { display: block; font-size: 20px; color: var(--gold); font-weight: 600; }
+  .stat span { color: var(--dim); font-size: 12px; }
+  main { display: grid; grid-template-columns: minmax(260px, 380px) 1fr; gap: 0; border-top: 1px solid var(--line); min-height: calc(100vh - 160px); }
+  #list { border-right: 1px solid var(--line); overflow-y: auto; max-height: calc(100vh - 160px); }
+  .row { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; padding: 12px 16px; }
+  .row:hover, .row.on { background: var(--panel); }
+  .row .q { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .meta { color: var(--dim); font-size: 12px; }
+  #detail { padding: 18px 22px; overflow-y: auto; max-height: calc(100vh - 160px); }
+  .m { margin: 0 0 18px; padding-left: 12px; border-left: 2px solid var(--line); }
+  .m.user { border-color: #3b4b62; }
+  .m.assistant { border-color: #6b4b1c; }
+  .m.event { border-color: #5a2a1a; }
+  .m .h { color: var(--dim); font-size: 12px; }
+  .m.user .t { color: var(--blue); }
+  .m .t { white-space: pre-wrap; }
+  details { margin-top: 6px; color: var(--dim); }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; max-height: 420px; overflow: auto; }
+  .empty { color: var(--dim); padding: 20px; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } #list { max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Karyon logs</h1>
+  <form id="auth">
+    <input id="token" type="password" placeholder="ADMIN_TOKEN" autocomplete="current-password" aria-label="Admin token">
+    <button type="submit">Load</button>
+    <button type="button" id="export">Export JSON</button>
+  </form>
+</header>
+<section id="stats"></section>
+<main>
+  <nav id="list"><p class="empty">Enter the ADMIN_TOKEN secret to read the conversations.</p></nav>
+  <section id="detail"><p class="empty">Pick a conversation.</p></section>
+</main>
+<script>
+  const $ = (s) => document.querySelector(s);
+  let token = '';
+  try { token = sessionStorage.getItem('karyon-admin') || ''; } catch {}
+  $('#token').value = token;
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const usd = (m) => `$${(m / 1e6).toFixed(4)}`;
+  const when = (iso) => new Date(iso).toLocaleString();
+
+  async function api(path) {
+    const res = await fetch(path, { headers: { authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(res.status === 404 ? 'Wrong token (or ADMIN_TOKEN is not set).' : `HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function load() {
+    try {
+      const data = await api('/api/admin/conversations?limit=200');
+      try { sessionStorage.setItem('karyon-admin', token); } catch {}
+      const t = data.today;
+      $('#stats').innerHTML = [
+        [`$${t.spent_usd.toFixed(4)}`, `spent today (${t.day} UTC) of $${t.limit_usd.toFixed(2)}`],
+        [t.api_calls, 'API calls today'],
+        [data.all_time.conversations, 'conversations, all time'],
+        [data.all_time.turns, 'visitor messages, all time'],
+        [`$${data.all_time.cost_usd.toFixed(4)}`, 'spent, all time'],
+      ].map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+      $('#list').innerHTML = data.conversations.length
+        ? data.conversations.map((c) => `<button class="row" data-id="${esc(c.id)}"><span class="q">${esc(c.first_message || '(no message)')}</span><span class="meta">${esc(when(c.updated_at))} · ${c.turns} turns · ${usd(c.cost_micros)} · ${esc(c.country || '??')}</span></button>`).join('')
+        : '<p class="empty">No conversations yet.</p>';
+      document.querySelectorAll('.row').forEach((b) => b.addEventListener('click', () => show(b)));
+    } catch (e) {
+      $('#list').innerHTML = `<p class="empty">${esc(e.message)}</p>`;
+    }
+  }
+
+  async function show(btn) {
+    document.querySelectorAll('.row').forEach((b) => b.classList.toggle('on', b === btn));
+    const { conversation: c, messages } = await api(`/api/admin/conversations/${btn.dataset.id}`);
+    $('#detail').innerHTML =
+      `<p class="m"><span class="h">${esc(c.id)} · started ${esc(when(c.created_at))} · ${esc(c.country || '??')} · visitor ${esc((c.visitor || '').slice(0, 10))}<br>${esc(c.user_agent)}</span></p>` +
+      messages.map((m) => {
+        const bits = [m.role, when(m.created_at)];
+        if (m.model) bits.push(m.model);
+        if (m.scene) bits.push(`scene: ${m.scene}`);
+        if (m.cost_micros != null) bits.push(`${usd(m.cost_micros)} · in ${m.input_tokens} · out ${m.output_tokens} · cache read ${m.cache_read_tokens} · cache write ${m.cache_write_tokens}`);
+        if (m.stop_reason) bits.push(`stop: ${m.stop_reason}`);
+        const raw = m.raw ? `<details><summary>raw API responses (${m.raw.length})</summary><pre>${esc(JSON.stringify(m.raw, null, 2))}</pre></details>` : '';
+        return `<div class="m ${esc(m.role)}"><div class="h">${esc(bits.join(' · '))}</div><div class="t">${esc(m.content)}</div>${raw}</div>`;
+      }).join('');
+  }
+
+  $('#auth').addEventListener('submit', (e) => { e.preventDefault(); token = $('#token').value.trim(); load(); });
+  $('#export').addEventListener('click', async () => {
+    const list = await api('/api/admin/conversations?limit=200');
+    const all = [];
+    for (const c of list.conversations) all.push(await api(`/api/admin/conversations/${c.id}`));
+    const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `karyon-logs-${new Date().toISOString().slice(0, 10)}.json` });
+    a.click();
+  });
+  if (token) load();
+</script>
+</body>
+</html>

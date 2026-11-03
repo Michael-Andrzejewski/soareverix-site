@@ -1,0 +1,37 @@
+# Cloudflare Pages config for soareverix.com.
+# When this file has pages_build_output_dir, Pages treats it as the source of
+# truth for bindings and vars (the dashboard values for those are ignored).
+name = "soareverix-site"
+pages_build_output_dir = "public"
+compatibility_date = "2026-10-01"
+
+# Conversation logs and the daily spend ledger.
+# Create it once with:  npx wrangler d1 create karyon
+# then paste the database_id it prints below.
+[[d1_databases]]
+binding = "DB"
+database_name = "karyon"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[vars]
+# Hard ceiling on Anthropic API spend per UTC day, in US dollars.
+DAILY_LIMIT_USD = "1.00"
+# Karyon answers with the primary model until this much of today's budget is
+# spent, then switches to the economy model for the rest of the UTC day.
+KARYON_MODEL = "claude-opus-5-5"
+KARYON_ECONOMY_MODEL = "claude-haiku-5-5"
+KARYON_ECONOMY_AFTER_USD = "0.50"
+KARYON_EFFORT = "low"
+KARYON_ECONOMY_EFFORT = "medium"
+# Server-side refusal fallback on the primary model ("default" or "off").
+KARYON_FALLBACKS = "default"
+# Abuse limits.
+MAX_MESSAGES_PER_VISITOR_PER_DAY = "60"
+MAX_TURNS_PER_CONVERSATION = "40"
+MAX_MESSAGE_CHARS = "1500"
+
+# Secrets (never in this file). Set each once:
+#   npx wrangler pages secret put ANTHROPIC_API_KEY
+#   npx wrangler pages secret put ADMIN_TOKEN     # long random string, for /admin.html
+#   npx wrangler pages secret put LOG_SALT        # long random string, for hashing visitor IPs
+# For local dev put the same names in .dev.vars (gitignored).
