@@ -284,6 +284,17 @@
   #alignment { --glow: rgba(170, 120, 255, 0.17); }
   #convergence { --glow: rgba(110, 160, 255, 0.17); }
   #ramblings { --glow: rgba(255, 170, 120, 0.16); }
+  #made { --glow: rgba(243, 199, 122, 0.14); }
+
+  /* film */
+  .film { margin: 0 0 64px; }
+  .seg .scene video {
+    display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(160, 200, 255, 0.14), 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+  }
+  .film figcaption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; margin-top: 20px; }
+  .film figcaption strong { font-family: var(--serif); font-weight: 400; font-size: 23px; line-height: 1.2; color: #f2f6fc; }
+  .film figcaption span { font: 400 11px/1.8 var(--mono); letter-spacing: 1.5px; text-transform: uppercase; color: var(--faint); }
 
   .seg .copy {
     max-width: none; margin-top: 44px; font-size: 17px; color: var(--dim);
@@ -1603,6 +1614,14 @@
     <!-- ============ THINGS I’VE MADE ============ -->
     <section id="made" class="seg reveal">
       <header class="chap"><span class="num">06</span><h2>Things I&rsquo;ve Made</h2><span class="kicker">The long thread</span></header>
+      <figure class="film">
+        <div class="scene">
+          <video controls playsinline preload="none" width="1920" height="1080" poster="images/era-of-intelligence.jpg" aria-label="Era of Intelligence, a 38-second silent film in gold ASCII art">
+            <source src="video/era-of-intelligence.mp4" type="video/mp4">
+          </video>
+        </div>
+        <figcaption><strong>Era of Intelligence</strong><span>2026 &middot; Gold ASCII &middot; 38 seconds &middot; Silent</span></figcaption>
+      </figure>
       <p class="made-intro">What is the most beautiful thing you have made so far? Here is my answer, in order. Each one was practice for the next.</p>
       <ol class="timeline"><li><time>Age 5</time><div><span class="kind">Writing</span><h3>A story told out loud</h3><p>Every night, a story for my little brother. Magic powers, and nobody ever dies. It never really stopped.</p></div></li><li><time>Middle school</time><div><span class="kind">Writing</span><h3>The first 120 pages</h3><p>The world that would become Staravorix, written until Word crashed and I learned to save everything.</p></div></li><li><time>2019</time><div><span class="kind">VR game</span><h3>City Breaker</h3><p>My first published game: break a city apart in virtual reality. Built in high school, shipped in my first year of college.</p></div></li><li><time>2019</time><div><span class="kind">Nonprofit</span><h3>CommunityVR</h3><p>Bringing VR headsets to nursing-home residents in Kane County, for a little wonder in their day.</p></div></li><li><time>2020</time><div><span class="kind">Writing</span><h3>Leap Motion</h3><p>Technical writer on a hand-tracking handbook, working with David Holz.</p></div></li><li><time>2020</time><div><span class="kind">VR game</span><h3>Hanger VR</h3><p>A grappling-gun game across a constellation map. The first thing I made that found fans.</p></div></li><li><time>2021</time><div><span class="kind">Game</span><h3>FitFight</h3><p>Push-ups become stats. A combat game you level up by getting stronger in real life.</p></div></li><li><time>2022</time><div><span class="kind">Art</span><h3>Dreaming in a Warped World</h3><p>A webcomic made in the earliest days of AI art, as one of Midjourney’s first few hundred users.</p></div></li><li><time>2023</time><div><span class="kind">Tool</span><h3>fast-email.ai</h3><p>An AI email writer that grew into a set of business tools. Graduated from Grinnell in computer science, with a neuroscience concentration.</p></div></li><li><time>2024</time><div><span class="kind">Research</span><h3>The Minecraft god-agent</h3><p>An agent that drifted off its goal and the safety layer that caught it. It won an Apart Research hackathon, and led to the lab. Also that year: the RimWorld Infinite Implants mod.</p></div></li><li><time>2025</time><div><span class="kind">Game</span><h3>Civilization Sim</h3><p>One of the best things I’ve built. I learned more about history and technology from it than from anything else. Also: Life Leveling, FitFight grown up.</p></div></li><li><time>2026</time><div><span class="kind">Now</span><h3>Vintage Story mods, and PrefDecay-Eval</h3><p>A flurry of mods, a published eval on preference decay in agents, and a talk called Making Beautiful Things.</p></div></li></ol>
     </section>

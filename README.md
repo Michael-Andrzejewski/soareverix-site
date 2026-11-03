@@ -31,6 +31,15 @@ Every major shape in the scenes is generated at load by a small facet engine (se
 
 Click, Enter, or Space skips the intro. `prefers-reduced-motion` skips it automatically.
 
+## Video
+
+Videos live in `video/`, posters in `images/`. Two Cloudflare Pages limits shape this:
+
+- Each file must be 25 MiB or smaller, or the whole deploy fails. Encode a web copy first and keep the full-quality master elsewhere.
+- Pages ignores `Range` headers on static files, and Safari and iPhones need a 206 reply to play an MP4. `functions/video/[[path]].js` serves everything under `/video/` with byte ranges.
+
+To test the Function locally, run `npx wrangler pages dev .`. The plain Python server above does not run it.
+
 ## Deploy (Cloudflare Pages)
 
 1. Cloudflare dashboard: Workers and Pages, Create, Pages, Connect to Git, pick this repo.
