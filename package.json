@@ -4,6 +4,8 @@
   "type": "module",
   "description": "soareverix.com: Karyon, an ASCII-eyed guide to Michael Andrzejewski",
   "scripts": {
+    "postinstall": "node scripts/stamp-assets.mjs",
+    "stamp": "node scripts/stamp-assets.mjs",
     "dev": "wrangler pages dev public --port 8788",
     "db:init:local": "wrangler d1 execute karyon --local --file=schema.sql",
     "db:init": "wrangler d1 execute karyon --remote --file=schema.sql",
