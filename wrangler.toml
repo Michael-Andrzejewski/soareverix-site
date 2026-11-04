@@ -1,0 +1,41 @@
+# Cloudflare Pages config for soareverix.com.
+# When this file has pages_build_output_dir, Pages treats it as the source of
+# truth for bindings and vars (the dashboard values for those are ignored).
+name = "soareverix-site"
+pages_build_output_dir = "public"
+compatibility_date = "2026-10-01"
+
+# Conversation logs and the daily spend ledger.
+# Create it once with:  npx wrangler d1 create karyon
+# then paste the database_id it prints below.
+[[d1_databases]]
+binding = "DB"
+database_name = "karyon"
+database_id = "1e5734ca-4b94-4bcf-b4ee-b776aab28d87"
+
+[vars]
+# Hard ceiling on Anthropic API spend per UTC day, in US dollars.
+DAILY_LIMIT_USD = "1.00"
+# Karyon answers with the primary model until this much of today's budget is
+# spent, then switches to the economy model for the rest of the UTC day.
+# Both are Haiku 5.5 for now, so Karyon stays on Haiku all day. To start on a
+# stronger model, change KARYON_MODEL and name it in karyon/persona.txt.
+KARYON_MODEL = "claude-haiku-5-5"
+KARYON_ECONOMY_MODEL = "claude-haiku-5-5"
+KARYON_ECONOMY_AFTER_USD = "0.50"
+# KARYON_EFFORT only applies when the primary model isn't the economy model.
+KARYON_EFFORT = "low"
+KARYON_ECONOMY_EFFORT = "medium"
+# Server-side refusal fallback ("default" or "off"). Opus-class models only:
+# Haiku 5.5 has no server-side fallback.
+KARYON_FALLBACKS = "default"
+# Abuse limits.
+MAX_MESSAGES_PER_VISITOR_PER_DAY = "60"
+MAX_TURNS_PER_CONVERSATION = "40"
+MAX_MESSAGE_CHARS = "1500"
+
+# Secrets (never in this file). Set each once:
+#   npx wrangler pages secret put ANTHROPIC_API_KEY
+#   npx wrangler pages secret put ADMIN_TOKEN     # long random string, for /admin.html
+#   npx wrangler pages secret put LOG_SALT        # long random string, for hashing visitor IPs
+# For local dev put the same names in .dev.vars (gitignored).

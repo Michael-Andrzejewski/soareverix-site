@@ -1,0 +1,22 @@
+{
+  "name": "soareverix-site",
+  "private": true,
+  "type": "module",
+  "description": "soareverix.com: Karyon, an ASCII-eyed guide to Michael Andrzejewski",
+  "scripts": {
+    "dev": "wrangler pages dev public --port 8788",
+    "db:init:local": "wrangler d1 execute karyon --local --file=schema.sql",
+    "db:init": "wrangler d1 execute karyon --remote --file=schema.sql",
+    "logs": "wrangler d1 execute karyon --remote --command \"SELECT c.id, c.created_at, c.turns, ROUND(c.cost_micros/1e6, 4) AS usd, c.country FROM conversations c ORDER BY c.updated_at DESC LIMIT 50\"",
+    "logs:export": "wrangler d1 export karyon --remote --output=karyon-logs.sql",
+    "mock": "node scripts/mock-anthropic.mjs",
+    "test:e2e": "node scripts/e2e.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.4.0"
+  },
+  "devDependencies": {
+    "wrangler": "4.157.0"
+  }
+}
