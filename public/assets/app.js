@@ -2,8 +2,7 @@
 (() => {
   'use strict';
 
-  const GREETING =
-    "My name is Karyon, the Seed, Kernel, and attempted CEV of Michael Andrzejewski. I've agreed to talk with visitors here. The conversations are recorded. What would you like to know about Michael?";
+  const GREETING = 'My name is Karyon, an agent attempting CEV for Michael Andrzejewski. What would you like to know about Michael?';
   // Era of Intelligence: the eyes open, the eclipse passes, and at 0:04 the
   // site cuts straight back to the eyes.
   const CUT_AT = 4.0;
@@ -49,11 +48,16 @@
   function placeUI() {
     const dockH = dock.offsetHeight;
     root.style.setProperty('--dock-h', `${dockH + 6}px`);
+    root.style.setProperty('--gutter', `${Math.round(engine.gutter)}px`);
+    body.classList.toggle('sides', started && engine.sideMode);
     if (body.classList.contains('chatting')) {
-      root.style.setProperty('--log-top', `${Math.round(innerHeight * (innerWidth < 700 ? 0.36 : 0.45))}px`);
+      root.style.setProperty('--log-top', '44px');
     } else {
+      // The greeting sits under the eyes, and always fits above the dock.
       const L = engine.layoutFor('hero');
-      root.style.setProperty('--log-top', `${Math.round(L.cy + L.size * 0.12 + 14)}px`);
+      const under = L.cy + L.eyeW * 0.2 + 8;
+      const need = (greetingEl ? greetingEl.el.offsetHeight : 64) + 10;
+      root.style.setProperty('--log-top', `${Math.round(Math.max(44, Math.min(under, innerHeight - dockH - 6 - need)))}px`);
     }
   }
   addEventListener('resize', () => setTimeout(placeUI, 150));
@@ -73,6 +77,7 @@
   function startIntro() {
     body.classList.add('intro');
     caption.classList.remove('on');
+    setPainted(null);
     engine.setMode('hero', true);
     engine.setScene('eyes', {}, { instant: true });
     P.eyeOpen = 0;
@@ -174,7 +179,7 @@
     }
     body.classList.add('awaiting');
     if (!greetingEl) {
-      greetingEl = addMessage('karyon', '');
+      greetingEl = addMessage('karyon', GREETING);
       greetingEl.el.classList.add('greeting');
     }
     placeUI();
@@ -192,18 +197,22 @@
       then();
       return;
     }
+    // The untyped text is laid out but hidden, so lines never jump as words
+    // wrap and the block keeps its final height from the first letter.
     let i = 0;
-    msg.body.classList.add('cursor');
+    const show = () => {
+      msg.body.innerHTML = `<p>${esc(text.slice(0, i))}<span class="caret"></span><span class="ghost">${esc(text.slice(i))}</span></p>`;
+    };
     const finish = () => {
       clearInterval(id);
       typing = null;
       render(msg, text);
-      msg.body.classList.remove('cursor');
       then();
     };
+    show();
     const id = setInterval(() => {
       i = Math.min(text.length, i + 2);
-      render(msg, text.slice(0, i));
+      show();
       if (i >= text.length) finish();
     }, 26);
     typing = { finish };
@@ -309,12 +318,55 @@
     tag.textContent = name;
   }
 
-  function scrollDown() {
-    log.scrollTop = log.scrollHeight;
+  // While a reply streams, follow it only until the visitor's question reaches
+  // the top of the view, so long replies stay readable from their first line.
+  // Scrolling by hand stops the following until the next question.
+  let anchor = null;
+  let followReply = true;
+  function follow() {
+    if (!followReply) return;
+    const newest = log.scrollHeight - log.clientHeight;
+    log.scrollTop = anchor ? Math.min(anchor.offsetTop - 48, newest) : newest;
   }
+  const stopFollowing = () => (followReply = false);
+  log.addEventListener('wheel', stopFollowing, { passive: true });
+  log.addEventListener('touchmove', stopFollowing, { passive: true });
+
+  // ---------- the art at the sides: clicking it asks Karyon about it ----------
+  const artLeft = $('#art-left');
+  const artRight = $('#art-right');
+  let painted = null;
+  const leftAsk = () => (painted?.caption ? `Tell me more about ${painted.caption}.` : painted ? 'What are you showing me?' : 'Who are you, Karyon?');
+  const rightAsk = 'What does CEV mean?';
+  function setPainted(scene) {
+    painted = scene && scene.scene !== 'eyes' ? scene : null;
+    const label = painted?.caption ? `Ask about ${painted.caption}` : painted ? 'Ask about this' : 'Ask who Karyon is';
+    artLeft.querySelector('.hint').textContent = label;
+    artLeft.setAttribute('aria-label', label);
+  }
+  artRight.querySelector('.hint').textContent = 'Ask what CEV means';
+  artRight.setAttribute('aria-label', 'Ask what CEV means');
+  const wireArt = (button, side, question) => {
+    const on = () => (engine.hover = side);
+    const off = () => {
+      if (engine.hover === side) engine.hover = null;
+    };
+    button.addEventListener('pointerenter', on);
+    button.addEventListener('pointerleave', off);
+    button.addEventListener('focus', on);
+    button.addEventListener('blur', off);
+    button.addEventListener('click', () => {
+      P.blinkNow = true;
+      ask(question());
+      button.blur();
+    });
+  };
+  wireArt(artLeft, 'left', leftAsk);
+  wireArt(artRight, 'right', () => rightAsk);
 
   function paint(scene) {
     engine.setScene(scene.scene, scene);
+    setPainted(scene);
     caption.textContent = scene.caption || '';
     caption.classList.toggle('on', Boolean(scene.caption));
   }
@@ -360,15 +412,15 @@
       body.classList.add('chatting');
       body.classList.remove('awaiting');
       engine.setMode('chat');
-      engine.dim = 0.85;
       placeUI();
     }
-    addMessage('you', text);
+    anchor = addMessage('you', text).el;
+    followReply = true;
     input.value = '';
     grow();
     const reply = addMessage('karyon', '');
     reply.body.classList.add('cursor');
-    scrollDown();
+    follow();
     thinkTarget = 1;
     let said = '';
     let trouble = '';
@@ -396,7 +448,7 @@
             said += data.delta;
             thinkTarget = 0;
             render(reply, said);
-            scrollDown();
+            follow();
           } else if (event === 'error') {
             trouble = data.message || 'Something went wrong on my side.';
           }
@@ -422,13 +474,14 @@
       }
       busy = false;
       sendBtn.disabled = false;
-      scrollDown();
+      follow();
     }
   }
 
   function grow() {
     input.style.height = 'auto';
     input.style.height = `${Math.min(140, input.scrollHeight)}px`;
+    input.style.overflowY = input.scrollHeight > 140 ? 'auto' : 'hidden';
     placeUI();
   }
   input.addEventListener('input', grow);
@@ -465,12 +518,12 @@
         started = true;
         body.classList.add('chatting');
         engine.setMode('chat', true);
-        engine.dim = 0.85;
         placeUI();
       }
       engine.setScene(name, { phase: qs.get('phase') || undefined }, { instant: true });
       caption.textContent = qs.get('caption') || '';
       caption.classList.toggle('on', qs.has('caption'));
+      setPainted({ scene: name, caption: qs.get('caption') || undefined });
     }
     if (qs.has('t')) {
       // Let the intro set itself up first (it starts after a microtask).

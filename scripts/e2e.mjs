@@ -119,7 +119,7 @@ async function chat(message, conversation_id) {
   check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes'), 'cuts back to the eyes after the eclipse');
   await page.waitForFunction(() => !document.body.classList.contains('awaiting'), null, { timeout: 15000 });
   const greeting = await page.textContent('.msg.greeting .body');
-  check(greeting.startsWith('My name is Karyon, the Seed, Kernel, and attempted CEV of Michael Andrzejewski.'), 'greeting typed beneath the eyes');
+  check(greeting.startsWith('My name is Karyon, an agent attempting CEV for Michael Andrzejewski.'), 'greeting typed beneath the eyes');
   check(await page.isVisible('#ask'), 'chat bar visible');
   await page.screenshot({ path: `${SHOTS}/2-greeting.png` });
 

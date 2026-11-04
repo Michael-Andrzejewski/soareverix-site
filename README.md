@@ -4,7 +4,8 @@ The personal site of Michael Andrzejewski (Soareverix). It is now a single conve
 
 1. **Intro.** *Era of Intelligence* plays: two ASCII eyes appear and open, an eclipse passes, and at 0:04 the site cuts straight back to the eyes, now live and in the same place on screen.
 2. **Greeting.** Karyon's opening line types out beneath the eyes, then the chat bar and a few suggested questions fade in.
-3. **Conversation.** Karyon answers about Michael (streamed), and repaints the background with a `paint_background` tool call when the topic moves: a figure watching the horizon for philosophy, a ringed planet with satellites for Diversified Utopia, a neural network under a lens for alignment research, and so on.
+3. **Conversation.** The eyes part to the sides and the transcript takes the full height. Karyon answers about Michael (streamed), and repaints the background with a `paint_background` tool call when the topic moves: a figure watching the horizon for philosophy, a ringed planet with satellites for Diversified Utopia, a neural network under a lens for alignment research, and so on.
+4. **Side art.** At 1080px wide and up, the painting takes the left gutter and Karyon's eye keeps the right. Clicking either asks Karyon about it. On narrower screens the art sits dimmed behind the text.
 
 Every conversation is logged to Cloudflare D1, and API spend is capped at **$1.00 per UTC day**.
 

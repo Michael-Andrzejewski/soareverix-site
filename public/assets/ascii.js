@@ -165,168 +165,185 @@
   const SCENES = {};
 
   // --- Karyon's eyes ---------------------------------------------------------
-  function drawEye(g, x0, y0, ew, o, side, gx, gy, think, t, cw, open01) {
-    const half = ew / 2;
-    const xo = x0 + side * half;
-    const xi = x0 - side * half;
-    const yo = y0 - ew * 0.07;
-    const yi = y0 + ew * 0.05;
-    const up = ew * 0.36 * o;
-    const lo = ew * 0.22 * o;
-    const upper = () => {
-      g.moveTo(xi, yi);
-      g.bezierCurveTo(lerp(xi, xo, 0.26), y0 - up, lerp(xi, xo, 0.7), y0 - up * 0.98, xo, yo);
+  // Built to the proportions of the eyes in Era of Intelligence, measured from
+  // the film: a tilted lens filled by a huge letter-shaded iris, with a small
+  // white-hot core, a thick bright band under the upper lid, dim sclera in the
+  // corners, a crease arc above, and faint streaks past the outer corner.
+  // Eye space: X runs from the inner corner (-0.5) to the outer one (+0.5),
+  // Y points down, both in eye widths.
+  const EYE_UPPER = [[0.5, -0.044], [0.3, -0.235], [-0.22, -0.24], [-0.5, 0.044]];
+  const EYE_LOWER = [[-0.5, 0.044], [-0.2, 0.235], [0.3, 0.25], [0.5, -0.044]];
+  const EYE_CREASE = [[0.46, -0.15], [0.25, -0.25], [-0.2, -0.275], [-0.47, -0.07]];
+
+  function drawEye(g, x0, y0, ew, o, side, gx, gy, think, t, cw, wing = 1) {
+    const sx = (X) => x0 + side * X * ew;
+    const tilt = (X) => -0.088 * X; // the outer corner sits above the inner one
+    // Openness folds both lids onto the line between the corners.
+    const sy = (X, Y) => y0 + (tilt(X) + (Y - tilt(X)) * o) * ew;
+    const curve = (pts, move) => {
+      const [a, b, c, d] = pts;
+      if (move) g.moveTo(sx(a[0]), sy(a[0], a[1]));
+      g.bezierCurveTo(sx(b[0]), sy(b[0], b[1]), sx(c[0]), sy(c[0], c[1]), sx(d[0]), sy(d[0], d[1]));
     };
-    const lower = () => {
-      g.moveTo(xo, yo);
-      g.bezierCurveTo(lerp(xi, xo, 0.72), y0 + lo, lerp(xi, xo, 0.28), y0 + lo * 1.04, xi, yi);
+    const along = (stops) => {
+      const gr = g.createLinearGradient(sx(0.5), 0, sx(-0.5), 0);
+      stops.forEach(([at, v]) => gr.addColorStop(at, grey(v)));
+      return gr;
     };
-    g.globalCompositeOperation = 'lighter';
-    // Wings: long tapered strokes streaming out from the outer corner.
-    for (let k = 0; k < 5; k++) {
-      const len = ew * (0.55 + k * 0.16);
-      const dy = (k - 2) * ew * 0.03;
-      fadeLine(g, xo - side * ew * 0.03, yo + dy * 0.35, xo + side * len, yo + dy * 1.4 + ew * 0.01, 0.42 - Math.abs(k - 2) * 0.07, 0, cw * 0.42);
+
+    // Faint streaks past the outer corner.
+    if (wing > 0.01 && o > 0.2) {
+      g.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 11; k++) {
+        const Y = -0.066 - 0.22 + (k / 10) * 0.46;
+        const start = 0.52 + hash(k * 7 + 1) * 0.16;
+        const len = (0.1 + hash(k * 13 + 5) * 0.34) * wing;
+        const v = (0.14 + hash(k * 3 + 9) * 0.18) * (0.75 + 0.25 * Math.sin(t * 0.7 + k * 1.7)) * Math.min(1, o);
+        fadeLine(g, sx(start), y0 + Y * ew, sx(start + len), y0 + Y * ew, v, 0, cw * 0.4);
+      }
+      g.globalCompositeOperation = 'source-over';
     }
-    // A shorter pair from the inner corner.
-    fadeLine(g, xi + side * ew * 0.01, yi, xi - side * ew * 0.16, yi + ew * 0.02, 0.4, 0, cw * 0.4);
-    // Brow arc.
-    g.strokeStyle = grey(0.14);
-    g.lineWidth = cw * 0.45;
-    g.beginPath();
-    g.moveTo(lerp(xi, xo, 0.04), y0 - ew * 0.2 - up * 0.65);
-    g.quadraticCurveTo(lerp(xi, xo, 0.45), y0 - ew * 0.34 - up * 0.95, xo + side * ew * 0.12, yo - ew * 0.16 - up * 0.3);
-    g.stroke();
+
+    // The crease arc above the lid, brighter toward the inner corner.
+    if (o > 0.12) {
+      g.strokeStyle = along([[0, 0.14], [0.45, 0.34], [1, 0.48]]);
+      g.lineWidth = ew * 0.045;
+      g.beginPath();
+      curve(EYE_CREASE, true);
+      g.stroke();
+    }
 
     if (o > 0.03) {
       g.save();
       g.beginPath();
-      upper();
-      g.bezierCurveTo(lerp(xi, xo, 0.72), y0 + lo, lerp(xi, xo, 0.28), y0 + lo * 1.04, xi, yi);
+      curve(EYE_UPPER, true);
+      curve(EYE_LOWER, false);
       g.closePath();
       g.clip();
-      g.globalCompositeOperation = 'source-over';
-      const ix = x0 - side * ew * 0.04 + gx * ew * 0.15;
-      const iy = y0 + ew * 0.02 + gy * ew * 0.05;
-      const ri = ew * 0.16;
-      // Sclera, darker toward the corners.
-      const sc = g.createRadialGradient(ix, iy, ri * 0.8, ix, iy, half * 1.05);
-      sc.addColorStop(0, grey(0.46));
-      sc.addColorStop(1, grey(0.2));
+      const ix = sx(0.034) + gx * ew * 0.085;
+      const iy = y0 + ew * 0.015 + gy * ew * 0.035;
+      const R = ew * 0.29;
+      // Sclera: dim, and dimmer toward the corners.
+      const sc = g.createRadialGradient(ix, iy, R * 0.9, ix, iy, ew * 0.62);
+      sc.addColorStop(0, grey(0.24));
+      sc.addColorStop(1, grey(0.09));
       g.fillStyle = sc;
-      g.fillRect(x0 - half - 4, y0 - up - 4, ew + 8, up + lo + 8);
-      // Iris.
-      const ir = g.createRadialGradient(ix, iy, ri * 0.25, ix, iy, ri);
-      ir.addColorStop(0, grey(1));
-      ir.addColorStop(0.45, grey(0.86 + think * 0.14));
-      ir.addColorStop(0.8, grey(0.62));
-      ir.addColorStop(1, grey(0.34));
-      disc(g, ix, iy, ri, ir);
-      // Striations.
-      g.strokeStyle = 'rgba(0,0,0,0.42)';
-      g.lineWidth = cw * 0.32;
-      for (let k = 0; k < 24; k++) {
-        const a = (k / 24) * TAU + t * 0.05 * (think ? 3 : 1);
-        const r0 = ri * (0.5 + 0.06 * Math.sin(k * 3.1));
+      g.fillRect(x0 - ew * 0.6, y0 - ew * 0.4, ew * 1.2, ew * 0.8);
+      // The iris: large enough that the lids cut off its top and bottom.
+      const ir = g.createRadialGradient(ix, iy, R * 0.1, ix, iy, R);
+      ir.addColorStop(0, grey(0.8 + think * 0.2));
+      ir.addColorStop(0.3, grey(0.54 + think * 0.2));
+      ir.addColorStop(0.65, grey(0.4 + think * 0.1));
+      ir.addColorStop(1, grey(0.3));
+      disc(g, ix, iy, R, ir);
+      // Fibers running out from the core, which give the fill its texture.
+      g.lineWidth = Math.max(cw * 0.22, ew * 0.004);
+      for (let k = 0; k < 72; k++) {
+        const a = (k / 72) * TAU + t * 0.02 * side;
+        const h = hash(k * 17 + 3);
+        const r0 = R * (0.26 + 0.2 * h);
+        const r1 = R * (0.6 + 0.38 * hash(k * 5 + 11));
+        g.strokeStyle = k % 2 ? `rgba(0,0,0,${0.18 + 0.22 * h})` : `rgba(255,255,255,${0.06 + 0.16 * h})`;
         g.beginPath();
         g.moveTo(ix + Math.cos(a) * r0, iy + Math.sin(a) * r0);
-        g.lineTo(ix + Math.cos(a + 0.12) * ri * 0.93, iy + Math.sin(a + 0.12) * ri * 0.93);
+        g.lineTo(ix + Math.cos(a) * r1, iy + Math.sin(a) * r1);
         g.stroke();
       }
-      // Limbal ring.
-      g.strokeStyle = grey(0.95);
-      g.lineWidth = cw * 0.65;
+      // A ring partway out, and a dark edge so the iris reads against the sclera.
+      g.strokeStyle = 'rgba(255,255,255,0.28)';
+      g.lineWidth = cw * 0.4;
       g.beginPath();
-      g.arc(ix, iy, ri, 0, TAU);
+      g.arc(ix, iy, R * 0.42, 0, TAU);
       g.stroke();
-      // Pupil, which becomes a small turning gear while Karyon thinks.
-      const rp = ri * (0.42 - 0.08 * think);
-      disc(g, ix, iy, rp, '#000');
+      g.strokeStyle = 'rgba(0,0,0,0.85)';
+      g.lineWidth = Math.max(cw * 0.5, ew * 0.012);
+      g.beginPath();
+      g.arc(ix, iy, R, 0, TAU);
+      g.stroke();
+      // The white-hot core inside a thin dark ring.
+      const rp = ew * 0.074;
+      disc(g, ix, iy, rp * 1.24, 'rgba(0,0,0,0.92)');
+      const core = g.createRadialGradient(ix, iy, rp * 0.5, ix, iy, rp);
+      core.addColorStop(0, grey(1));
+      core.addColorStop(1, grey(0.84));
+      disc(g, ix, iy, rp, core);
+      // While Karyon thinks, a ring of teeth turns around the core.
       if (think > 0.02) {
-        g.strokeStyle = grey(0.9 * think);
+        const rr = rp * 1.55;
+        g.strokeStyle = grey(0.95 * think);
         g.lineWidth = cw * 0.45;
-        const teeth = 9;
         g.beginPath();
-        for (let k = 0; k <= teeth * 2; k++) {
-          const a = (k / (teeth * 2)) * TAU + t * 1.6 * side;
-          const r = k % 2 ? rp * 0.62 : rp * 0.8;
-          const px = ix + Math.cos(a) * r;
-          const py = iy + Math.sin(a) * r;
-          if (k === 0) g.moveTo(px, py);
-          else g.lineTo(px, py);
+        g.arc(ix, iy, rr, 0, TAU);
+        for (let k = 0; k < 10; k++) {
+          const a = (k / 10) * TAU + t * 1.4 * side;
+          g.moveTo(ix + Math.cos(a) * rr, iy + Math.sin(a) * rr);
+          g.lineTo(ix + Math.cos(a) * rr * 1.36, iy + Math.sin(a) * rr * 1.36);
         }
         g.stroke();
-        disc(g, ix, iy, rp * 0.22, grey(0.9 * think));
       }
-      // Highlights.
-      disc(g, ix - ri * 0.36, iy - ri * 0.36, ri * 0.18, grey(1));
-      disc(g, ix + ri * 0.3, iy + ri * 0.28, ri * 0.07, grey(0.95));
-      // Shadow under the upper lid.
-      const sh = g.createLinearGradient(0, y0 - up, 0, y0 - up * 0.25);
-      sh.addColorStop(0, 'rgba(0,0,0,0.75)');
-      sh.addColorStop(1, 'rgba(0,0,0,0)');
-      g.fillStyle = sh;
-      g.fillRect(x0 - half - 4, y0 - up - 4, ew + 8, up);
+      // The bright band under the upper lid, and a dimmer one on the lower.
+      g.strokeStyle = along([[0, 0.6], [0.28, 0.98], [0.6, 0.9], [1, 0.58]]);
+      g.lineWidth = ew * 0.1;
+      g.beginPath();
+      curve(EYE_UPPER, true);
+      g.stroke();
+      g.strokeStyle = grey(0.46);
+      g.lineWidth = ew * 0.04;
+      g.beginPath();
+      curve(EYE_LOWER, true);
+      g.stroke();
+      // Both corners catch the light.
+      g.globalCompositeOperation = 'lighter';
+      glow(g, sx(-0.47), sy(-0.47, 0.041), ew * 0.09, 0.8);
+      glow(g, sx(0.47), sy(0.47, -0.041), ew * 0.06, 0.5);
       g.restore();
     }
 
+    // The lids themselves.
     g.globalCompositeOperation = 'lighter';
-    g.lineCap = 'round';
     g.strokeStyle = grey(0.95);
-    g.lineWidth = cw * 0.75;
+    g.lineWidth = Math.max(cw * 0.5, ew * 0.006);
     g.beginPath();
-    upper();
+    curve(EYE_UPPER, true);
     g.stroke();
     g.strokeStyle = grey(0.55);
-    g.lineWidth = cw * 0.55;
+    g.lineWidth = Math.max(cw * 0.4, ew * 0.005);
     g.beginPath();
-    lower();
+    curve(EYE_LOWER, true);
     g.stroke();
-    // Crease above the lid.
-    g.strokeStyle = grey(0.3);
-    g.lineWidth = cw * 0.45;
-    g.beginPath();
-    g.moveTo(lerp(xi, xo, 0.12), y0 - up * 0.9 - ew * 0.05);
-    g.bezierCurveTo(lerp(xi, xo, 0.35), y0 - up * 1.2 - ew * 0.07, lerp(xi, xo, 0.7), y0 - up * 1.15 - ew * 0.07, lerp(xi, xo, 0.92), yo - up * 0.5 - ew * 0.04);
-    g.stroke();
-    // Lashes along the upper lid.
-    if (open01 > 0.15) {
-      g.strokeStyle = grey(0.42);
-      g.lineWidth = cw * 0.38;
-      for (let k = 0; k < 8; k++) {
-        const u = 0.45 + k * 0.075;
-        const px = lerp(xi, xo, u);
-        const py = y0 - up * (1 - Math.pow(u * 2 - 1, 2)) * 0.74 - (yi - yo) * 0;
-        const len = ew * 0.06 * open01 * (0.6 + u * 0.6);
-        g.beginPath();
-        g.moveTo(px, py);
-        g.lineTo(px + side * len * 0.7, py - len);
-        g.stroke();
-      }
-    }
-    g.lineCap = 'butt';
+    g.globalCompositeOperation = 'source-over';
   }
 
+  // Scene t is continuous across scenes for the eyes: the engine keeps one eye
+  // state, so an eye left on screen doesn't restart when a painting arrives.
   SCENES.eyes = {
     init: (opts, L, r) => ({ open: 0, blinkAt: 2 + r() * 3, blinkStart: -9, gx: 0, gy: 0, r }),
-    draw(g, L, s, t, P) {
-      const S = L.size;
-      const ew = S * 0.4;
+    update(s, t, P) {
       const target = P.eyeOpen ?? 1;
       s.open += (target - s.open) * (P.eyeSnap ? 1 : 0.16);
-      if (t > s.blinkAt && target > 0.9) {
+      if (P.blinkNow) {
+        P.blinkNow = false;
+        s.blinkStart = t;
+      } else if (t > s.blinkAt && target > 0.9) {
         s.blinkStart = t;
         s.blinkAt = t + 3 + s.r() * 5;
       }
       const bt = (t - s.blinkStart) / 0.2;
       const blink = bt >= 0 && bt < 1 ? Math.sin(bt * Math.PI) : 0;
-      const o = clamp(s.open * (1 - blink * 0.96), 0, 1.08);
+      s.o = clamp(s.open * (1 - blink * 0.96), 0, 1.08);
       s.gx += ((P.gazeX || 0) - s.gx) * 0.07;
       s.gy += ((P.gazeY || 0) - s.gy) * 0.07;
-      const think = P.thinking || 0;
+    },
+    drawOne(g, L, s, t, P, side) {
+      const conv = (L.conv || 0) * -side; // each eye turns toward the conversation
+      const gx = clamp(s.gx * (1 - Math.abs(L.conv || 0) * 0.5) + conv, -1, 1);
+      drawEye(g, L.cx + side * L.eyeDX, L.cy, L.eyeW, s.o, side, gx, s.gy, P.thinking || 0, t, L.cw, L.wing ?? 1);
+    },
+    draw(g, L, s, t, P) {
+      this.update(s, t, P);
       g.globalAlpha = P.eyeFade ?? 1;
-      drawEye(g, L.cx - S * 0.265, L.cy, ew, o, -1, s.gx, s.gy, think, t, L.cw, s.open);
-      drawEye(g, L.cx + S * 0.265, L.cy, ew, o, 1, s.gx, s.gy, think, t, L.cw, s.open);
+      this.drawOne(g, L, s, t, P, -1);
+      this.drawOne(g, L, s, t, P, 1);
       g.globalAlpha = 1;
     },
   };
@@ -1465,6 +1482,9 @@
   };
 
   // ---------------------------------------------------------------------------
+  // At this width and up, the conversation has art in a gutter on each side.
+  const SIDE_MIN_W = 1080;
+
   class Engine {
     constructor(canvas, glowCanvas) {
       this.canvas = canvas;
@@ -1476,6 +1496,10 @@
       this.xA = this.sA.getContext('2d', { willReadFrequently: true });
       this.xB = this.sB.getContext('2d', { willReadFrequently: true });
       this.params = { eyeOpen: 1, gazeX: 0, gazeY: 0, thinking: 0 };
+      this.hover = null;
+      this.hoverL = 0;
+      this.hoverR = 0;
+      this.eyeT0 = 0;
       this.mode = 'hero';
       this.time = 0;
       this.frame = 0;
@@ -1496,13 +1520,14 @@
     }
 
     resize() {
-      const W = window.innerWidth;
-      const H = window.innerHeight;
+      // A hidden tab can report a zero-size window, and the grid can't be zero.
+      const W = window.innerWidth || 1024;
+      const H = window.innerHeight || 768;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const probe = this.ctx;
       probe.font = '100px "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace';
       const ratio = probe.measureText('M').width / 100 || 0.6;
-      const cols = clamp(Math.round(W / (W < 700 ? 5.6 : 8.6)), 60, 240);
+      const cols = clamp(Math.round(W / (W < 700 ? 4.6 : 6.4)), 70, 340);
       const cw = W / cols;
       const font = cw / ratio;
       const ch = font * 1.14;
@@ -1558,34 +1583,107 @@
       Object.assign(this, { atlas, gw, gh });
     }
 
+    // On wide screens the conversation takes the center column (the same width
+    // as --col in karyon.css) and the art lives in the gutters either side.
+    get gutter() {
+      return (this.W - Math.min(720, this.W * 0.52)) / 2;
+    }
+
+    get sideMode() {
+      return this.mode === 'chat' && this.W >= SIDE_MIN_W;
+    }
+
     layoutFor(mode) {
       const { W, H, cw, ch } = this;
-      const narrow = W < 700;
-      // In chat mode the art lives above the transcript, which starts near
-      // 45% of the height (36% on phones).
       if (mode === 'chat') {
-        return narrow
-          ? { W, H, cw, ch, cx: W / 2, cy: H * 0.18, size: Math.min(W * 1.0, H * 0.42) }
-          : { W, H, cw, ch, cx: W / 2, cy: H * 0.24, size: Math.min(W * 0.8, H * 0.72) };
+        if (W >= SIDE_MIN_W) {
+          // One eye in each gutter, turned toward the conversation.
+          const g = this.gutter;
+          return { W, H, cw, ch, cx: W / 2, cy: H * 0.46, size: Math.min(W * 0.8, H * 0.72), eyeDX: (W - g) / 2, eyeW: Math.min(g * 0.86, 560), wing: 0.3, conv: 0.5 };
+        }
+        // No gutters: the art stays behind the text, dimmed.
+        return { W, H, cw, ch, cx: W / 2, cy: H * 0.2, size: Math.min(W, H * 0.5), eyeDX: W * 0.25, eyeW: W * 0.42, wing: 0.2, conv: 0 };
       }
-      // Hero: the eyes sit exactly where they are in the Era of Intelligence
-      // video as it is letterboxed on this screen (eye centers at 28% and 72%
-      // of the frame width, lids centered 46% down), so the cut back to them
-      // lines up. y0 sits a little lower because the upper lid arcs higher.
+      if (W < SIDE_MIN_W && W < H) {
+        // Portrait phones: the letterboxed film is too small to match, so the
+        // eyes fill the width instead.
+        return { W, H, cw, ch, cx: W / 2, cy: H * 0.3, size: W, eyeDX: W * 0.25, eyeW: W * 0.46, wing: 0.25, conv: 0 };
+      }
+      // Hero: the eyes sit exactly where they are in Era of Intelligence as it
+      // is letterboxed on this screen (eye centers 27.6% and 72.4% across, lids
+      // centered 48% down, each eye 35.4% of the frame wide), so the cut back
+      // to them lines up.
       const vw = Math.min(W, (H * 16) / 9);
       const vh = (vw * 9) / 16;
-      return { W, H, cw, ch, cx: W / 2, cy: (H - vh) / 2 + vh * 0.49, size: vw * 0.815 };
+      return { W, H, cw, ch, cx: W / 2, cy: (H - vh) / 2 + vh * 0.482, size: vw * 0.815, eyeDX: vw * 0.224, eyeW: vw * 0.354, wing: 1, conv: 0 };
+    }
+
+    // The frame a painting gets when it lives in a gutter. Scenes see it as
+    // their whole world, so anything sized to L.W and L.H stays inside it.
+    panelLayout(side) {
+      const { W, H, cw, ch } = this;
+      const g = this.gutter;
+      return { W: g, H, cw, ch, cx: g / 2, cy: H * 0.46, size: Math.min(g * 1.6, H * 0.95), x: side === 'left' ? 0 : W - g };
+    }
+
+    drawPanel(ctx, entry, side) {
+      const L = this.panelLayout(side);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(L.x, 0, L.W, L.H);
+      ctx.clip();
+      ctx.translate(L.x, 0);
+      SCENES[entry.name].draw(ctx, L, entry.state, this.time - entry.t0, this.params);
+      ctx.restore();
+      // Fade the painting into an oval, so full-bleed scenes float in the gutter
+      // instead of ending in the edges of a rectangle.
+      const rx = L.W * 0.52;
+      const ry = Math.min(L.H * 0.4, L.W * 0.86);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(L.x, 0, L.W, L.H);
+      ctx.clip();
+      ctx.translate(L.x + L.cx, L.cy);
+      ctx.scale(rx, ry);
+      const gr = ctx.createRadialGradient(0, 0, 0.55, 0, 0, 1);
+      gr.addColorStop(0, 'rgba(0,0,0,0)');
+      gr.addColorStop(1, 'rgba(0,0,0,1)');
+      ctx.fillStyle = gr;
+      ctx.fillRect(-(L.W / rx) * 2, -(L.H / ry) * 2, (L.W / rx) * 4, (L.H / ry) * 4);
+      ctx.restore();
     }
 
     setMode(mode, instant = false) {
       this.mode = mode;
-      if (instant) this.layout = this.layoutFor(mode);
+      if (instant) {
+        this.layout = this.layoutFor(mode);
+        this.dim = this.dimTarget;
+      }
+    }
+
+    get dimTarget() {
+      return this.mode !== 'chat' ? 1 : this.sideMode ? 0.96 : 0.36;
     }
 
     setScene(name, opts = {}, { instant = false, duration = 1.5 } = {}) {
       const def = SCENES[name] ? name : 'eyes';
       const entry = { name: def, opts, t0: this.time, state: null };
-      entry.state = SCENES[def].init ? SCENES[def].init(opts, this.layout, rng(this.seed++)) : {};
+      if (def === 'eyes') {
+        // One eye state for the whole session, so an eye that stays on screen
+        // doesn't restart when the scene around it changes.
+        if (instant || !this.eyeState) {
+          this.eyeState = SCENES.eyes.init(opts, this.layout, rng(this.seed++));
+          this.eyeT0 = this.time;
+        }
+        entry.state = this.eyeState;
+      } else {
+        const L = this.sideMode ? this.panelLayout('left') : this.layout;
+        entry.state = SCENES[def].init ? SCENES[def].init(opts, L, rng(this.seed++)) : {};
+      }
+      if (!this.eyeState) {
+        this.eyeState = SCENES.eyes.init({}, this.layout, rng(this.seed++));
+        this.eyeT0 = this.time;
+      }
       if (instant || !this.current) {
         this.current = entry;
         this.next = null;
@@ -1597,8 +1695,9 @@
       this.morph = { t0: this.time, dur: this.reduced ? 0.4 : duration };
       // Decode order: mostly noise, partly a ripple out from the art's center.
       const { cols, rows } = this;
-      const cx = this.layout.cx / this.cw;
-      const cy = this.layout.cy / this.ch;
+      const origin = this.sideMode ? this.panelLayout('left') : this.layout;
+      const cx = origin.cx / this.cw;
+      const cy = origin.cy / this.ch;
       const md = Math.hypot(Math.max(cx, cols - cx), Math.max(cy, rows - cy) * 2);
       const salt = Math.floor(Math.random() * 1e6);
       for (let y = 0; y < rows; y++) {
@@ -1622,7 +1721,17 @@
       ctx.fillRect(0, 0, sw, sh);
       ctx.setTransform(sw / W, 0, 0, sh / H, 0, 0);
       try {
-        SCENES[entry.name].draw(ctx, this.layout, entry.state, this.time - entry.t0, this.params);
+        const eyeT = this.time - this.eyeT0;
+        if (entry.name === 'eyes') {
+          SCENES.eyes.draw(ctx, this.layout, entry.state, eyeT, this.params);
+        } else if (this.sideMode) {
+          // A painting takes the left gutter while Karyon's eye keeps the right.
+          this.drawPanel(ctx, entry, 'left');
+          SCENES.eyes.update(this.eyeState, eyeT, this.params);
+          SCENES.eyes.drawOne(ctx, this.layout, this.eyeState, eyeT, this.params, 1);
+        } else {
+          SCENES[entry.name].draw(ctx, this.layout, entry.state, this.time - entry.t0, this.params);
+        }
       } catch (err) {
         console.error('scene', entry.name, err);
       }
@@ -1724,8 +1833,16 @@
       const band = 0.22;
       const dim = this.dim;
       const n = cols * rows;
+      // Hovering a side panel lifts its art; the eye in the right gutter is the
+      // same in both scenes, so it skips the decode glitch.
+      const side = this.sideMode;
+      const gutterCols = side ? Math.floor(this.gutter / cw) : 0;
+      const rightCol = side ? cols - gutterCols : Infinity;
+      this.hoverL += ((this.hover === 'left' ? 1 : 0) - this.hoverL) * 0.2;
+      this.hoverR += ((this.hover === 'right' ? 1 : 0) - this.hoverR) * 0.2;
       for (let c = 0; c < n; c++) {
-        if (p < 0) this.glyph(this.A, c);
+        const x = c % cols;
+        if (p < 0 || x >= rightCol) this.glyph(p < 0 ? this.A : this.B, c);
         else {
           const o = this.order[c];
           if (p < o) this.glyph(this.A, c);
@@ -1740,8 +1857,8 @@
         }
         const g = this.gi;
         if (g < 0) continue;
-        const lv = clamp(Math.round(this.gv * dim * (LEVELS - 1)), 1, LEVELS - 1);
-        const x = c % cols;
+        const lift = !side ? 1 : x < gutterCols ? 1 + 0.4 * this.hoverL : x >= rightCol ? 1 + 0.4 * this.hoverR : 1;
+        const lv = clamp(Math.round(this.gv * dim * lift * (LEVELS - 1)), 1, LEVELS - 1);
         const y = (c / cols) | 0;
         ctx.drawImage(atlas, g * gw, lv * gh, gw, gh, Math.round(x * cw * dpr), Math.round(y * ch * dpr), gw, gh);
       }
@@ -1756,8 +1873,9 @@
       this.frame++;
       const target = this.layoutFor(this.mode);
       const k = this.reduced ? 1 : 1 - Math.exp(-dt * 3);
-      for (const key of ['cx', 'cy', 'size']) this.layout[key] = lerp(this.layout[key], target[key], k);
+      for (const key of ['cx', 'cy', 'size', 'eyeDX', 'eyeW', 'wing', 'conv']) this.layout[key] = lerp(this.layout[key], target[key], k);
       Object.assign(this.layout, { W: this.W, H: this.H, cw: this.cw, ch: this.ch });
+      this.dim = lerp(this.dim, this.dimTarget, k);
       if (this.onStep) this.onStep(this.time, dt);
       this.draw();
     }
