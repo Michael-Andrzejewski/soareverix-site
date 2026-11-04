@@ -55,7 +55,7 @@
     } else {
       // The greeting sits under the eyes, and always fits above the dock.
       const L = engine.layoutFor('hero');
-      const under = L.cy + L.eyeW * 0.2 + 8;
+      const under = L.cy + L.eyeW * 0.15 + 10;
       const need = (greetingEl ? greetingEl.el.offsetHeight : 64) + 10;
       root.style.setProperty('--log-top', `${Math.round(Math.max(44, Math.min(under, innerHeight - dockH - 6 - need)))}px`);
     }
