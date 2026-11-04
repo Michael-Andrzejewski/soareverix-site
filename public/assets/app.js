@@ -485,6 +485,8 @@
             paint(data);
           } else if (event === 'eyes') {
             modelExpression = data.expression;
+          } else if (event === 'limits') {
+            note.textContent = data.note || '';
           } else if (event === 'end') {
             ending = { until: data.closed_until };
           } else if (event === 'text') {

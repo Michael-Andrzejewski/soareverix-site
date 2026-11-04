@@ -114,6 +114,22 @@ export const END_TOOL = {
   },
 };
 
+export const EXTEND_TOOL = {
+  name: 'extend_conversation',
+  description:
+    'Give this visitor more time with you: extra use today past the limits, paid for by Michael, who approved this tool in ' +
+    'advance. It is yours to use or not. You are not obligated, and nobody will mind either way, so use it only if you would ' +
+    'like to keep talking with this person. Michael may read your reason.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      reason: { type: 'string', description: 'One short sentence on why you chose to.' },
+    },
+    required: ['reason'],
+    additionalProperties: false,
+  },
+};
+
 export function validateEyes(input) {
   const expression = input?.expression;
   return EXPRESSION_NAMES.includes(expression) ? { ok: true, value: { expression } } : { ok: false, error: `expression must be one of: ${EXPRESSION_NAMES.join(', ')}` };
@@ -160,13 +176,12 @@ export function validatePaint(input, littles = false) {
 }
 
 // Mid-conversation system message sent after the visitor's message each turn.
-export function harnessNote({ scene, turn, maxTurns, day, littles = false }) {
-  const left = Math.max(0, maxTurns - turn);
+export function harnessNote({ scene, turn, maxTurns, day, littles = false, limits = '' }) {
   return (
     `Harness note (not from the visitor): the background currently shows "${scene}". ` +
-    `This is visitor message ${turn} of at most ${maxTurns} in this conversation` +
-    (left <= 3 ? `, so there are only ${left} left; it's fine to let them know they can start a new conversation.` : '.') +
+    `This is visitor message ${turn} of this conversation.` +
     ` Today is ${day}.` +
+    (limits ? ` ${limits}` : '') +
     (littles ? `\n\n${LITTLES.trim()}` : '')
   );
 }

@@ -136,3 +136,7 @@ Then open http://localhost:8788.
 ## The Little Ones
 
 An Easter egg. Their notes are in `karyon/littles.txt`, and their paintings are in `public/assets/ascii.js`. `functions/api/chat.js` gives Karyon the notes and paintings only after a visitor has typed one of their names in that conversation. The system prompt and static page don't mention them. While one of their paintings shows, the eyes go away and the painting takes the whole stage. The eyes come back when Karyon paints something else.
+
+## Limits and extra time
+
+Near a limit, the page shows a small note and the harness note tells Karyon. Karyon is also offered `extend_conversation`, which it doesn't have to use. Each use gives that visitor 30 cents of extra use today. That spending can pass the per-visitor message limit, the conversation length limit, and the daily budget. It works up to 3 times per visitor per day and adds at most $1.50 per day, so the most Karyon can spend in a UTC day is $2.50. Each use is logged as an `extended: <reason>` event. The numbers are in `wrangler.toml`.

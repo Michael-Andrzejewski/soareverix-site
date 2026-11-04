@@ -33,6 +33,14 @@ KARYON_FALLBACKS = "default"
 MAX_MESSAGES_PER_VISITOR_PER_DAY = "60"
 MAX_TURNS_PER_CONVERSATION = "40"
 MAX_MESSAGE_CHARS = "1500"
+# Warn the visitor and Karyon when this few messages are left.
+LIMIT_WARN_MESSAGES = "8"
+# Karyon's extend_conversation tool: how much extra time each use gives a visitor,
+# how many times a day it works per visitor, and the most it can add in a day. The
+# most Karyon can spend in a UTC day is DAILY_LIMIT_USD + MAX_EXTENSION_USD_PER_DAY.
+EXTENSION_USD = "0.30"
+MAX_EXTENSIONS_PER_VISITOR_PER_DAY = "3"
+MAX_EXTENSION_USD_PER_DAY = "1.50"
 
 # Secrets (never in this file). Set each once:
 #   npx wrangler pages secret put ANTHROPIC_API_KEY

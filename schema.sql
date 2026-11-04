@@ -60,3 +60,14 @@ CREATE TABLE IF NOT EXISTS visitor_days (
   messages INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (visitor, day)
 );
+
+-- Extra time Karyon has given a visitor today, and how much of it they've used.
+-- functions/_lib/budget.js also creates this table when it's missing.
+CREATE TABLE IF NOT EXISTS visitor_extensions (
+  visitor      TEXT NOT NULL,
+  day          TEXT NOT NULL,
+  extensions   INTEGER NOT NULL DEFAULT 0,
+  bonus_micros INTEGER NOT NULL DEFAULT 0,
+  over_micros  INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (visitor, day)
+);

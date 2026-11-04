@@ -206,6 +206,29 @@ async function chat(message, conversation_id) {
   check(/budget resets at midnight UTC/.test(said), 'over-budget message instead of an API call');
   const calls = fs.readFileSync('.wrangler/e2e-mock.jsonl', 'utf8').trim().split('\n').length;
   check(calls === sent.length + 2, 'no API call was made past the cap', `${calls} calls`);
+
+  // ---- warnings near a limit, and extra time from Karyon ----
+  const lastBody = () => fs.readFileSync('.wrangler/e2e-mock.jsonl', 'utf8').trim().split('\n').map((l) => JSON.parse(l)).at(-1).body;
+  const limitNote = (r) => r.events.filter((e) => e.ev === 'limits').at(-1)?.data.note || '';
+  d1(`UPDATE daily_spend SET spent_micros = 0 WHERE day = '${today}'`);
+  d1('DELETE FROM visitor_extensions');
+  d1(`UPDATE visitor_days SET messages = 20 WHERE day = '${today}'`);
+  const roomy = await chat('Hello there');
+  check(limitNote(roomy) === '' && !lastBody().tools.some((t) => t.name === 'extend_conversation'), 'no warning and no extend tool with plenty of room');
+  d1(`UPDATE visitor_days SET messages = 55 WHERE day = '${today}'`);
+  const warned = await chat('Hello again');
+  check(limitNote(warned) === '4 messages left today.', 'the visitor is warned near the limit', limitNote(warned));
+  check(lastBody().tools.some((t) => t.name === 'extend_conversation') && /4 more messages today/.test(lastBody().messages.at(-1).content), 'Karyon is warned and offered the extend tool');
+  const extended = await chat('Please extend our time');
+  check(/extra time: about 30 cents/.test(limitNote(extended)), 'extending gives this visitor 30 cents', limitNote(extended));
+  d1(`UPDATE visitor_days SET messages = 100 WHERE day = '${today}'`);
+  const past = await chat('Still here?');
+  check(past.status === 200 && past.events.some((e) => e.ev === 'text'), 'extra time carries the visitor past the limit');
+  d1(`UPDATE visitor_extensions SET over_micros = bonus_micros`);
+  const spentOut = await chat('And now?');
+  check(spentOut.status === 429 && spentOut.json?.error === 'visitor_limit', 'the limit returns when the extra time is used up');
+  d1('DELETE FROM visitor_extensions');
+  d1(`UPDATE visitor_days SET messages = 0 WHERE day = '${today}'`);
   d1(`DELETE FROM daily_spend WHERE day = '${today}'`);
 
   console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');

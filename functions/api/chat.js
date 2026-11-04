@@ -4,20 +4,22 @@
 //   scene { scene, caption?, svg? }     when Karyon repaints the art
 //   eyes  { expression }                when Karyon changes its expression
 //   end   { closed_until }              when Karyon ends the conversation
+//   limits { note }                     a short line for the visitor when a limit is near
 //   text  { delta }                     reply text as it is generated
 //   done  { stop_reason }               reply finished
 //   error { code, message }             budget, limits, or upstream trouble
 // Every visitor message, reply, tool call, and error is logged to D1.
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM, PAINT_TOOL, PAINT_TOOL_LITTLES, EYES_TOOL, END_TOOL, ALL_SCENE_NAMES, namesALittle, validatePaint, validateEyes, validateEnd, harnessNote } from '../_lib/karyon.js';
+import { SYSTEM, PAINT_TOOL, PAINT_TOOL_LITTLES, EYES_TOOL, END_TOOL, EXTEND_TOOL, ALL_SCENE_NAMES, namesALittle, validatePaint, validateEyes, validateEnd, harnessNote } from '../_lib/karyon.js';
 import { closedUntil, closeConversation } from '../_lib/closures.js';
 import { responseMicros, worstCaseMicros } from '../_lib/pricing.js';
-import { reserve, settle, spentToday, countVisitorMessage } from '../_lib/budget.js';
+import { reserve, settle, spentToday, countVisitorMessage, extensionState, grantExtension, useExtension } from '../_lib/budget.js';
 import { utcDay, nowIso, num, json, isUuid, visitorId } from '../_lib/util.js';
 
 const HISTORY_MESSAGES = 24; // earlier turns sent back to the model (12 exchanges)
 const MAX_API_CALLS = 3; // per visitor message: paint, reply, and one spare
 const MAX_TOKENS = 3072; // thinking + reply; also bounds the worst-case cost hold
+const BUDGET_WARN_SHARE = 0.85; // warn once this share of the daily budget is spent
 
 const MESSAGES_FOR = {
   budget:
@@ -94,9 +96,14 @@ export async function onRequestPost(context) {
     return json({ error: code, message: MESSAGES_FOR[code], conversation_id: conversationId }, status);
   };
   if (!env.ANTHROPIC_API_KEY) return refuseEarly('not_configured', 503);
-  if (convo.turns >= maxTurns) return refuseEarly('conversation_limit', 429);
+  const maxMessages = num(env.MAX_MESSAGES_PER_VISITOR_PER_DAY, 60);
   const visitorCount = await countVisitorMessage(db, visitor, day);
-  if (visitorCount > num(env.MAX_MESSAGES_PER_VISITOR_PER_DAY, 60)) return refuseEarly('visitor_limit', 429);
+  const ext = await extensionState(db, visitor, day);
+  const pastTurns = convo.turns >= maxTurns;
+  const pastMessages = visitorCount > maxMessages;
+  // Extra time from Karyon carries a visitor past these limits until it's used up.
+  if ((pastTurns || pastMessages) && ext.over >= ext.bonus) return refuseEarly(pastTurns ? 'conversation_limit' : 'visitor_limit', 429);
+  const usage = { messagesLeft: maxMessages - visitorCount, turnsLeft: maxTurns - turn, past: pastTurns || pastMessages, ext };
 
   // The page says what's showing, because a visitor can clear the painting.
   const [history, currentScene] = await Promise.all([
@@ -121,7 +128,7 @@ export async function onRequestPost(context) {
   const run = async () => {
     try {
       await reply({
-        env, db, day, conversationId, visitor, text: said, history, currentScene, turn, maxTurns, send,
+        env, db, day, conversationId, visitor, text: said, history, currentScene, turn, maxTurns, usage, send,
         setActive: (s) => (activeStream = s),
         isGone: () => clientGone,
       });
@@ -144,7 +151,7 @@ export async function onRequestPost(context) {
   });
 }
 
-async function reply({ env, db, day, conversationId, visitor, text, history, currentScene, turn, maxTurns, send, setActive, isGone }) {
+async function reply({ env, db, day, conversationId, visitor, text, history, currentScene, turn, maxTurns, usage, send, setActive, isGone }) {
   const client = new Anthropic({
     apiKey: env.ANTHROPIC_API_KEY,
     // Only set for local testing against scripts/mock-anthropic.mjs.
@@ -159,12 +166,42 @@ async function reply({ env, db, day, conversationId, visitor, text, history, cur
 
   // Only the visitor's own words count, not anything Karyon has said.
   const littles = namesALittle(text) || history.some((m) => m.role === 'user' && namesALittle(m.content));
+  const { ext } = usage;
+  const extendMicros = Math.round(num(env.EXTENSION_USD, 0.3) * 1e6);
+  const maxExtensions = num(env.MAX_EXTENSIONS_PER_VISITOR_PER_DAY, 3);
+  const maxExtensionMicros = Math.round(num(env.MAX_EXTENSION_USD_PER_DAY, 1.5) * 1e6);
+  const today = await spentToday(db, day);
+  const budgetLow = today.spent + today.held >= limitMicros * BUDGET_WARN_SHARE;
+  const left = Math.min(usage.messagesLeft, usage.turnsLeft);
+  const leftWhere = usage.turnsLeft < usage.messagesLeft ? 'in this conversation' : 'today';
+  const near = usage.past || budgetLow || left <= num(env.LIMIT_WARN_MESSAGES, 8);
+  const canExtend = near && ext.extensions < maxExtensions && ext.total + extendMicros <= maxExtensionMicros;
+  const extraCents = () => Math.max(0, Math.round((ext.bonus - ext.over) / 1e4));
+  const limitsNote = () => {
+    if (ext.bonus > ext.over) return `Karyon gave you extra time: about ${extraCents()} cents left.`;
+    if (budgetLow) return "Karyon's budget for today is almost spent.";
+    return near ? `${left} ${left === 1 ? 'message' : 'messages'} left ${leftWhere}.` : '';
+  };
+  const limitsForKaryon = () => {
+    if (!near) return '';
+    const parts = [];
+    if (ext.bonus > ext.over) parts.push(`This visitor has about ${extraCents()} cents of extra time left, which you gave them.`);
+    else if (budgetLow) parts.push(`Today's shared budget is almost spent, so the conversation may stop soon.`);
+    if (!usage.past) parts.push(`This visitor can send ${left} more ${left === 1 ? 'message' : 'messages'} ${leftWhere}, and the page shows them a small note about it.`);
+    if (canExtend) parts.push(`If you'd like to keep talking with them, extend_conversation adds ${Math.round(extendMicros / 1e4)} cents of extra time. Using it is entirely your choice.`);
+    return parts.join(' ');
+  };
+  send('limits', { note: limitsNote() });
+
   const messages = [
     ...history,
     { role: 'user', content: text },
-    { role: 'system', content: harnessNote({ scene: currentScene, turn, maxTurns, day, littles }) },
+    { role: 'system', content: harnessNote({ scene: currentScene, turn, maxTurns, day, littles, limits: limitsForKaryon() }) },
   ];
 
+  // Someone with extra time left can spend past the shared daily budget too.
+  const capMicros = () => limitMicros + (ext.bonus > ext.over ? ext.total : 0);
+  let extendResult = null;
   let painted = null;
   let replyText = '';
   let stopReason = null;
@@ -176,12 +213,12 @@ async function reply({ env, db, day, conversationId, visitor, text, history, cur
   for (let call = 0; call < MAX_API_CALLS && !isGone(); call++) {
     const { spent } = await spentToday(db, day);
     let model = spent >= economyAfterMicros ? economy : primary;
-    let params = buildParams(env, model, messages, call === MAX_API_CALLS - 1, littles);
-    let hold = await reserve(db, day, holdFor(env, params), limitMicros);
+    let params = buildParams(env, model, messages, call === MAX_API_CALLS - 1, littles, canExtend);
+    let hold = await reserve(db, day, holdFor(env, params), capMicros());
     if (!hold && model !== economy) {
       model = economy;
-      params = buildParams(env, model, messages, call === MAX_API_CALLS - 1, littles);
-      hold = await reserve(db, day, holdFor(env, params), limitMicros);
+      params = buildParams(env, model, messages, call === MAX_API_CALLS - 1, littles, canExtend);
+      hold = await reserve(db, day, holdFor(env, params), capMicros());
     }
     if (!hold) {
       stopReason = 'budget';
@@ -233,6 +270,11 @@ ${delta}` : delta;
     const micros = used ? responseMicros(used, model) : 0;
     await settle(db, day, hold, micros);
     totalMicros += micros;
+    // Spending past a limit comes out of the extra time.
+    if (ext.bonus > 0 && (usage.past || spent >= limitMicros)) {
+      await useExtension(db, visitor, day, micros);
+      ext.over += micros;
+    }
     lastModel = used?.model || model;
     if (used?.usage) {
       tokens.input += used.usage.input_tokens || 0;
@@ -278,6 +320,20 @@ ${delta}` : delta;
       break;
     }
 
+    const extending = toolUses.find((use) => use.name === EXTEND_TOOL.name);
+    if (extending) {
+      const check = validateEnd(extending.input);
+      const granted = canExtend && !extendResult?.granted && check.ok && (await grantExtension(db, visitor, day, extendMicros, maxExtensions, maxExtensionMicros));
+      extendResult = { granted };
+      if (granted) {
+        ext.extensions += 1;
+        ext.bonus += extendMicros;
+        ext.total += extendMicros;
+        await logMessage(db, conversationId, { role: 'event', content: `extended: ${check.value.reason}` });
+        send('limits', { note: limitsNote() });
+      }
+    }
+
     for (const use of toolUses) {
       if (painted || use.name !== PAINT_TOOL.name) continue;
       const check = validatePaint(use.input, littles);
@@ -288,7 +344,7 @@ ${delta}` : delta;
     }
 
     messages.push({ role: 'assistant', content: message.content });
-    messages.push({ role: 'user', content: toolUses.map((use) => toolResult(use, painted, littles)) });
+    messages.push({ role: 'user', content: toolUses.map((use) => toolResult(use, painted, littles, extendResult)) });
   }
 
   if (!replyText.trim() && stopReason !== 'client_closed' && stopReason !== 'error' && stopReason !== 'budget') {
@@ -317,12 +373,12 @@ ${delta}` : delta;
     .run();
 }
 
-function buildParams(env, model, messages, lastCall, littles) {
+function buildParams(env, model, messages, lastCall, littles, canExtend) {
   const params = {
     model,
     max_tokens: MAX_TOKENS,
     system: SYSTEM,
-    tools: [littles ? PAINT_TOOL_LITTLES : PAINT_TOOL, EYES_TOOL, END_TOOL],
+    tools: [littles ? PAINT_TOOL_LITTLES : PAINT_TOOL, EYES_TOOL, END_TOOL, ...(canExtend ? [EXTEND_TOOL] : [])],
     messages,
     // Thinking is adaptive (the default on both models); effort sets how much.
     output_config: { effort: model === (env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5') ? env.KARYON_ECONOMY_EFFORT || 'medium' : env.KARYON_EFFORT || 'low' },
@@ -345,7 +401,12 @@ function holdFor(env, params) {
   return worstCaseMicros(params.model, JSON.stringify(params).length, params.max_tokens, usesFallback(env, params.model));
 }
 
-function toolResult(use, painted, littles) {
+function toolResult(use, painted, littles, extendResult) {
+  if (use.name === EXTEND_TOOL.name) {
+    return extendResult?.granted
+      ? { type: 'tool_result', tool_use_id: use.id, content: 'Done. This visitor has more time with you today. Write your reply to the visitor now.' }
+      : { type: 'tool_result', tool_use_id: use.id, is_error: true, content: 'No extra time is available right now. Write your reply to the visitor now.' };
+  }
   if (use.name === EYES_TOOL.name) {
     const check = validateEyes(use.input);
     return check.ok

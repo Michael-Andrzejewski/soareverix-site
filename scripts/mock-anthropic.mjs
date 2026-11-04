@@ -99,6 +99,14 @@ http
         'tool_use',
       );
     }
+    if (/extend/i.test(question) && !afterTool && body.tools.some((t) => t.name === 'extend_conversation')) {
+      return stream(
+        res,
+        body.model,
+        [{ type: 'tool_use', id: `toolu_mock_${n}`, name: 'extend_conversation', input: { reason: 'Mock: a good conversation.' } }],
+        'tool_use',
+      );
+    }
     if (/squint|suspicious/i.test(question) && !afterTool) {
       return stream(
         res,
