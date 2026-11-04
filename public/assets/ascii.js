@@ -57,16 +57,38 @@
     [0.85, [255, 206, 112]],
     [1, [255, 242, 210]],
   ];
-  function gold(t) {
-    for (let i = 1; i < GOLD.length; i++) {
-      if (t <= GOLD[i][0]) {
-        const [t0, a] = GOLD[i - 1];
-        const [t1, b] = GOLD[i];
+  const shade = (mid, high, top) => [[0, [8, 7, 8]], [0.3, mid.map((v) => Math.round(v * 0.5))], [0.62, mid], [0.85, high], [1, top]];
+  // Index 0 is gold. A scene can color any of its parts with the others.
+  const PALETTES = [
+    GOLD,
+    shade([214, 194, 156], [246, 232, 200], [255, 250, 238]), // cream
+    shade([206, 206, 214], [238, 238, 244], [255, 255, 255]), // white
+    shade([150, 150, 160], [196, 196, 206], [235, 235, 242]), // grey
+    shade([226, 58, 48], [255, 108, 90], [255, 205, 190]), // red
+    shade([232, 98, 150], [255, 160, 196], [255, 225, 236]), // rose
+    shade([150, 104, 232], [196, 160, 255], [236, 222, 255]), // violet
+    shade([246, 116, 54], [255, 165, 110], [255, 226, 200]), // orange
+    shade([164, 104, 58], [204, 148, 98], [240, 210, 175]), // brown
+  ];
+  const PAL = { gold: 0, cream: 1, white: 2, grey: 3, red: 4, rose: 5, violet: 6, orange: 7, brown: 8 };
+  function ramp(stops, t) {
+    for (let i = 1; i < stops.length; i++) {
+      if (t <= stops[i][0]) {
+        const [t0, a] = stops[i - 1];
+        const [t1, b] = stops[i];
         const k = (t - t0) / (t1 - t0);
         return `rgb(${a.map((v, j) => Math.round(lerp(v, b[j], k))).join(',')})`;
       }
     }
-    return 'rgb(255,242,210)';
+    return `rgb(${stops[stops.length - 1][1].join(',')})`;
+  }
+  // Marks an ellipse of the current drawing with a color. Later marks win. The
+  // letters inside it use that color. This works under any transform of g.
+  let tintMarks = null;
+  function tint(g, x, y, rx, ry, name) {
+    if (!tintMarks) return;
+    const m = g.getTransform();
+    tintMarks.push(m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f, Math.hypot(m.a, m.b) * rx, Math.hypot(m.c, m.d) * ry, PAL[name]);
   }
 
   // ---------------------------------------------------------------------------
@@ -1468,6 +1490,554 @@
   };
 
   // --- Custom: an SVG Karyon drew, turned into brightness ---------------------------
+  // --- The Little Ones ---------------------------------------------------------
+  // Michael's plush family, drawn from photos of them. Karyon only gets these
+  // scenes once a visitor has asked for one by name. Each is built from soft blobs
+  // with dark seams, and tint() gives its parts their own colors.
+  function blob(g, x, y, rx, ry, v, rot = 0) {
+    g.fillStyle = grey(v);
+    g.beginPath();
+    g.ellipse(x, y, Math.max(rx, 0.1), Math.max(ry, 0.1), rot, 0, TAU);
+    g.fill();
+  }
+  // A blob with a dark rim, which keeps overlapping parts apart.
+  function part(g, x, y, rx, ry, v, rim, rot = 0) {
+    blob(g, x, y, rx + rim, ry + rim, 0.04, rot);
+    blob(g, x, y, rx, ry, v, rot);
+  }
+  function heart(g, x, y, r, v) {
+    blob(g, x - r * 0.5, y - r * 0.3, r * 0.56, r * 0.56, v);
+    blob(g, x + r * 0.5, y - r * 0.3, r * 0.56, r * 0.56, v);
+    g.fillStyle = grey(v);
+    g.beginPath();
+    g.moveTo(x - r * 1.02, y - r * 0.12);
+    g.lineTo(x + r * 1.02, y - r * 0.12);
+    g.lineTo(x, y + r);
+    g.fill();
+  }
+  const blinking = (t, seed = 0) => (t + seed) % 4.3 < 0.14;
+  const bubbles = (g, L, t, n, seed = 0) => {
+    for (let i = 0; i < n; i++) {
+      const k = hash(i * 13 + seed);
+      const speed = 0.05 + k * 0.05;
+      const y = L.H * (1 - ((t * speed + k * 7) % 1));
+      const x = L.W * hash(i * 29 + seed) + Math.sin(t * 1.4 + i) * L.W * 0.012;
+      const r = L.size * (0.005 + hash(i * 41 + seed) * 0.011);
+      g.strokeStyle = grey(0.5);
+      g.lineWidth = Math.max(1.5, r * 0.45);
+      g.beginPath();
+      g.arc(x, y, r, 0, TAU);
+      g.stroke();
+    }
+  };
+  // Small dark eyes with a glint, used by both bears.
+  function bearEyes(g, u, t, seed, ex, ey, rx, ry) {
+    for (const s of [-1, 1]) {
+      if (blinking(t, seed)) blob(g, s * ex * u, ey * u, rx * u, 1.1 * u, 0);
+      else {
+        blob(g, s * ex * u, ey * u, rx * u, ry * u, 0);
+        blob(g, s * ex * u + rx * 0.3 * u, (ey - ry * 0.35) * u, rx * 0.34 * u, rx * 0.34 * u, 1);
+      }
+    }
+  }
+
+  // A big white bear, sitting with her feet out: grey soles with pink hearts, a
+  // heart on her chest, a big brown nose, and a ribbon bow of hearts.
+  function drawLittleX(g, x, y, S, t, sword = false) {
+    const u = S / 100;
+    const rim = u * 1.1;
+    const fur = 0.86;
+    const pulse = 1 + Math.max(0, Math.sin(t * 2.4)) * 0.14;
+    g.save();
+    g.translate(x, y);
+    tint(g, 0, -50 * u, 56 * u, 64 * u, 'white');
+    for (const s of [-1, 1]) part(g, s * 28 * u, -43 * u, 9.5 * u, 19 * u, fur * 0.92, rim, s * 0.3);
+    part(g, 0, -36 * u, 29 * u, 31 * u, fur, rim);
+    heart(g, 0, -33 * u, 7.5 * u * pulse, 0.7);
+    tint(g, 0, -33 * u, 9 * u, 9 * u, 'rose');
+    // The head, which tilts a little.
+    g.save();
+    g.translate(0, -72 * u);
+    g.rotate(Math.sin(t * 0.5 + 2.3) * 0.035);
+    for (const s of [-1, 1]) part(g, s * 21 * u, -19 * u, 9 * u, 9 * u, fur, rim);
+    part(g, 0, 0, 28 * u, 25 * u, fur, rim);
+    blob(g, 0, 9 * u, 14 * u, 11 * u, 1);
+    blob(g, 0, 4.5 * u, 7 * u, 5.4 * u, 0.42);
+    tint(g, 0, 4.5 * u, 7 * u, 5 * u, 'brown');
+    g.strokeStyle = grey(0.08);
+    g.lineWidth = u * 1.3;
+    g.beginPath();
+    g.moveTo(-6 * u, 13.5 * u);
+    g.quadraticCurveTo(0, 18 * u, 6 * u, 13.5 * u);
+    g.stroke();
+    bearEyes(g, u, t, 2.3, 13, -7, 4.6, 5.6);
+    g.restore();
+    // The bow at her neck.
+    g.save();
+    g.translate(0, -49 * u);
+    for (const s of [-1, 1]) {
+      g.fillStyle = grey(0.04);
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.lineTo(s * 18 * u, -9 * u);
+      g.lineTo(s * 18 * u, 9 * u);
+      g.fill();
+      g.fillStyle = grey(0.66);
+      g.beginPath();
+      g.moveTo(s * 1.5 * u, 0);
+      g.lineTo(s * 15.5 * u, -6.5 * u);
+      g.lineTo(s * 15.5 * u, 6.5 * u);
+      g.fill();
+      tint(g, s * 9 * u, 0, 10 * u, 8 * u, 'red');
+    }
+    blob(g, 0, 0, 4 * u, 4 * u, 0.86);
+    tint(g, 0, 0, 4.5 * u, 4.5 * u, 'red');
+    g.restore();
+    // Her feet point at you, with the soles showing.
+    for (const s of [-1, 1]) {
+      const fx = s * 30 * u;
+      part(g, fx, -12 * u, 16 * u, 15 * u, fur, rim);
+      blob(g, fx, -11 * u, 11 * u, 10.5 * u, 0.4);
+      tint(g, fx, -11 * u, 11 * u, 10.5 * u, 'grey');
+      heart(g, fx, -9 * u, 4.6 * u, 0.82);
+      tint(g, fx, -9 * u, 5.5 * u, 5 * u, 'rose');
+      for (const k of [-1, 0, 1]) {
+        blob(g, fx + k * 5.4 * u, -18 * u + Math.abs(k) * 1.4 * u, 1.9 * u, 1.9 * u, 0.82);
+        tint(g, fx + k * 5.4 * u, -18 * u, 2.4 * u, 2.4 * u, 'rose');
+      }
+    }
+    if (sword) {
+      const hx = 37 * u;
+      const hy = -45 * u;
+      g.fillStyle = grey(0.04);
+      g.fillRect(hx - 4.2 * u, hy - 66 * u, 8.4 * u, 62 * u);
+      g.fillStyle = grey(0.82);
+      g.beginPath();
+      g.moveTo(hx - 3 * u, hy - 8 * u);
+      g.lineTo(hx - 3 * u, hy - 58 * u);
+      g.lineTo(hx, hy - 66 * u);
+      g.lineTo(hx + 3 * u, hy - 58 * u);
+      g.lineTo(hx + 3 * u, hy - 8 * u);
+      g.fill();
+      // A gleam runs up the blade now and then.
+      const gleam = (t % 3.6) / 0.7;
+      if (gleam < 1) {
+        g.fillStyle = grey(1);
+        g.fillRect(hx - 3 * u, hy - 8 * u - gleam * 52 * u - 7 * u, 6 * u, 14 * u);
+      }
+      if (gleam >= 0.82 && gleam < 1) star4(g, hx, hy - 66 * u, 16 * u, 1);
+      g.fillStyle = grey(0.95);
+      g.fillRect(hx - 11 * u, hy - 9 * u, 22 * u, 4.5 * u);
+      part(g, hx, hy + 2 * u, 7.5 * u, 7.5 * u, fur, rim);
+    }
+    g.restore();
+  }
+
+  // A small, slim cream bear: little ears, dot eyes, a dark triangle nose, and a
+  // red and white scarf with a long fringed tail.
+  function drawLittleM(g, x, y, S, t) {
+    const u = S / 100;
+    const rim = u * 1.1;
+    const fur = 0.74;
+    g.save();
+    g.translate(x, y);
+    tint(g, 0, -50 * u, 40 * u, 58 * u, 'cream');
+    for (const s of [-1, 1]) part(g, s * 17 * u, -9 * u, 12 * u, 9 * u, fur, rim);
+    for (const s of [-1, 1]) part(g, s * 23 * u, -33 * u, 6 * u, 19 * u, fur * 0.92, rim, s * 0.16);
+    part(g, 0, -33 * u, 19 * u, 24 * u, fur, rim);
+    // The head, tilted as if thinking.
+    g.save();
+    g.translate(0, -70 * u);
+    g.rotate(-0.07 + Math.sin(t * 0.5 + 1.1) * 0.035);
+    for (const s of [-1, 1]) part(g, s * 16 * u, -17 * u, 7 * u, 7 * u, fur, rim);
+    part(g, 0, 0, 22 * u, 21 * u, fur, rim);
+    blob(g, 0, 7 * u, 10 * u, 8 * u, 0.94);
+    g.fillStyle = grey(0);
+    g.beginPath();
+    g.moveTo(-4.4 * u, 2.5 * u);
+    g.lineTo(4.4 * u, 2.5 * u);
+    g.lineTo(0, 7.5 * u);
+    g.fill();
+    g.fillRect(-0.7 * u, 7 * u, 1.4 * u, 5 * u);
+    bearEyes(g, u, t, 1.1, 10, -5, 3.8, 4.4);
+    g.restore();
+    // The scarf: stripes around the neck, and a tail hanging down the front.
+    blob(g, 0, -50 * u, 26 * u, 8.5 * u, 0.04);
+    for (let k = -3; k <= 3; k++) {
+      const red = k % 2 !== 0;
+      const sx = k * 7 * u;
+      const sy = -50 * u + Math.abs(k) * -0.5 * u;
+      blob(g, sx, sy, 3.6 * u, 6.6 * u, red ? 0.68 : 1);
+      tint(g, sx, sy, 3.9 * u, 7 * u, red ? 'red' : 'white');
+    }
+    for (let k = 0; k < 6; k++) {
+      const red = k % 2 === 0;
+      const sway = Math.sin(t * 1.9 - k * 0.8) * k * 0.55 * u;
+      const sx = 8 * u + sway;
+      const sy = (-41 + k * 5.6) * u;
+      blob(g, sx, sy, 6.6 * u, 3.4 * u, red ? 0.68 : 1);
+      tint(g, sx, sy, 7 * u, 3.4 * u, red ? 'red' : 'white');
+    }
+    const fx = 8 * u + Math.sin(t * 1.9 - 5) * 3 * u;
+    for (const k of [-1, 0, 1]) line(g, fx + k * 4 * u, -11 * u, fx + k * 4.6 * u, -5 * u, grey(0.66), Math.max(1.5, 1.6 * u));
+    tint(g, fx, -8 * u, 7 * u, 4 * u, 'red');
+    g.restore();
+  }
+
+  // A round, fuzzy red ladybug with a grey face at the bottom of the ball.
+  function drawLittleL(g, x, y, S, t, flying = false) {
+    const u = S / 100;
+    g.save();
+    g.translate(x, y);
+    if (flying) {
+      const flap = Math.sin(t * 34) * 0.5 + 0.5;
+      for (const s of [-1, 1]) {
+        blob(g, s * 42 * u, -19 * u - flap * 5 * u, 17 * u, 7 * u + flap * 5 * u, 0.15, s * (0.45 + flap * 0.3));
+        tint(g, s * 39 * u, -22 * u, 24 * u, 18 * u, 'grey');
+      }
+    }
+    part(g, 0, 0, 41 * u, 38 * u, 0.74, u * 1.2);
+    tint(g, 0, 0, 43 * u, 40 * u, 'red');
+    g.fillStyle = grey(0.03);
+    g.fillRect(-1.5 * u, -38 * u, 3 * u, 30 * u);
+    for (const [sx, sy, r] of [[-26, -8, 7.5], [26, -8, 7.5], [-13, -24, 5.5], [13, -24, 5.5]]) blob(g, sx * u, sy * u, r * u, r * u, 0.03);
+    // Her grey face, with a black spot at each corner.
+    part(g, 0, 18 * u, 25 * u, 17 * u, 0.5, u * 1.1);
+    tint(g, 0, 18 * u, 26 * u, 18 * u, 'grey');
+    for (const s of [-1, 1]) blob(g, s * 23 * u, 4 * u, 6.5 * u, 6 * u, 0.03);
+    for (const s of [-1, 1]) {
+      if (blinking(t, 3.1)) blob(g, s * 12 * u, 17 * u, 5 * u, 1.1 * u, 0);
+      else {
+        blob(g, s * 12 * u, 17 * u, 5 * u, 5.4 * u, 0.02);
+        blob(g, s * 12 * u + 1.6 * u, 15 * u, 1.8 * u, 1.8 * u, 1);
+      }
+    }
+    g.strokeStyle = grey(0.04);
+    g.lineWidth = Math.max(1.5, 1.8 * u);
+    g.beginPath();
+    g.moveTo(-5 * u, 24 * u);
+    g.quadraticCurveTo(0, 28.5 * u, 5 * u, 24 * u);
+    g.stroke();
+    g.restore();
+  }
+
+  // A slim white fish with a huge ringed eye, and an orange shrimp lying on its
+  // back. In the stack it sits. On its own it runs on little legs.
+  function drawMrFish(g, x, y, S, t, running = true, legs = true) {
+    const u = S / 100;
+    const hop = running ? Math.abs(Math.sin(t * 9)) * 3 * u : Math.sin(t * 2) * 1.2 * u;
+    g.save();
+    g.translate(x, y);
+    if (legs) {
+      for (const s of [-1, 1]) {
+        const swing = running ? Math.sin(t * 9 + (s > 0 ? 0 : Math.PI)) * 9 * u : 0;
+        line(g, s * 10 * u, -22 * u, s * 10 * u + swing, -5 * u, grey(0.75), 5 * u);
+        blob(g, s * 10 * u + swing + 2.5 * u, -4 * u, 6 * u, 3.2 * u, 0.85);
+      }
+    }
+    g.translate(0, -hop);
+    tint(g, -6 * u, -40 * u, 62 * u, 24 * u, 'white');
+    // The tail, swishing.
+    const swish = Math.sin(t * 7) * 5 * u;
+    g.fillStyle = grey(0.04);
+    g.beginPath();
+    g.moveTo(-40 * u, -40 * u);
+    g.lineTo(-64 * u, -56 * u + swish);
+    g.lineTo(-64 * u, -24 * u + swish);
+    g.fill();
+    g.fillStyle = grey(0.76);
+    g.beginPath();
+    g.moveTo(-41 * u, -40 * u);
+    g.lineTo(-61 * u, -52 * u + swish);
+    g.lineTo(-61 * u, -28 * u + swish);
+    g.fill();
+    // The body tapers toward the tail.
+    part(g, -20 * u, -40 * u, 25 * u, 13 * u, 0.88, u * 1.2);
+    part(g, 8 * u, -40 * u, 33 * u, 20 * u, 0.88, u * 1.2);
+    blob(g, -12 * u, -40 * u, 22 * u, 12 * u, 0.88);
+    blob(g, -14 * u, -33 * u, 11 * u, 5.5 * u, 0.56, 0.2 + Math.sin(t * 7) * 0.15);
+    // The big ringed eye.
+    const look = Math.sin(t * 0.7) * 1.2 * u;
+    blob(g, 19 * u, -42 * u, 17 * u, 17 * u, 0.02);
+    blob(g, 19 * u, -42 * u, 13.6 * u, 13.6 * u, 1);
+    if (blinking(t, 1.7)) blob(g, 19 * u, -42 * u, 14 * u, 2.4 * u, 0.02);
+    else {
+      blob(g, 20 * u + look, -42 * u, 8 * u, 8 * u, 0.02);
+      blob(g, 23 * u + look, -45 * u, 2.5 * u, 2.5 * u, 1);
+    }
+    // The shrimp: a curl of orange segments, with a small tail fan.
+    g.save();
+    g.translate(-8 * u, -64 * u);
+    g.rotate(Math.sin(t * 3) * 0.05);
+    const seg = (k) => {
+      const a = Math.PI * 1.02 - k * 0.5;
+      return [Math.cos(a) * 19 * u, -Math.sin(a) * 8 * u + 2 * u, 6.6 * u - Math.abs(k - 3.5) * 0.7 * u];
+    };
+    for (let k = 0; k < 7; k++) {
+      const [sx, sy, r] = seg(k);
+      blob(g, sx, sy, r + u, r + u, 0.04);
+    }
+    for (let k = 0; k < 7; k++) {
+      const [sx, sy, r] = seg(k);
+      blob(g, sx, sy, r, r, k % 2 ? 0.98 : 0.68);
+    }
+    tint(g, 0, 0, 28 * u, 13 * u, 'orange');
+    g.restore();
+    g.restore();
+  }
+
+  // A soft purple dome with big oval eyes and a small smile, on eight stubby lobes
+  // that are darker underneath. The lobes ripple, and the dome breathes.
+  function drawLittleClaw(g, x, y, S, t, letter = false) {
+    const u = S / 100;
+    const rim = u * 1.2;
+    const lobeY = (k) => Math.sin(t * 1.9 + k * 1.3) * 1.6 * u;
+    const lobe = (lx, ly, rx, ry, k, v = 0.84) => {
+      const wy = ly + lobeY(k);
+      blob(g, lx, wy + 2.5 * u, rx + rim * 2.2, ry + rim * 3.4, 0.02);
+      blob(g, lx, wy + 4.5 * u, rx, ry, 0.34);
+      blob(g, lx, wy, rx, ry, v);
+    };
+    const breathe = 1 + Math.sin(t * 1.3) * 0.012;
+    g.save();
+    g.translate(x, y);
+    tint(g, 0, -40 * u, 84 * u, 46 * u, 'violet');
+    lobe(-48 * u, -22 * u, 17 * u, 9 * u, 5, 0.5);
+    lobe(48 * u, -22 * u, 17 * u, 9 * u, 6, 0.5);
+    lobe(-24 * u, -25 * u, 15 * u, 8 * u, 7, 0.5);
+    lobe(24 * u, -25 * u, 15 * u, 8 * u, 0, 0.5);
+    part(g, 0, -47 * u, 38 * u, 36 * u * breathe, 0.66, rim);
+    blob(g, -13 * u, -66 * u, 11 * u, 8 * u, 0.82);
+    lobe(-66 * u, -10 * u, 16 * u, 9.5 * u, 1);
+    lobe(66 * u, -10 * u, 16 * u, 9.5 * u, 2);
+    lobe(-22 * u, -9 * u, 18 * u, 10.5 * u, 3);
+    lobe(22 * u, -9 * u, 18 * u, 10.5 * u, 4);
+    // The eyes and the smile.
+    for (const s of [-1, 1]) {
+      if (blinking(t, 0.6)) blob(g, s * 15 * u, -46 * u, 7.5 * u, 1.3 * u, 0);
+      else {
+        blob(g, s * 15 * u, -46 * u, 7.5 * u, 9.5 * u, 0.01);
+        blob(g, s * 15 * u + 2.4 * u, -50.5 * u, 1.9 * u, 1.9 * u, 1);
+      }
+    }
+    g.strokeStyle = grey(0.03);
+    g.lineWidth = Math.max(1.6, 2 * u);
+    g.beginPath();
+    g.moveTo(-6 * u, -34 * u);
+    g.quadraticCurveTo(0, -28 * u, 6 * u, -34 * u);
+    g.stroke();
+    // A letter, held up on the end lobe.
+    if (letter) {
+      const w = 27 * u;
+      const h = 19 * u;
+      g.save();
+      g.translate(73 * u, -27 * u + lobeY(2));
+      g.rotate(-0.14 + Math.sin(t * 1.5) * 0.08);
+      g.fillStyle = grey(0.04);
+      g.fillRect(-w / 2 - 1.2 * u, -h / 2 - 1.2 * u, w + 2.4 * u, h + 2.4 * u);
+      g.fillStyle = grey(0.95);
+      g.fillRect(-w / 2, -h / 2, w, h);
+      g.strokeStyle = grey(0.1);
+      g.lineWidth = Math.max(1.3, 1.5 * u);
+      g.beginPath();
+      g.moveTo(-w / 2, -h / 2);
+      g.lineTo(0, 1.5 * u);
+      g.lineTo(w / 2, -h / 2);
+      g.stroke();
+      tint(g, 0, 0, w * 0.62, h * 0.65, 'white');
+      g.restore();
+    }
+    g.restore();
+  }
+
+  // A tiny fish: Little Claw's wages.
+  function tinyFish(g, x, y, r, dir, v) {
+    g.save();
+    g.translate(x, y);
+    g.scale(dir, 1);
+    blob(g, 0, 0, r, r * 0.55, v);
+    g.fillStyle = grey(v);
+    g.beginPath();
+    g.moveTo(-r * 0.75, 0);
+    g.lineTo(-r * 1.45, -r * 0.5);
+    g.lineTo(-r * 1.45, r * 0.5);
+    g.fill();
+    blob(g, r * 0.42, -r * 0.1, r * 0.14, r * 0.14, 0.02);
+    tint(g, -r * 0.2, 0, r * 1.5, r * 0.8, 'orange');
+    g.restore();
+  }
+
+  // Soft ground: a low hill along the bottom of the frame.
+  function hill(g, L, top, v = 0.16) {
+    const gr = g.createLinearGradient(0, L.H * top, 0, L.H);
+    gr.addColorStop(0, grey(v));
+    gr.addColorStop(1, grey(v * 0.3));
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(0, L.H);
+    g.lineTo(0, L.H * (top + 0.06));
+    g.quadraticCurveTo(L.W * 0.5, L.H * (top - 0.05), L.W, L.H * (top + 0.06));
+    g.lineTo(L.W, L.H);
+    g.fill();
+  }
+
+  // Little M sits under the stars and thinks.
+  SCENES.littlem = {
+    tint: 'cream',
+    draw(g, L, s, t) {
+      const S = Math.min(L.size * 0.5, L.H * 0.66);
+      const x = L.W * 0.44;
+      const y = L.H * 0.88;
+      starfield(g, L, s, t, 90, 0.75);
+      drawLittleM(g, x, y, S, t);
+      // Thoughts rise off the head, and one is a star.
+      const u = S / 100;
+      const bx = x + 24 * u;
+      const by = y - 92 * u;
+      for (const [k, r] of [[0, 2.6], [1, 3.8]]) blob(g, bx + k * 9 * u, by - k * 7 * u, r * u, r * u, 0.5 + Math.sin(t * 2 - k) * 0.25);
+      star4(g, bx + 30 * u, by - 16 * u, (12 + Math.sin(t * 1.3) * 3) * u, 1);
+      tint(g, bx + 30 * u, by - 16 * u, 18 * u, 18 * u, 'gold');
+    },
+  };
+
+  // Little X keeps watch with a sword, and the sun comes up behind her.
+  SCENES.littlex = {
+    tint: 'rose',
+    draw(g, L, s, t) {
+      const S = Math.min(L.size * 0.5, L.H * 0.62);
+      const x = L.W * 0.46;
+      const y = L.H * 0.89;
+      const u = S / 100;
+      glow(g, x, y - 58 * u, S * 1.05, 0.16);
+      g.save();
+      g.translate(x, y - 58 * u);
+      g.rotate(t * 0.05);
+      for (let k = 0; k < 14; k++) {
+        const a = (k / 14) * TAU;
+        fadeLine(g, Math.cos(a) * S * 0.72, Math.sin(a) * S * 0.72, Math.cos(a) * S * 1.1, Math.sin(a) * S * 1.1, 0.42, 0, Math.max(2, 2 * u));
+      }
+      g.restore();
+      drawLittleX(g, x, y, S, t, true);
+    },
+  };
+
+  // Little L hovers over a field of flowers, leaving a dotted trail.
+  SCENES.littlel = {
+    tint: 'grey',
+    draw(g, L, s, t) {
+      const R = Math.min(L.W * 0.3, L.H * 0.26);
+      const path = (k) => {
+        const a = k * 0.72;
+        return [L.W * 0.5 + Math.sin(a) * R * 0.85, L.H * 0.44 + Math.sin(a * 2) * R * 0.28];
+      };
+      hill(g, L, 0.86, 0.14);
+      for (let i = 0; i < 7; i++) {
+        const fx = L.W * (0.07 + i * 0.143);
+        const h = L.H * (0.1 + hash(i * 7) * 0.08);
+        const by = L.H * 0.98;
+        const sway = Math.sin(t * 1.3 + i) * L.W * 0.006;
+        line(g, fx, by, fx + sway, by - h, grey(0.42), Math.max(2, L.size * 0.005));
+        const fr = L.size * 0.026;
+        for (let p = 0; p < 6; p++) {
+          const a = (p / 6) * TAU + t * 0.2;
+          blob(g, fx + sway + Math.cos(a) * fr * 1.5, by - h + Math.sin(a) * fr * 1.5, fr, fr, 0.72);
+        }
+        tint(g, fx + sway, by - h, fr * 3, fr * 3, 'rose');
+        blob(g, fx + sway, by - h, fr * 0.9, fr * 0.9, 0.2);
+      }
+      for (let k = 1; k <= 22; k++) {
+        const [dx, dy] = path(t - k * 0.11);
+        const r = Math.max(1.5, L.size * 0.006 * (1 - k / 26));
+        if (k % 2) blob(g, dx, dy, r, r, 0.6 * (1 - k / 24));
+      }
+      const [x, y] = path(t);
+      drawLittleL(g, x, y, Math.min(L.size * 0.42, L.H * 0.5), t, true);
+    },
+  };
+
+  // Mr Fish runs along the shore, with the shrimp holding on.
+  SCENES.mrfish = {
+    tint: 'grey',
+    draw(g, L, s, t) {
+      const S = Math.min(L.size * 0.56, L.H * 0.72);
+      const x = L.W * 0.5;
+      const y = L.H * 0.84;
+      const u = S / 100;
+      // The ground rushes past underneath.
+      line(g, 0, y, L.W, y, grey(0.45), Math.max(2, u));
+      for (let k = 0; k < 12; k++) {
+        const dx = (((k * 0.085 - t * 0.55) % 1) + 1) % 1;
+        const w = L.W * (0.03 + hash(k) * 0.05);
+        const ly = y + L.H * (0.035 + hash(k * 3) * 0.08);
+        line(g, dx * L.W * 1.1 - w, ly, dx * L.W * 1.1, ly, grey(0.28), Math.max(1.5, u * 0.8));
+      }
+      // Speed lines behind, and bubbles left over from the last swim.
+      for (let k = 0; k < 5; k++) {
+        const ly = y - (24 + k * 12) * u;
+        const run = ((t * 1.7 + k * 0.37) % 1) * 24 * u;
+        fadeLine(g, x - 70 * u - run, ly, x - 104 * u - run, ly, 0.6, 0, Math.max(1.5, u));
+      }
+      bubbles(g, L, t, 12, 5);
+      drawMrFish(g, x, y, S, t);
+    },
+  };
+
+  // Little Claw, on the sea floor, with the post and the wages.
+  SCENES.littleclaw = {
+    tint: 'violet',
+    draw(g, L, s, t) {
+      const S = Math.min(L.size * 0.5, L.H * 0.64);
+      const x = L.W * 0.46;
+      const y = L.H * 0.86;
+      // Light coming down through the water.
+      for (let k = 0; k < 5; k++) {
+        const lx = L.W * (0.1 + k * 0.2) + Math.sin(t * 0.3 + k) * L.W * 0.02;
+        const gr = g.createLinearGradient(0, 0, 0, L.H * 0.85);
+        gr.addColorStop(0, grey(0.1));
+        gr.addColorStop(1, grey(0));
+        g.fillStyle = gr;
+        g.beginPath();
+        g.moveTo(lx - L.W * 0.02, 0);
+        g.lineTo(lx + L.W * 0.02, 0);
+        g.lineTo(lx + L.W * 0.08, L.H * 0.85);
+        g.lineTo(lx - L.W * 0.08, L.H * 0.85);
+        g.fill();
+      }
+      hill(g, L, 0.88, 0.16);
+      bubbles(g, L, t, 14, 9);
+      drawLittleClaw(g, x, y, S, t, true);
+      // Three small fish, circling: the going rate for a letter.
+      for (let k = 0; k < 3; k++) {
+        const a = t * 0.55 + (k * TAU) / 3;
+        const dir = Math.cos(a) < 0 ? 1 : -1;
+        tinyFish(g, L.W * 0.5 + Math.sin(a) * L.W * 0.34, L.H * 0.12 + Math.cos(a) * L.H * 0.03 + k * L.H * 0.05, L.size * 0.03, dir, 0.9);
+      }
+    },
+  };
+
+  // Everyone at once: Little M beside Little L, and the stack. Little Claw sits on
+  // Little X's head, Mr Fish sits on Little Claw, and the shrimp sits on Mr Fish.
+  SCENES.littleones = {
+    draw(g, L, s, t) {
+      const S = Math.min(L.size * 0.44, L.H * 0.45);
+      const u = S / 100;
+      const ground = L.H * 0.88;
+      starfield(g, L, s, t, 55, 0.55);
+      const x = L.W * 0.7;
+      // The stack sways, and sways more the higher it goes.
+      const sway = Math.sin(t * 0.9);
+      const clawS = S * 0.56;
+      const clawY = ground - 90 * u;
+      const fishS = S * 0.46;
+      const fishY = clawY - (78 * clawS) / 100 + (20 * fishS) / 100;
+      drawLittleX(g, x, ground, S, t);
+      drawLittleClaw(g, x + sway * 2.5 * u, clawY, clawS, t);
+      drawMrFish(g, x + Math.sin(t * 0.9 - 0.5) * 6 * u, fishY, fishS, t, false, false);
+      drawLittleM(g, L.W * 0.22, ground, S * 0.78, t);
+      drawLittleL(g, L.W * 0.43, ground - S * 0.3, S * 0.62, t);
+    },
+  };
+
   SCENES.custom = {
     init(opts) {
       const s = { img: null, ready: false };
@@ -1610,6 +2180,14 @@
     buildAtlas() {
       const gw = Math.ceil(this.cw * this.dpr) + 1;
       const gh = Math.ceil(this.ch * this.dpr) + 1;
+      Object.assign(this, { gw, gh, atlases: [] });
+      this.atlas = this.atlasFor(0);
+    }
+
+    // Gold is built up front. The other colors are built the first time they show.
+    atlasFor(pal) {
+      if (this.atlases[pal]) return this.atlases[pal];
+      const { gw, gh } = this;
       const atlas = document.createElement('canvas');
       atlas.width = gw * CHARS.length;
       atlas.height = gh * LEVELS;
@@ -1618,10 +2196,11 @@
       a.textBaseline = 'middle';
       a.font = `${this.font * this.dpr}px "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace`;
       for (let k = 0; k < LEVELS; k++) {
-        a.fillStyle = gold(k / (LEVELS - 1));
+        a.fillStyle = ramp(PALETTES[pal], k / (LEVELS - 1));
         for (let i = 0; i < CHARS.length; i++) a.fillText(CHARS[i], i * gw + gw / 2, k * gh + gh / 2 + this.dpr * 0.5);
       }
-      Object.assign(this, { atlas, gw, gh });
+      this.atlases[pal] = atlas;
+      return atlas;
     }
 
     // The width of the left stage. The rest of the window is the conversation.
@@ -1908,6 +2487,7 @@
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, sw, sh);
       ctx.setTransform(sw / W, 0, 0, sh / H, 0, 0);
+      tintMarks = [];
       try {
         const eyeT = this.time - this.eyeT0;
         if (entry.name === 'eyes') {
@@ -1926,6 +2506,32 @@
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       this.analyze(ctx.getImageData(0, 0, sw, sh).data, buf);
+      this.applyTints(entry, buf);
+    }
+
+    // One color index per cell, from the scene's base color and its tint marks.
+    // A mark's position is in samples: a cell is 2 samples wide and 4 tall.
+    applyTints(entry, buf) {
+      const { cols, rows } = this;
+      if (!buf.T || buf.T.length !== cols * rows) buf.T = new Uint8Array(cols * rows);
+      buf.T.fill(PAL[SCENES[entry.name]?.tint] || 0);
+      const m = tintMarks;
+      tintMarks = null;
+      for (let i = 0; i < m.length; i += 5) {
+        const [x, y, rx, ry, pal] = m.slice(i, i + 5);
+        if (rx <= 0 || ry <= 0) continue;
+        const c0 = Math.max(0, Math.floor((x - rx) / 2));
+        const c1 = Math.min(cols - 1, Math.ceil((x + rx) / 2));
+        const r0 = Math.max(0, Math.floor((y - ry) / 4));
+        const r1 = Math.min(rows - 1, Math.ceil((y + ry) / 4));
+        for (let r = r0; r <= r1; r++) {
+          for (let c = c0; c <= c1; c++) {
+            const dx = (c * 2 + 1 - x) / rx;
+            const dy = (r * 4 + 2 - y) / ry;
+            if (dx * dx + dy * dy <= 1) buf.T[r * cols + c] = pal;
+          }
+        }
+      }
     }
 
     analyze(data, b) {
@@ -2043,12 +2649,16 @@
         const x = c % cols;
         const y = (c / cols) | 0;
         const inArt = x >= ax0 && x < ax1 && y >= ay0;
+        let from = this.A;
         if (p < 0 || !inArt) this.glyph(this.A, c);
         else {
           const o = this.order[c];
           if (p < o) this.glyph(this.A, c);
-          else if (p > o + band) this.glyph(this.B, c);
-          else {
+          else if (p > o + band) {
+            from = this.B;
+            this.glyph(this.B, c);
+          } else {
+            from = this.B;
             const m = Math.max(this.A.L[c], this.B.L[c]);
             const r = hash(c * 31 + this.frame);
             if (m < 0.03 && r > 0.12) continue;
@@ -2062,7 +2672,8 @@
         // Hovering the art or the eyes lifts them.
         const lift = inEyes ? 1 + 0.4 * this.hoverR : chat && inArt ? artDim * (1 + 0.4 * this.hoverL) : 1;
         const lv = clamp(Math.round(this.gv * this.dim * lift * (LEVELS - 1)), 1, LEVELS - 1);
-        ctx.drawImage(atlas, g * gw, lv * gh, gw, gh, Math.round(x * cw * dpr), Math.round(y * ch * dpr), gw, gh);
+        const pal = inArt ? from.T[c] : 0;
+        ctx.drawImage(pal ? this.atlasFor(pal) : atlas, g * gw, lv * gh, gw, gh, Math.round(x * cw * dpr), Math.round(y * ch * dpr), gw, gh);
       }
       // A golem wakes with the word for truth on its forehead. Karyon's is here,
       // between the eyes, faint enough that almost nobody will find it.

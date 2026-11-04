@@ -165,6 +165,9 @@ async function chat(message, conversation_id) {
   check(errors.length === 0, 'no page errors', errors.join(' | '));
   await browser.close();
 
+  // The Little Ones stay hidden until a visitor names one.
+  await chat('Who is Little Claw?');
+
   // ---- what was sent to the API ----
   const sent = fs.readFileSync('.wrangler/e2e-mock.jsonl', 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   const first = sent[0].body;
@@ -173,6 +176,9 @@ async function chat(message, conversation_id) {
   check(first.system[0].cache_control?.type === 'ephemeral', 'system prompt is cached');
   check(first.tools[0].eager_input_streaming === true && first.tools[0].name === 'paint_background', 'paint tool streams its input');
   check(first.messages.at(-1).role === 'system' && /background currently shows "eyes"/.test(first.messages.at(-1).content), 'harness note tells Karyon the current scene');
+  const named = sent.at(-1).body;
+  check(!first.tools[0].input_schema.properties.scene.enum.includes('littleclaw') && !JSON.stringify(first).includes('Little Claw'), 'the Little Ones are hidden until named');
+  check(named.tools[0].input_schema.properties.scene.enum.includes('littleclaw') && /Little Claw: a small purple octopus/.test(named.messages.at(-1).content), 'naming one gives Karyon their notes and paintings');
   const second = sent[1].body;
   check(second.messages.at(-2).content.some((b) => b.type === 'thinking'), 'thinking blocks are passed back within a turn');
 

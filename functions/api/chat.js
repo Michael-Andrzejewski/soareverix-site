@@ -9,7 +9,7 @@
 //   error { code, message }             budget, limits, or upstream trouble
 // Every visitor message, reply, tool call, and error is logged to D1.
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM, PAINT_TOOL, EYES_TOOL, END_TOOL, SCENE_NAMES, validatePaint, validateEyes, validateEnd, harnessNote } from '../_lib/karyon.js';
+import { SYSTEM, PAINT_TOOL, PAINT_TOOL_LITTLES, EYES_TOOL, END_TOOL, ALL_SCENE_NAMES, namesALittle, validatePaint, validateEyes, validateEnd, harnessNote } from '../_lib/karyon.js';
 import { closedUntil, closeConversation } from '../_lib/closures.js';
 import { responseMicros, worstCaseMicros } from '../_lib/pricing.js';
 import { reserve, settle, spentToday, countVisitorMessage } from '../_lib/budget.js';
@@ -101,7 +101,7 @@ export async function onRequestPost(context) {
   // The page says what's showing, because a visitor can clear the painting.
   const [history, currentScene] = await Promise.all([
     loadHistory(db, conversationId),
-    SCENE_NAMES.includes(body.scene) ? body.scene : lastScene(db, conversationId),
+    ALL_SCENE_NAMES.includes(body.scene) ? body.scene : lastScene(db, conversationId),
   ]);
 
   const { readable, writable } = new TransformStream();
@@ -157,10 +157,12 @@ async function reply({ env, db, day, conversationId, visitor, text, history, cur
   const primary = env.KARYON_MODEL || 'claude-haiku-5-5';
   const economy = env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5';
 
+  // Only the visitor's own words count, not anything Karyon has said.
+  const littles = namesALittle(text) || history.some((m) => m.role === 'user' && namesALittle(m.content));
   const messages = [
     ...history,
     { role: 'user', content: text },
-    { role: 'system', content: harnessNote({ scene: currentScene, turn, maxTurns, day }) },
+    { role: 'system', content: harnessNote({ scene: currentScene, turn, maxTurns, day, littles }) },
   ];
 
   let painted = null;
@@ -174,11 +176,11 @@ async function reply({ env, db, day, conversationId, visitor, text, history, cur
   for (let call = 0; call < MAX_API_CALLS && !isGone(); call++) {
     const { spent } = await spentToday(db, day);
     let model = spent >= economyAfterMicros ? economy : primary;
-    let params = buildParams(env, model, messages, call === MAX_API_CALLS - 1);
+    let params = buildParams(env, model, messages, call === MAX_API_CALLS - 1, littles);
     let hold = await reserve(db, day, holdFor(env, params), limitMicros);
     if (!hold && model !== economy) {
       model = economy;
-      params = buildParams(env, model, messages, call === MAX_API_CALLS - 1);
+      params = buildParams(env, model, messages, call === MAX_API_CALLS - 1, littles);
       hold = await reserve(db, day, holdFor(env, params), limitMicros);
     }
     if (!hold) {
@@ -211,7 +213,7 @@ ${delta}` : delta;
         const check = validateEyes(block.input);
         if (check.ok) send('eyes', check.value);
       } else if (block.name === PAINT_TOOL.name && !painted) {
-        const check = validatePaint(block.input);
+        const check = validatePaint(block.input, littles);
         if (check.ok) {
           painted = check.value;
           send('scene', painted);
@@ -278,7 +280,7 @@ ${delta}` : delta;
 
     for (const use of toolUses) {
       if (painted || use.name !== PAINT_TOOL.name) continue;
-      const check = validatePaint(use.input);
+      const check = validatePaint(use.input, littles);
       if (check.ok) {
         painted = check.value;
         send('scene', painted);
@@ -286,7 +288,7 @@ ${delta}` : delta;
     }
 
     messages.push({ role: 'assistant', content: message.content });
-    messages.push({ role: 'user', content: toolUses.map((use) => toolResult(use, painted)) });
+    messages.push({ role: 'user', content: toolUses.map((use) => toolResult(use, painted, littles)) });
   }
 
   if (!replyText.trim() && stopReason !== 'client_closed' && stopReason !== 'error' && stopReason !== 'budget') {
@@ -315,12 +317,12 @@ ${delta}` : delta;
     .run();
 }
 
-function buildParams(env, model, messages, lastCall) {
+function buildParams(env, model, messages, lastCall, littles) {
   const params = {
     model,
     max_tokens: MAX_TOKENS,
     system: SYSTEM,
-    tools: [PAINT_TOOL, EYES_TOOL, END_TOOL],
+    tools: [littles ? PAINT_TOOL_LITTLES : PAINT_TOOL, EYES_TOOL, END_TOOL],
     messages,
     // Thinking is adaptive (the default on both models); effort sets how much.
     output_config: { effort: model === (env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5') ? env.KARYON_ECONOMY_EFFORT || 'medium' : env.KARYON_EFFORT || 'low' },
@@ -343,7 +345,7 @@ function holdFor(env, params) {
   return worstCaseMicros(params.model, JSON.stringify(params).length, params.max_tokens, usesFallback(env, params.model));
 }
 
-function toolResult(use, painted) {
+function toolResult(use, painted, littles) {
   if (use.name === EYES_TOOL.name) {
     const check = validateEyes(use.input);
     return check.ok
@@ -356,7 +358,7 @@ function toolResult(use, painted) {
   if (use.name !== PAINT_TOOL.name) {
     return { type: 'tool_result', tool_use_id: use.id, is_error: true, content: `Unknown tool ${use.name}.` };
   }
-  const check = validatePaint(use.input);
+  const check = validatePaint(use.input, littles);
   if (!check.ok) {
     return {
       type: 'tool_result',
@@ -412,7 +414,7 @@ async function lastScene(db, conversationId) {
     .prepare(`SELECT scene FROM messages WHERE conversation_id = ?1 AND scene IS NOT NULL ORDER BY id DESC LIMIT 1`)
     .bind(conversationId)
     .first();
-  return SCENE_NAMES.includes(row?.scene) ? row.scene : 'eyes';
+  return ALL_SCENE_NAMES.includes(row?.scene) ? row.scene : 'eyes';
 }
 
 async function logMessage(db, conversationId, m) {

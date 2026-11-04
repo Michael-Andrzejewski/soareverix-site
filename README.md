@@ -132,3 +132,7 @@ Then open http://localhost:8788.
 ## Privacy note
 
 `karyon/context.txt` is everything Karyon knows about Michael. This repository is public, and a visitor can ask Karyon to repeat what it knows, so treat that file as published. It was assembled from the old site's copy, the resume, the Making Beautiful Things talk, and the Diversified Utopia and Code documents. Phone, email, family, relationships, and health were deliberately left out. Edit it freely: Karyon picks up changes on the next deploy.
+
+## The Little Ones
+
+An Easter egg. Their notes are in `karyon/littles.txt`, and their paintings are in `public/assets/ascii.js`. `functions/api/chat.js` gives Karyon the notes and paintings only after a visitor has typed one of their names in that conversation. The system prompt and static page don't mention them.

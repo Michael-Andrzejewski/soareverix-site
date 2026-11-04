@@ -2,6 +2,7 @@
 // The scene names here must match the scenes in public/assets/ascii.js.
 import PERSONA from '../../karyon/persona.txt';
 import CONTEXT from '../../karyon/context.txt';
+import LITTLES from '../../karyon/littles.txt';
 
 export const SCENES = {
   eyes: "Karyon's own two eyes, the home view. Greetings, questions about Karyon itself or CEV, what this site is, or when nothing else fits.",
@@ -21,6 +22,13 @@ export const SCENES = {
   custom: 'Your own drawing, given as SVG in the svg field. Only for a specific subject none of the scenes above fits.',
 };
 export const SCENE_NAMES = Object.keys(SCENES);
+
+// The Little Ones are an Easter egg. Karyon doesn't know about them, or have their
+// paintings, until a visitor has typed one of their names in this conversation.
+export const LITTLE_SCENES = ['littleones', 'littlem', 'littlex', 'littlel', 'mrfish', 'littleclaw'];
+export const ALL_SCENE_NAMES = [...SCENE_NAMES, ...LITTLE_SCENES];
+const LITTLE_NAME = /\b(?:little\s*(?:m|x|l|claw|ones?)|(?:mr\.?|mister)\s*fish)\b/i;
+export const namesALittle = (text) => LITTLE_NAME.test(text || '');
 
 const sceneList = SCENE_NAMES.map((name) => `- ${name}: ${SCENES[name]}`).join('\n');
 
@@ -51,6 +59,18 @@ export const PAINT_TOOL = {
   // Stream the input as it is generated (an SVG can be a few thousand
   // characters). The API then skips validation, so validatePaint() does it.
   eager_input_streaming: true,
+};
+
+// The same tool, once the visitor has named one of the Little Ones.
+export const PAINT_TOOL_LITTLES = {
+  ...PAINT_TOOL,
+  input_schema: {
+    ...PAINT_TOOL.input_schema,
+    properties: {
+      ...PAINT_TOOL.input_schema.properties,
+      scene: { ...PAINT_TOOL.input_schema.properties.scene, enum: ALL_SCENE_NAMES },
+    },
+  },
 };
 
 export const EXPRESSIONS = {
@@ -117,10 +137,11 @@ const MAX_SVG = 8000;
 const BAD_SVG = /<\s*script|<\s*foreignObject|\bon[a-z]+\s*=|javascript:|href\s*=|<\s*image|<\s*iframe|@import|url\s*\(\s*['"]?\s*(?:https?:|data:|\/\/)/i;
 
 // Validates a paint_background input. Returns { ok, value } or { ok: false, error }.
-export function validatePaint(input) {
+export function validatePaint(input, littles = false) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'input must be an object' };
   const { scene, caption, svg } = input;
-  if (!SCENE_NAMES.includes(scene)) return { ok: false, error: `scene must be one of: ${SCENE_NAMES.join(', ')}` };
+  const allowed = littles ? ALL_SCENE_NAMES : SCENE_NAMES;
+  if (!allowed.includes(scene)) return { ok: false, error: `scene must be one of: ${allowed.join(', ')}` };
   const value = { scene };
   if (caption !== undefined) {
     if (typeof caption !== 'string') return { ok: false, error: 'caption must be a string' };
@@ -139,12 +160,13 @@ export function validatePaint(input) {
 }
 
 // Mid-conversation system message sent after the visitor's message each turn.
-export function harnessNote({ scene, turn, maxTurns, day }) {
+export function harnessNote({ scene, turn, maxTurns, day, littles = false }) {
   const left = Math.max(0, maxTurns - turn);
   return (
     `Harness note (not from the visitor): the background currently shows "${scene}". ` +
     `This is visitor message ${turn} of at most ${maxTurns} in this conversation` +
     (left <= 3 ? `, so there are only ${left} left; it's fine to let them know they can start a new conversation.` : '.') +
-    ` Today is ${day}.`
+    ` Today is ${day}.` +
+    (littles ? `\n\n${LITTLES.trim()}` : '')
   );
 }
