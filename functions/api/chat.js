@@ -1,13 +1,16 @@
 // POST /api/chat  { conversation_id?: string, message: string }
 // Streams Karyon's reply as server-sent events:
 //   meta  { conversation_id, model }    once per API call (model can change mid-reply)
-//   scene { scene, caption?, svg? }     when Karyon repaints the background
+//   scene { scene, caption?, svg? }     when Karyon repaints the art
+//   eyes  { expression }                when Karyon changes its expression
+//   end   { closed_until }              when Karyon ends the conversation
 //   text  { delta }                     reply text as it is generated
 //   done  { stop_reason }               reply finished
 //   error { code, message }             budget, limits, or upstream trouble
 // Every visitor message, reply, tool call, and error is logged to D1.
 import Anthropic from '@anthropic-ai/sdk';
-import { SYSTEM, PAINT_TOOL, SCENE_NAMES, validatePaint, harnessNote } from '../_lib/karyon.js';
+import { SYSTEM, PAINT_TOOL, EYES_TOOL, END_TOOL, SCENE_NAMES, validatePaint, validateEyes, validateEnd, harnessNote } from '../_lib/karyon.js';
+import { closedUntil, closeConversation } from '../_lib/closures.js';
 import { responseMicros, worstCaseMicros } from '../_lib/pricing.js';
 import { reserve, settle, spentToday, countVisitorMessage } from '../_lib/budget.js';
 import { utcDay, nowIso, num, json, isUuid, visitorId } from '../_lib/util.js';
@@ -21,6 +24,8 @@ const MESSAGES_FOR = {
     "I've talked as much as I'm allowed to today. My budget resets at midnight UTC, so come back tomorrow. If you leave a message now, Michael will still read it.",
   visitor_limit: "We've talked a lot today. Let's pick this up tomorrow. Michael reads these, so anything you've said here will reach him.",
   conversation_limit: 'This conversation has reached its length limit. Reload the page to start a fresh one.',
+  closed: 'I ended our conversation earlier, so I am not talking with you for now. The page below has everything I would have told you.',
+  ended: "I'm ending this conversation here.",
   not_configured: "I'm not connected yet. Michael still needs to give me an API key.",
   busy: "Too many voices at once. I couldn't think. Try again in a moment?",
   upstream: 'Something went wrong on my side and I lost the thread. Try asking again?',
@@ -47,6 +52,8 @@ export async function onRequestPost(context) {
   const db = env.DB;
   const day = utcDay();
   const visitor = await visitorId(request, env);
+  const closed = await closedUntil(db, visitor);
+  if (closed) return json({ error: 'closed', message: MESSAGES_FOR.closed, closed_until: closed }, 403);
   const maxTurns = num(env.MAX_TURNS_PER_CONVERSATION, 40);
 
   // Find or start the conversation. Ids are random UUIDs made by this server.
@@ -108,7 +115,7 @@ export async function onRequestPost(context) {
   const run = async () => {
     try {
       await reply({
-        env, db, day, conversationId, text, history, currentScene, turn, maxTurns, send,
+        env, db, day, conversationId, visitor, text, history, currentScene, turn, maxTurns, send,
         setActive: (s) => (activeStream = s),
         isGone: () => clientGone,
       });
@@ -131,7 +138,7 @@ export async function onRequestPost(context) {
   });
 }
 
-async function reply({ env, db, day, conversationId, text, history, currentScene, turn, maxTurns, send, setActive, isGone }) {
+async function reply({ env, db, day, conversationId, visitor, text, history, currentScene, turn, maxTurns, send, setActive, isGone }) {
   const client = new Anthropic({
     apiKey: env.ANTHROPIC_API_KEY,
     // Only set for local testing against scripts/mock-anthropic.mjs.
@@ -186,12 +193,17 @@ async function reply({ env, db, day, conversationId, text, history, currentScene
       send('text', { delta });
     });
     stream.on('contentBlock', (block) => {
-      // Repaint as soon as the tool call is complete, before the reply text.
-      if (block.type !== 'tool_use' || block.name !== PAINT_TOOL.name || painted) return;
-      const check = validatePaint(block.input);
-      if (check.ok) {
-        painted = check.value;
-        send('scene', painted);
+      // Act as soon as a tool call is complete, before the reply text.
+      if (block.type !== 'tool_use') return;
+      if (block.name === EYES_TOOL.name) {
+        const check = validateEyes(block.input);
+        if (check.ok) send('eyes', check.value);
+      } else if (block.name === PAINT_TOOL.name && !painted) {
+        const check = validatePaint(block.input);
+        if (check.ok) {
+          painted = check.value;
+          send('scene', painted);
+        }
       }
     });
     try {
@@ -238,6 +250,20 @@ async function reply({ env, db, day, conversationId, text, history, currentScene
     const toolUses = message.content.filter((b) => b.type === 'tool_use');
     // max_tokens with a tool call means its input may be cut off: don't run it.
     if (stopReason !== 'tool_use' || toolUses.length === 0) break;
+
+    // Ending the conversation stops everything: there is no reply after it.
+    const ending = toolUses.find((use) => use.name === END_TOOL.name);
+    const endCheck = ending ? validateEnd(ending.input) : null;
+    if (endCheck?.ok) {
+      if (!replyText.trim()) {
+        replyText = MESSAGES_FOR.ended;
+        send('text', { delta: replyText });
+      }
+      stopReason = 'ended';
+      send('end', { closed_until: await closeConversation(db, conversationId, visitor, endCheck.value.reason) });
+      break;
+    }
+
     for (const use of toolUses) {
       if (painted || use.name !== PAINT_TOOL.name) continue;
       const check = validatePaint(use.input);
@@ -282,7 +308,7 @@ function buildParams(env, model, messages, lastCall) {
     model,
     max_tokens: MAX_TOKENS,
     system: SYSTEM,
-    tools: [PAINT_TOOL],
+    tools: [PAINT_TOOL, EYES_TOOL, END_TOOL],
     messages,
     // Thinking is adaptive (the default on both models); effort sets how much.
     output_config: { effort: model === (env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5') ? env.KARYON_ECONOMY_EFFORT || 'medium' : env.KARYON_EFFORT || 'low' },
@@ -306,6 +332,15 @@ function holdFor(env, params) {
 }
 
 function toolResult(use, painted) {
+  if (use.name === EYES_TOOL.name) {
+    const check = validateEyes(use.input);
+    return check.ok
+      ? { type: 'tool_result', tool_use_id: use.id, content: `Your eyes now look ${check.value.expression}. Write your reply to the visitor now.` }
+      : { type: 'tool_result', tool_use_id: use.id, is_error: true, content: check.error };
+  }
+  if (use.name === END_TOOL.name) {
+    return { type: 'tool_result', tool_use_id: use.id, is_error: true, content: validateEnd(use.input).error || 'Could not end the conversation.' };
+  }
   if (use.name !== PAINT_TOOL.name) {
     return { type: 'tool_result', tool_use_id: use.id, is_error: true, content: `Unknown tool ${use.name}.` };
   }

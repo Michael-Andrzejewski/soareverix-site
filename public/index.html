@@ -4,27 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Soareverix · Karyon</title>
-<meta name="description" content="Karyon, the Seed, Kernel, and attempted CEV of Michael Andrzejewski (Soareverix), talks with visitors about Michael: AI alignment research, Diversified Utopia, Staravorix, Vintage Story mods, and the things he has made.">
+<meta name="description" content="Karyon, an agent attempting CEV for Michael Andrzejewski (Soareverix), talks with visitors about Michael: AI alignment research, Diversified Utopia, Staravorix, Vintage Story mods, and the things he has made.">
 <meta name="theme-color" content="#040302">
 <meta property="og:title" content="Soareverix · Karyon">
-<meta property="og:description" content="Ask Karyon, the attempted CEV of Michael Andrzejewski, anything about Michael.">
+<meta property="og:description" content="Ask Karyon, an agent attempting CEV for Michael Andrzejewski, anything about him.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/karyon.css?v=8712fa4402">
+<link rel="stylesheet" href="assets/karyon.css?v=0d2a85a12d">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23040302'/%3E%3Cpath d='M4 17c6-9 18-9 24 0-6 7-18 7-24 0z' fill='none' stroke='%23f0b450' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%23f0b450'/%3E%3C/svg%3E">
 </head>
 <body class="intro">
 <canvas id="ascii" aria-hidden="true"></canvas>
 <canvas id="glow" aria-hidden="true"></canvas>
 <div id="shade" aria-hidden="true"></div>
-<!-- The first seconds of Era of Intelligence (public/video/era-of-intelligence.mp4), silent. -->
-<video id="intro-video" muted playsinline preload="auto" aria-hidden="true" tabindex="-1">
-  <source src="video/era-of-intelligence-intro.mp4" type="video/mp4">
-</video>
 <div id="flash" aria-hidden="true"></div>
+<div id="rail" aria-hidden="true"></div>
 
-<!-- The art in the side gutters is clickable: it asks Karyon about what it shows. -->
+<!-- The art and the eyes are clickable: they ask Karyon about what they show. -->
 <button type="button" class="art" id="art-left"><span class="hint"></span></button>
 <button type="button" class="art" id="art-right"><span class="hint"></span></button>
 
@@ -34,7 +31,7 @@
 </header>
 
 <main id="stage">
-  <h1 class="sr-only">Karyon, the attempted CEV of Michael Andrzejewski</h1>
+  <h1 class="sr-only">Karyon, an agent attempting CEV for Michael Andrzejewski</h1>
   <section id="log" aria-live="polite" aria-label="Conversation with Karyon"></section>
 </main>
 
@@ -56,24 +53,84 @@
   <footer>
     <span>Conversations are recorded.</span>
     <a href="https://github.com/Michael-Andrzejewski" rel="me">GitHub</a>
-    <button type="button" id="film-open">Watch Era of Intelligence</button>
+    <button type="button" id="read-open">Read without chatting</button>
     <button type="button" id="replay">Replay intro</button>
   </footer>
 </div>
 
-<div id="film" role="dialog" aria-modal="true" aria-label="Era of Intelligence" hidden>
-  <figure>
-    <video id="film-video" controls playsinline preload="none" width="1920" height="1080" poster="images/era-of-intelligence.jpg" aria-label="Era of Intelligence, a 38-second silent film in gold ASCII art">
-      <source src="video/era-of-intelligence.mp4" type="video/mp4">
-    </video>
-    <figcaption><strong>Era of Intelligence</strong><span>2026 · Gold ASCII · 38 seconds · Silent</span></figcaption>
-  </figure>
-  <button type="button" id="film-close" aria-label="Close the film">×</button>
-</div>
+<article id="static" tabindex="-1" hidden>
+  <button type="button" id="read-close">Back to the conversation</button>
+  <div id="closed-note" hidden>
+    <p id="closed-text"></p>
+    <blockquote id="closed-parting" hidden></blockquote>
+  </div>
+
+  <header>
+    <h2>Michael Andrzejewski</h2>
+    <p class="lede">AI safety researcher, game modder, worldbuilder, and maker of ASCII animations. Online he goes by Soareverix. "All of life is practice."</p>
+    <p class="links"><a href="https://github.com/Michael-Andrzejewski" rel="me">GitHub</a></p>
+  </header>
+
+  <section>
+    <h3>AI alignment research</h3>
+    <p>"When an agent's context gets summarized, do your preferences survive? I build evals that answer small questions like that exactly, because labs steer by what gets measured."</p>
+    <p>He is a Lab Fellow at Apart Research. His benchmark <a href="https://github.com/Michael-Andrzejewski/PrefDecay-eval">PrefDecay-Eval</a> makes a preference into a tool parameter, so adherence is an exact check with no LLM judge. Before compaction, adherence is about 95%. It drops to about 80% after one summary and about 72% by the sixth. The compaction prompt matters as much as the model, and routing compaction to a stronger model took Haiku's worst cell from 23% to 92%.</p>
+    <p>He also made BalatroBench, a long-horizon game benchmark for LLM agents, and a Minecraft god-agent with a safety layer, which won an Apart Research hackathon.</p>
+  </section>
+
+  <section>
+    <h3>Diversified Utopia</h3>
+    <p>His vision for a good future. "There is no global optima. There are only countless local optima that we can move around between."</p>
+    <p>Every kind of utopia exists, and any agent can move between them or found a new one. An aligned superintelligence maintains the system more like a force of nature than a ruler: it enforces each utopia's rules, keeps utopias from absorbing each other, and prevents superweapons. A planet relives the 1700s. A habitat holds deer in a wildlife preserve. Dyson swarms hold digital minds dreaming worlds humans can't comprehend. Some worlds reject AI entirely.</p>
+    <p>The principles are Agency, Beauty, Normality, Narrative, Diversity, Expansion, and voluntary Recycling. He wrote it up on LessWrong as "My Specific Singularity Timeline to Utopia."</p>
+  </section>
+
+  <section>
+    <h3>Philosophy</h3>
+    <p>"All things have an end. A thrown stone cannot change its path; a stalled plane can wake its engine and choose another. Convergence is the practice of finding the ends worth reaching, and steering toward them."</p>
+    <ol class="steps">
+      <li><b>The Star.</b> Know what you want.</li>
+      <li><b>The Constellation.</b> Map the cause and effect.</li>
+      <li><b>The Hierarchy.</b> Compress it into principles.</li>
+      <li><b>The Way.</b> Draw a plan.</li>
+      <li><b>The Step.</b> Act.</li>
+      <li><b>The Eye.</b> Look back and refine.</li>
+      <li><b>The Cycle.</b> Begin again, a little closer.</li>
+    </ol>
+    <p>The Code is his personal operating philosophy. It holds three meanings of life: Identity, Experience, and Impact. "Learn to see even the mundane as heartbreakingly beautiful. Love what you have been given."</p>
+  </section>
+
+  <section>
+    <h3>Staravorix</h3>
+    <p>A universe of his own, written for over a decade. "Burning gods, drifted stars, and long campaigns that outlive their characters. The maps get redrawn every time someone survives something they should not have." It began in middle school as 120 pages, written until Word crashed and he learned to save everything.</p>
+    <p>"Runes are markers in reality that tell reality to pay attention."</p>
+  </section>
+
+  <section>
+    <h3>Vintage Story mods</h3>
+    <p>"Some worlds reward patience. I build mods for one of them: slow systems that make a long life feel earned." Over 50,000 downloads. Spreading Devastation, Temporal Storms Require a Fight, Seraph Leveling, Underwater Horrors, and Nadiya Village Assistance come together in the Rustfall modpack.</p>
+  </section>
+
+  <section>
+    <h3>Things he has made</h3>
+    <ul class="made">
+      <li><span>Age 5</span>A story told out loud every night for his little brother.</li>
+      <li><span>2019</span>City Breaker, his first published VR game.</li>
+      <li><span>2019&ndash;23</span>CommunityVR, bringing VR to nursing-home residents.</li>
+      <li><span>2020</span>Hanger VR, and a hand-tracking handbook at Leap Motion.</li>
+      <li><span>2021</span>FitFight, where push-ups become stats.</li>
+      <li><span>2022</span>Dreaming in a Warped World, an early AI-art webcomic.</li>
+      <li><span>2023</span>fast-email.ai. Graduated from Grinnell.</li>
+      <li><span>2024</span>The Minecraft god-agent. RimWorld Infinite Implants.</li>
+      <li><span>2025</span>Civilization Sim and Life Leveling.</li>
+      <li><span>2026</span>Vintage Story mods, PrefDecay-Eval, BalatroBench, and Era of Intelligence.</li>
+    </ul>
+  </section>
+</article>
 
 <p id="skip" aria-hidden="true">click to skip</p>
 
-<script src="assets/ascii.js?v=d4903c0b3a"></script>
-<script src="assets/app.js?v=eae9792a39"></script>
+<script src="assets/ascii.js?v=9a2beb3776"></script>
+<script src="assets/app.js?v=e46174841e"></script>
 </body>
 </html>

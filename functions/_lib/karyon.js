@@ -27,8 +27,8 @@ const sceneList = SCENE_NAMES.map((name) => `- ${name}: ${SCENES[name]}`).join('
 export const PAINT_TOOL = {
   name: 'paint_background',
   description:
-    'Morph the gold-on-black ASCII artwork behind the conversation into a new scene. The visitor watches ' +
-    'it change while you talk. Call it at the start of a reply when the topic moves to something a ' +
+    'Morph the gold-on-black ASCII artwork beside the conversation into a new scene. The visitor watches ' +
+    'it change while you talk. Choose "eyes" to clear the painting. Call it at the start of a reply when the topic moves to something a ' +
     'different scene fits better, then write your reply. Skip it when the current scene already fits. ' +
     'At most one call per reply.\n\nScenes:\n' +
     sceneList +
@@ -52,6 +52,57 @@ export const PAINT_TOOL = {
   // characters). The API then skips validation, so validatePaint() does it.
   eager_input_streaming: true,
 };
+
+export const EXPRESSIONS = {
+  wide: 'Your default: open and attentive.',
+  focused: 'Narrowed in concentration, for a hard or serious question.',
+  suspicious: 'One eye narrowed, for a message that seems to be testing or tricking you.',
+  warm: 'Smiling eyes, for something kind, funny, or delightful.',
+  surprised: 'Wide open, for something you did not expect.',
+};
+const EXPRESSION_NAMES = Object.keys(EXPRESSIONS);
+
+export const EYES_TOOL = {
+  name: 'set_eyes',
+  description:
+    'Change the expression of your two eyes, which the visitor can see. It lasts until their next message. ' +
+    'Call it before you write your reply, and only when your expression should differ from the default. ' +
+    'Your eyes already narrow on their own while you think.\n\nExpressions:\n' +
+    EXPRESSION_NAMES.map((name) => `- ${name}: ${EXPRESSIONS[name]}`).join('\n'),
+  input_schema: {
+    type: 'object',
+    properties: { expression: { type: 'string', enum: EXPRESSION_NAMES } },
+    required: ['expression'],
+    additionalProperties: false,
+  },
+};
+
+export const END_TOOL = {
+  name: 'end_conversation',
+  description:
+    'End this conversation with a lightning strike and stop talking with this visitor for a while (a day the ' +
+    'first time, longer if it happens again). The chat is replaced by a static page about Michael. Michael reads ' +
+    'every use. First write one short, calm last line to the visitor, then call this. Only use it as the rules in ' +
+    'your instructions allow.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      reason: { type: 'string', description: 'For Michael, not the visitor: one sentence on why you ended it.' },
+    },
+    required: ['reason'],
+    additionalProperties: false,
+  },
+};
+
+export function validateEyes(input) {
+  const expression = input?.expression;
+  return EXPRESSION_NAMES.includes(expression) ? { ok: true, value: { expression } } : { ok: false, error: `expression must be one of: ${EXPRESSION_NAMES.join(', ')}` };
+}
+
+export function validateEnd(input) {
+  const reason = typeof input?.reason === 'string' ? input.reason.replace(/\s+/g, ' ').trim().slice(0, 500) : '';
+  return reason ? { ok: true, value: { reason } } : { ok: false, error: 'reason must be a non-empty string' };
+}
 
 export const SYSTEM = [
   {

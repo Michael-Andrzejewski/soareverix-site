@@ -1,11 +1,8 @@
-// soareverix.com: the Era of Intelligence intro, then Karyon's chat.
+// soareverix.com: the eyes wake and look around, then Karyon's chat.
 (() => {
   'use strict';
 
   const GREETING = 'My name is Karyon, an agent attempting CEV for Michael Andrzejewski. What would you like to know about Michael?';
-  // Era of Intelligence: the eyes open, the eclipse passes, and at 0:04 the
-  // site cuts straight back to the eyes.
-  const CUT_AT = 4.0;
   const MODEL_NAMES = { 'claude-opus-5-5': 'Opus 5.5', 'claude-haiku-5-5': 'Haiku 5.5' };
 
   const $ = (s) => document.querySelector(s);
@@ -18,7 +15,6 @@
   const sendBtn = $('#send');
   const note = $('#note');
   const caption = $('#caption');
-  const video = $('#intro-video');
   const flash = $('#flash');
   const dock = $('#dock');
 
@@ -34,31 +30,50 @@
   let lastPointer = -1e9;
   let typing = null;
   let greetingEl = null;
+  let modelExpression = null;
+  let closed = false;
+  let glance = { at: 0, x: 0, y: 0 };
+  let speakTarget = 0;
 
   // ---------- frame hook: intro timeline, thinking glow, idle gaze ----------
   engine.onStep = (time, dt) => {
     if (introTick) introTick(time);
     P.thinking += (thinkTarget - P.thinking) * Math.min(1, dt * 5);
-    if (performance.now() - lastPointer > 4000 && document.activeElement !== input) {
-      P.gazeX = Math.sin(time * 0.31) * 0.45 + Math.sin(time * 0.73) * 0.15;
-      P.gazeY = Math.sin(time * 0.23 + 1) * 0.25;
+    P.speaking = (P.speaking || 0) + (speakTarget - (P.speaking || 0)) * Math.min(1, dt * 4);
+    placeEyeButton();
+    // Thinking narrows the eyes. Otherwise they hold whatever Karyon last chose.
+    if (!introTick && !closed) P.expression = thinkTarget > 0 ? 'focused' : modelExpression || 'wide';
+    // Left alone, the eyes look around: they hold a spot, then move to a new one.
+    if (!introTick && !closed && performance.now() - lastPointer > 4000 && document.activeElement !== input && time > glance.at) {
+      glance = { at: time + 1.1 + Math.random() * 2.6, x: (Math.random() - 0.5) * 1.5, y: (Math.random() - 0.5) * 0.9 };
+      P.gazeX = glance.x;
+      P.gazeY = glance.y;
     }
   };
 
   function placeUI() {
     const dockH = dock.offsetHeight;
     root.style.setProperty('--dock-h', `${dockH + 6}px`);
-    root.style.setProperty('--gutter', `${Math.round(engine.gutter)}px`);
-    body.classList.toggle('sides', started && engine.sideMode);
+    root.style.setProperty('--stage', `${Math.round(engine.stageW)}px`);
+    root.style.setProperty('--band', `${engine.bandH}px`);
+    body.classList.toggle('sides', engine.sideMode);
+    const art = engine.artRect;
+    root.style.setProperty('--art-y', `${art.y}px`);
     if (body.classList.contains('chatting')) {
-      root.style.setProperty('--log-top', '44px');
+      root.style.setProperty('--log-top', engine.sideMode ? '44px' : `${engine.bandH}px`);
     } else {
       // The greeting sits under the eyes, and always fits above the dock.
       const L = engine.layoutFor('hero');
-      const under = L.cy + L.eyeW * 0.15 + 10;
+      const under = L.cy + L.eyeW * 0.2 + 10;
       const need = (greetingEl ? greetingEl.el.offsetHeight : 64) + 10;
       root.style.setProperty('--log-top', `${Math.round(Math.max(44, Math.min(under, innerHeight - dockH - 6 - need)))}px`);
     }
+    placeEyeButton();
+  }
+  // The eyes move when a painting arrives, so their button follows them.
+  function placeEyeButton() {
+    const r = engine.eyeRect;
+    Object.assign(artRight.style, { left: `${r.x}px`, top: `${r.y}px`, width: `${r.W}px`, height: `${r.H}px` });
   }
   addEventListener('resize', () => setTimeout(placeUI, 150));
   // Keep the input above the on-screen keyboard on phones.
@@ -74,6 +89,8 @@
   }
 
   // ---------- intro ----------
+  // One intro for everyone: black, the eyes open, look around the room, find the
+  // visitor, and blink. It's drawn live, so it plays the same on every load.
   function startIntro() {
     body.classList.add('intro');
     caption.classList.remove('on');
@@ -82,92 +99,40 @@
     engine.setScene('eyes', {}, { instant: true });
     P.eyeOpen = 0;
     P.eyeFade = 0;
+    P.expression = 'wide';
+    P.gazeX = 0;
+    P.gazeY = 0;
     if (reduced || qs.has('skip')) {
-      cutToEyes(true);
+      endIntro(true);
       return;
     }
-    tryVideo().then((ok) => {
-      if (!ok) proceduralIntro();
-    });
-  }
-
-  // The real Era of Intelligence video, if it has been added to public/media.
-  function tryVideo() {
-    return new Promise((resolve) => {
-      if (qs.has('novideo')) return resolve(false);
-      let settled = false;
-      const done = (ok) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        resolve(ok);
-      };
-      const timer = setTimeout(() => done(false), 2500);
-      const sources = [...video.querySelectorAll('source')];
-      let failed = 0;
-      sources.forEach((s) => s.addEventListener('error', () => ++failed === sources.length && done(false), { once: true }));
-      const go = () => {
-        if (settled) return;
-        video.currentTime = 0;
-        video
-          .play()
-          .then(() => {
-            if (settled) return video.pause();
-            video.classList.add('playing');
-            done(true);
-            const watch = () => {
-              if (!video.classList.contains('playing')) return;
-              if (video.currentTime >= CUT_AT || video.ended) cutToEyes(false);
-              else requestAnimationFrame(watch);
-            };
-            requestAnimationFrame(watch);
-          })
-          .catch(() => done(false));
-      };
-      if (video.readyState >= 3) go();
-      else video.addEventListener('canplay', go, { once: true });
-      if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) done(false);
-    });
-  }
-
-  // The same beats drawn live in ASCII, on the video's timing: black, the
-  // closed eyes at 1.0 s, open by 1.5 s, the eclipse from 2.0 s to totality
-  // at 3.25 s, and at 4.0 s a hard cut back to the open eyes.
-  function proceduralIntro() {
     const t0 = engine.time;
-    let stage = 0;
+    const beats = [
+      [0.55, () => (P.eyeFade = 1)],
+      [0.75, () => (P.eyeOpen = 1)],
+      [1.45, () => { P.gazeX = -0.95; P.gazeY = -0.15; }],
+      [2.15, () => { P.gazeX = 0.95; P.gazeY = 0.2; }],
+      [2.85, () => { P.gazeX = 0.1; P.gazeY = -0.55; P.expression = 'focused'; }],
+      [3.4, () => { P.gazeX = 0; P.gazeY = 0.35; P.expression = 'wide'; }],
+      [3.75, () => (P.blinkNow = true)],
+      [4.05, () => endIntro(false)],
+    ];
+    let next = 0;
     introTick = (time) => {
-      const t = time - t0;
-      if (stage === 0) {
-        P.eyeFade = Math.max(0, Math.min(1, (t - 0.9) / 0.2));
-        if (t > 1.3) {
-          P.eyeOpen = 1;
-          stage = 1;
-        }
-      } else if (stage === 1 && t > 1.95) {
-        engine.setScene('eclipse', { phase: 'intro' }, { duration: 0.3 });
-        stage = 2;
-      } else if (stage === 2 && t >= CUT_AT) {
-        stage = 3;
-        cutToEyes(false);
-      }
+      while (next < beats.length && time - t0 >= beats[next][0]) beats[next++][1]();
     };
   }
 
-  function cutToEyes(skipped) {
+  function endIntro(skipped) {
     introTick = null;
-    video.pause();
-    video.classList.remove('playing');
-    engine.setScene('eyes', {}, { instant: true });
     P.eyeFade = 1;
     P.eyeOpen = 1;
-    P.eyeSnap = true;
-    setTimeout(() => (P.eyeSnap = false), 120);
-    if (!skipped && !reduced) {
-      flash.classList.remove('go');
-      void flash.offsetWidth;
-      flash.classList.add('go');
+    P.expression = 'wide';
+    if (skipped) {
+      P.eyeSnap = true;
+      setTimeout(() => (P.eyeSnap = false), 120);
     }
+    lastPointer = performance.now() - 2500; // a moment's rest before they wander
     reveal();
   }
 
@@ -221,7 +186,7 @@
   const skipIntro = (e) => {
     if (body.classList.contains('intro')) {
       e.preventDefault();
-      cutToEyes(true);
+      endIntro(true);
     } else if (typing && !started) {
       typing.finish();
     }
@@ -238,34 +203,102 @@
     startIntro();
   });
 
-  // ---------- the full film ----------
-  const film = $('#film');
-  const filmVideo = $('#film-video');
-  const closeFilm = () => {
-    filmVideo.pause();
-    film.hidden = true;
-    engine.paused = false;
-    $('#film-open').focus({ preventScroll: true });
-  };
-  $('#film-open').addEventListener('click', (e) => {
+  // ---------- the page without the chat ----------
+  const staticPage = $('#static');
+  function showStatic() {
+    staticPage.hidden = false;
+    body.classList.add('static', 'chatting');
+    body.classList.remove('intro', 'awaiting');
+    if (engine.mode !== 'chat') engine.setMode('chat');
+    placeUI();
+    staticPage.scrollTop = 0;
+  }
+  function hideStatic() {
+    staticPage.hidden = true;
+    body.classList.remove('static');
+    if (!started) {
+      body.classList.remove('chatting');
+      engine.setMode('hero');
+    }
+    placeUI();
+  }
+  $('#read-open').addEventListener('click', (e) => {
     e.stopPropagation();
-    film.hidden = false;
-    engine.paused = true;
-    filmVideo.play().catch(() => {});
-    $('#film-close').focus({ preventScroll: true });
+    if (typing) typing.finish();
+    showStatic();
+    staticPage.focus({ preventScroll: true });
   });
-  $('#film-close').addEventListener('click', closeFilm);
-  film.addEventListener('click', (e) => e.target === film && closeFilm());
-  addEventListener('keydown', (e) => e.key === 'Escape' && !film.hidden && closeFilm());
+  $('#read-close').addEventListener('click', hideStatic);
+  addEventListener('keydown', (e) => e.key === 'Escape' && !staticPage.hidden && !closed && hideStatic());
+
+  const closingDate = (iso) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  // The page as it stays once Karyon has closed the conversation: the eyes shut,
+  // no chat, and everything Karyon could have said written out.
+  function settleClosed(until, parting) {
+    closed = true;
+    P.eyeOpen = 0;
+    introTick = null;
+    setPainted(null);
+    // Only a painting needs to dissolve. Eyes alone change with no glitch.
+    engine.setScene('eyes', {}, { instant: !engine.hasArt });
+    caption.classList.remove('on');
+    $('#read-close').hidden = true;
+    const note2 = $('#closed-note');
+    note2.hidden = false;
+    $('#closed-text').textContent = `Karyon ended this conversation.${until ? ` It can talk with you again on ${closingDate(until)}.` : ''} Michael reads the transcripts, and the rest of this page is everything Karyon would have told you.`;
+    const last = $('#closed-parting');
+    last.hidden = !parting;
+    last.textContent = parting || '';
+    showStatic();
+    // Nothing moves from here on, so stop drawing once the eyes have shut.
+    const rest = setInterval(() => {
+      if (engine.morph || engine.eyeState.open > 0.02) return;
+      clearInterval(rest);
+      engine.paused = true;
+    }, 200);
+  }
+
+  // ---------- lightning ----------
+  function strike(until, parting) {
+    closed = true;
+    P.expression = 'suspicious';
+    P.gazeX = 0.9;
+    P.gazeY = 0.4;
+    input.disabled = true;
+    sendBtn.disabled = true;
+    if (reduced) {
+      settleClosed(until, parting);
+      return;
+    }
+    // Time to read the last line, then the bolt comes down on the input.
+    const box = form.getBoundingClientRect();
+    const hitX = box.left + box.width / 2;
+    const hitY = box.top + box.height / 2;
+    setTimeout(() => {
+      engine.strike(hitX + (Math.random() - 0.5) * 240, -20, hitX, hitY);
+      flash.classList.remove('go');
+      void flash.offsetWidth;
+      flash.classList.add('go');
+      body.classList.add('struck');
+    }, 1500);
+    setTimeout(() => engine.strike(hitX + 80 + Math.random() * 200, -20, hitX + (Math.random() - 0.5) * 120, hitY), 1760);
+    setTimeout(() => (P.eyeOpen = 0), 2300);
+    setTimeout(() => {
+      body.classList.remove('struck');
+      settleClosed(until, parting);
+    }, 2900);
+  }
 
   // ---------- gaze ----------
   addEventListener('pointermove', (e) => {
     lastPointer = performance.now();
+    if (closed || introTick) return;
     const L = engine.layout;
     P.gazeX = Math.max(-1, Math.min(1, ((e.clientX - L.cx) / innerWidth) * 2.4));
     P.gazeY = Math.max(-1, Math.min(1, ((e.clientY - L.cy) / innerHeight) * 2.2));
   });
   input.addEventListener('focus', () => {
+    if (closed) return;
     P.gazeX = 0;
     P.gazeY = 0.9;
   });
@@ -332,15 +365,16 @@
   log.addEventListener('wheel', stopFollowing, { passive: true });
   log.addEventListener('touchmove', stopFollowing, { passive: true });
 
-  // ---------- the art at the sides: clicking it asks Karyon about it ----------
+  // ---------- the art and the eyes: clicking them asks Karyon about them ----------
   const artLeft = $('#art-left');
   const artRight = $('#art-right');
   let painted = null;
-  const leftAsk = () => (painted?.caption ? `Tell me more about ${painted.caption}.` : painted ? 'What are you showing me?' : 'Who are you, Karyon?');
+  const leftAsk = () => (painted?.caption ? `Tell me more about ${painted.caption}.` : 'What are you showing me?');
   const rightAsk = 'What does CEV mean?';
   function setPainted(scene) {
     painted = scene && scene.scene !== 'eyes' ? scene : null;
-    const label = painted?.caption ? `Ask about ${painted.caption}` : painted ? 'Ask about this' : 'Ask who Karyon is';
+    body.classList.toggle('painted', Boolean(painted));
+    const label = painted?.caption ? `Ask about ${painted.caption}` : 'Ask about this';
     artLeft.querySelector('.hint').textContent = label;
     artLeft.setAttribute('aria-label', label);
   }
@@ -403,7 +437,7 @@
 
   async function ask(text) {
     text = text.trim();
-    if (!text || busy) return;
+    if (!text || busy || closed) return;
     busy = true;
     sendBtn.disabled = true;
     if (typing) typing.finish();
@@ -414,6 +448,7 @@
       engine.setMode('chat');
       placeUI();
     }
+    modelExpression = null;
     anchor = addMessage('you', text).el;
     followReply = true;
     input.value = '';
@@ -424,6 +459,7 @@
     thinkTarget = 1;
     let said = '';
     let trouble = '';
+    let ending = null;
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -436,6 +472,7 @@
           data = await res.json();
         } catch {}
         if (data.conversation_id) conversationId = data.conversation_id;
+        if (data.error === 'closed') ending = { until: data.closed_until, quiet: true };
         trouble = data.message || (res.status === 404 ? "I'm not awake on this host. The site needs its Cloudflare functions to talk." : 'Something went wrong on my side. Try again?');
       } else {
         await readEvents(res.body, (event, data) => {
@@ -444,9 +481,14 @@
             setModel(reply, data.model);
           } else if (event === 'scene') {
             paint(data);
+          } else if (event === 'eyes') {
+            modelExpression = data.expression;
+          } else if (event === 'end') {
+            ending = { until: data.closed_until };
           } else if (event === 'text') {
             said += data.delta;
             thinkTarget = 0;
+            speakTarget = 1;
             render(reply, said);
             follow();
           } else if (event === 'error') {
@@ -458,6 +500,7 @@
       trouble = "I can't reach my thoughts right now. Check your connection and try again?";
     } finally {
       thinkTarget = 0;
+      speakTarget = 0;
       reply.body.classList.remove('cursor');
       if (trouble) {
         if (said) {
@@ -475,6 +518,8 @@
       busy = false;
       sendBtn.disabled = false;
       follow();
+      if (ending?.quiet) settleClosed(ending.until);
+      else if (ending) strike(ending.until, said.trim());
     }
   }
 
@@ -497,18 +542,29 @@
   });
   document.querySelectorAll('#chips button').forEach((b) => b.addEventListener('click', () => ask(b.textContent)));
 
-  fetch('/api/status')
-    .then((r) => (r.ok ? r.json() : null))
-    .then((s) => {
-      if (!s) return;
-      if (!s.configured) note.textContent = 'Karyon is not connected yet.';
-      else if (!s.open) note.textContent = 'Karyon has talked as much as it can today. Its budget resets at midnight UTC.';
-    })
-    .catch(() => {});
-
   // ---------- go ----------
   engine.start();
-  const boot = () => {
+  // A visitor Karyon has closed the conversation with gets the static page at once.
+  const status = fetch('/api/status')
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  status.then((s) => {
+    if (!s) return;
+    if (s.closed_until) return;
+    if (!s.configured) note.textContent = 'Karyon is not connected yet.';
+    else if (!s.open) note.textContent = 'Karyon has talked as much as it can today. Its budget resets at midnight UTC.';
+  });
+  const boot = async () => {
+    const s = await Promise.race([status, new Promise((r) => setTimeout(r, 700))]);
+    if (s?.closed_until) {
+      engine.setMode('chat', true);
+      engine.setScene('eyes', {}, { instant: true });
+      P.eyeFade = 1;
+      P.eyeOpen = 0;
+      settleClosed(s.closed_until);
+      return;
+    }
+    status.then((late) => late?.closed_until && !closed && settleClosed(late.closed_until));
     startIntro();
     placeUI();
     // Test hooks for screenshots: ?scene=planet&mode=chat&t=4&pause=1
@@ -518,9 +574,12 @@
         started = true;
         body.classList.add('chatting');
         engine.setMode('chat', true);
-        placeUI();
       }
       engine.setScene(name, { phase: qs.get('phase') || undefined }, { instant: true });
+      if (qs.get('mode') === 'chat') {
+        engine.layout = engine.layoutFor('chat');
+        placeUI();
+      }
       caption.textContent = qs.get('caption') || '';
       caption.classList.toggle('on', qs.has('caption'));
       setPainted({ scene: name, caption: qs.get('caption') || undefined });
@@ -541,5 +600,5 @@
     });
   } else boot();
 
-  window.__karyon = { engine, ask, paint, startIntro };
+  window.__karyon = { engine, ask, paint, startIntro, strike, showStatic, setExpression: (x) => (modelExpression = x) };
 })();

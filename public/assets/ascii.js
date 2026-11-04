@@ -44,7 +44,7 @@
   const RAMP = ' .:-=+;ilcueadLCUEAD#@';
   const GLITCH = '01<>/\\|{}[]#%&*+=:;?';
   const EDGE = ['|', '/', '-', '\\'];
-  const CHARS = [...new Set((RAMP + GLITCH + EDGE.join('') + '_').split(''))];
+  const CHARS = [...new Set((RAMP + GLITCH + EDGE.join('') + '_emt').split(''))];
   const CI = Object.fromEntries(CHARS.map((c, i) => [c, i]));
   const RAMP_I = RAMP.split('').map((c) => CI[c]);
   const GLITCH_I = GLITCH.split('').map((c) => CI[c]);
@@ -173,7 +173,16 @@
   // Eye space: x runs from the inner corner (-1) to the outer one (+1) in half
   // eye widths, y points up in units of hh, the film's ratio of 230 to 440.
   const EYE_HH = 230 / 440;
-  const EYE_REST = 0.8; // the film's eyes narrow to about this, "determined"
+  // Each expression sets the upper lid (u), the lower lid (l), and how far the
+  // brow drops toward the nose (b). A pair is [left eye, right eye]. Lowering the
+  // upper lid reads as focus or suspicion. Raising the lower lid reads as a smile.
+  const EXPRESSIONS = {
+    wide: { u: 1, l: 1, b: 0 },
+    focused: { u: 0.58, l: 0.8, b: 0.8 },
+    suspicious: { u: [0.4, 0.74], l: [0.72, 0.88], b: [1, 0.1] },
+    warm: { u: 0.88, l: 0.42, b: -0.35 },
+    surprised: { u: 1.16, l: 1.08, b: -0.7 },
+  };
   const eyeRng = (seed) => {
     const r = rng(seed);
     return Array.from({ length: 7 }, () => {
@@ -184,13 +193,16 @@
   };
   const EYE_TRACES = { [-1]: eyeRng(917), 1: eyeRng(1977) };
 
-  function drawEye(g, x0, y0, ew, o, side, gazeX, gazeY, think, spin, sweep, cw, wing = 1) {
+  function drawEye(g, x0, y0, ew, o, awake, lid, side, gazeX, gazeY, think, spin, sweep, cw, wing = 1) {
     const hw = ew / 2;
     const hh = hw * EYE_HH;
     const O = Math.max(o, 0.04);
     const P = (x, y) => [x0 + side * x * hw, y0 - y * hh];
-    const up = [P(-1, -0.06), P(-0.3, 0.72 * O), P(0.45, 0.98 * O), P(1, 0.34 * O)];
-    const lo = [P(1, 0.34 * O), P(0.5, -0.58 * O), P(-0.4, -0.52 * O), P(-1, -0.06)];
+    const U = O * lid.u;
+    const Lo = O * lid.l;
+    const corner = 0.34 * Math.min(U, 1);
+    const up = [P(-1, -0.06), P(-0.3, 0.72 * U), P(0.45, 0.98 * U), P(1, corner)];
+    const lo = [P(1, corner), P(0.5, -0.58 * Lo), P(-0.4, -0.52 * Lo), P(-1, -0.06)];
     const path = (pts) => pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
     const stroke = (pts, v, w) => {
       g.strokeStyle = grey(v);
@@ -201,7 +213,9 @@
     };
     g.lineJoin = 'miter';
     const unit = ew / 880; // one unit of line width in the film
-    const fine = (u, min) => Math.max(u * unit, cw * min);
+    // Line widths have a floor so they survive the turn into letters. Small eyes
+    // get a lower floor, or their lids turn into solid bars.
+    const fine = (u, min) => Math.max(u * unit, cw * min * Math.min(1, 0.5 + ew / 900));
 
     if (o > 0.03) {
       // The almond.
@@ -278,7 +292,7 @@
     // as thick letter-filled bands, so each one gets a wide dim stroke under it.
     g.globalCompositeOperation = 'lighter';
     if (o > 0.03) {
-      const brow = [P(-0.9, 0.42), P(-0.2, 1.05 * O + 0.1), P(0.9, 0.7 * O + 0.1)];
+      const brow = [P(-0.9, 0.42 - lid.b * 0.3), P(-0.2, 1.05 * U + 0.1 - lid.b * 0.08), P(0.9, 0.7 * U + 0.1 + lid.b * 0.1)];
       stroke(brow, 0.38, fine(40, 3.2));
       stroke(brow, 0.3, fine(6, 0.5));
       stroke(up, 0.52, fine(40, 2.6));
@@ -286,8 +300,10 @@
       stroke(lo, 0.7, fine(5, 0.45));
     }
     stroke(up, 0.98, fine(14, 2.7));
-    if (wing > 0.01 && o > 0.25) {
-      const fade = Math.min(1, (o - 0.25) * 3);
+    // The circuit traces stay lit through a blink. They only go out when the eyes
+    // really close.
+    if (wing > 0.01 && awake > 0.25) {
+      const fade = Math.min(1, (awake - 0.25) * 3);
       for (const tr of EYE_TRACES[side]) {
         let [x, y] = tr.start;
         const pts = [P(x, y)];
@@ -309,7 +325,18 @@
   // The engine keeps one eye state for the session, so an eye left on screen
   // doesn't restart when a painting arrives.
   SCENES.eyes = {
-    init: (opts, L, r) => ({ open: 0, blinkAt: 2 + r() * 3, blinkStart: -9, gx: 0, gy: 0, spin: 0, last: 0, glintAt: 2.4, r }),
+    init: (opts, L, r) => ({
+      open: 0,
+      blinkAt: 2 + r() * 3,
+      blinkStart: -9,
+      gx: 0,
+      gy: 0,
+      spin: 0,
+      last: 0,
+      glintAt: 2.4,
+      r,
+      lids: { [-1]: { u: 1, l: 1, b: 0 }, 1: { u: 1, l: 1, b: 0 } },
+    }),
     update(s, t, P) {
       const target = P.eyeOpen ?? 1;
       s.open += (target - s.open) * (P.eyeSnap ? 1 : 0.16);
@@ -322,20 +349,29 @@
       }
       const bt = (t - s.blinkStart) / 0.2;
       const blink = bt >= 0 && bt < 1 ? Math.sin(bt * Math.PI) : 0;
-      s.o = clamp(s.open * (1 - blink * 0.96), 0, 1) * EYE_REST;
+      s.o = clamp(s.open * (1 - blink * 0.96), 0, 1);
+      const want = EXPRESSIONS[P.expression] || EXPRESSIONS.wide;
+      const ease = P.eyeSnap ? 1 : 0.12;
+      for (const side of [-1, 1]) {
+        const lid = s.lids[side];
+        for (const key of ['u', 'l', 'b']) {
+          const v = want[key];
+          lid[key] += ((Array.isArray(v) ? v[side < 0 ? 0 : 1] : v) - lid[key]) * ease;
+        }
+      }
       s.gx += ((P.gazeX || 0) - s.gx) * 0.07;
       s.gy += ((P.gazeY || 0) - s.gy) * 0.07;
-      // The gears run at the film's 30 degrees a second, and four times that
-      // while Karyon thinks.
-      s.spin += Math.max(0, t - s.last) * 30 * (1 + (P.thinking || 0) * 3);
+      // The gears run at the film's 30 degrees a second, four times that while
+      // Karyon thinks, and twice that while it speaks.
+      s.spin += Math.max(0, t - s.last) * 30 * (1 + (P.thinking || 0) * 3 + (P.speaking || 0));
       s.last = t;
       if (t > s.glintAt + 0.5) s.glintAt = t + 5 + s.r() * 6;
     },
     drawOne(g, L, s, t, P, side) {
-      const conv = (L.conv || 0) * -side; // each eye turns toward the conversation
-      const gx = clamp(s.gx * (1 - Math.abs(L.conv || 0) * 0.5) + conv, -1, 1);
+      const look = L.lookX || 0; // both eyes lean toward the conversation
+      const gx = clamp(s.gx * (1 - Math.abs(look) * 0.5) + look, -1, 1);
       const sweep = (t - s.glintAt) / 0.35;
-      drawEye(g, L.cx + side * L.eyeDX, L.cy, L.eyeW, s.o, side, gx, s.gy, P.thinking || 0, s.spin, sweep, L.cw, L.wing ?? 1);
+      drawEye(g, L.cx + side * L.eyeDX, L.cy, L.eyeW, s.o, s.open, s.lids[side], side, gx, s.gy, P.thinking || 0, s.spin, sweep, L.cw, L.wing ?? 1);
     },
     draw(g, L, s, t, P) {
       this.update(s, t, P);
@@ -1459,7 +1495,7 @@
     },
     draw(g, L, s, t) {
       if (!s.ready) {
-        if (s.failed) SCENES.eyes.draw(g, L, (s.fallback ||= SCENES.eyes.init({}, L, rng(1))), t, { eyeOpen: 1 });
+        if (s.failed) return;
         return;
       }
       const w = Math.min(L.W * 0.96, L.size * 1.1);
@@ -1480,7 +1516,9 @@
   };
 
   // ---------------------------------------------------------------------------
-  // At this width and up, the conversation has art in a gutter on each side.
+  // At this width and up, the eyes and the art share a stage on the left and the
+  // conversation takes the right. Below it, the eyes sit in a band at the top and
+  // the art stays dim behind the text.
   const SIDE_MIN_W = 1080;
 
   class Engine {
@@ -1493,7 +1531,8 @@
       this.sB = document.createElement('canvas');
       this.xA = this.sA.getContext('2d', { willReadFrequently: true });
       this.xB = this.sB.getContext('2d', { willReadFrequently: true });
-      this.params = { eyeOpen: 1, gazeX: 0, gazeY: 0, thinking: 0 };
+      this.params = { eyeOpen: 1, gazeX: 0, gazeY: 0, thinking: 0, expression: 'wide' };
+      this.bolts = [];
       this.hover = null;
       this.hoverL = 0;
       this.hoverR = 0;
@@ -1581,74 +1620,144 @@
       Object.assign(this, { atlas, gw, gh });
     }
 
-    // On wide screens the conversation takes the center column (the same width
-    // as --col in karyon.css) and the art lives in the gutters either side.
-    get gutter() {
-      return (this.W - Math.min(720, this.W * 0.52)) / 2;
+    // The width of the left stage. The rest of the window is the conversation.
+    get stageW() {
+      return this.W - clamp(this.W * 0.42, 440, 660);
     }
 
     get sideMode() {
       return this.mode === 'chat' && this.W >= SIDE_MIN_W;
     }
 
+    // Height of the band that holds the eyes above the text on narrow screens.
+    get bandH() {
+      return Math.round(Math.min(this.H * 0.22, this.W * 0.4));
+    }
+
+    get hasArt() {
+      return this.mode === 'chat' && this.sceneName && this.sceneName !== 'eyes';
+    }
+
     layoutFor(mode) {
       const { W, H, cw, ch } = this;
       if (mode === 'chat') {
         if (W >= SIDE_MIN_W) {
-          // One eye in each gutter, turned toward the conversation.
-          const g = this.gutter;
-          return { W, H, cw, ch, cx: W / 2, cy: H * 0.46, size: Math.min(W * 0.8, H * 0.72), eyeDX: (W - g) / 2, eyeW: Math.min(g * 0.94, 600), wing: 0.3, conv: 0.5 };
+          // Both eyes on the stage. With a painting they rise to make room for it.
+          const S = this.stageW;
+          const eyeW = this.hasArt ? Math.min(S * 0.27, H * 0.36) : Math.min(S * 0.36, H * 0.6);
+          return { W, H, cw, ch, cx: S / 2, cy: this.hasArt ? H * 0.17 : H * 0.46, size: Math.min(S, H), eyeDX: eyeW * 0.62, eyeW, wing: this.hasArt ? 0.3 : 0.38, lookX: 0.45 };
         }
-        // No gutters: the art stays behind the text, dimmed.
-        return { W, H, cw, ch, cx: W / 2, cy: H * 0.2, size: Math.min(W, H * 0.5), eyeDX: W * 0.25, eyeW: W * 0.42, wing: 0.2, conv: 0 };
+        const band = this.bandH;
+        const eyeW = Math.min(W * 0.36, band * 1.15);
+        return { W, H, cw, ch, cx: W / 2, cy: band * 0.5, size: Math.min(W, H * 0.5), eyeDX: eyeW * 0.62, eyeW, wing: 0.15, lookX: 0 };
       }
       if (W < SIDE_MIN_W && W < H) {
-        // Portrait phones: the letterboxed film is too small to match, so the
-        // eyes fill the width instead.
-        return { W, H, cw, ch, cx: W / 2, cy: H * 0.3, size: W, eyeDX: W * 0.25, eyeW: W * 0.46, wing: 0.25, conv: 0 };
+        // Portrait phones: the eyes fill the width.
+        return { W, H, cw, ch, cx: W / 2, cy: H * 0.24, size: W, eyeDX: W * 0.25, eyeW: W * 0.46, wing: 0.25, lookX: 0 };
       }
-      // Hero: the eyes sit exactly where they are in Era of Intelligence as it
-      // is letterboxed on this screen (from the film's renderer: eye centers 22.5%
-      // of the frame width off center, each eye 35.3% wide, on the middle line),
-      // so the cut back to them lines up.
+      // Hero: the eyes at the proportions they have in Era of Intelligence (eye
+      // centers 22.5% of a 16:9 frame off center, each eye 35.3% wide), above the
+      // middle of the window so they clear the greeting.
       const vw = Math.min(W, (H * 16) / 9);
-      const vh = (vw * 9) / 16;
-      return { W, H, cw, ch, cx: W / 2, cy: (H - vh) / 2 + vh * 0.5, size: vw * 0.815, eyeDX: vw * 0.2247, eyeW: vw * 0.3531, wing: 1, conv: 0 };
+      return { W, H, cw, ch, cx: W / 2, cy: H * 0.34, size: vw * 0.815, eyeDX: vw * 0.2247, eyeW: vw * 0.3531, wing: 1, lookX: 0 };
     }
 
-    // The frame a painting gets when it lives in a gutter. Scenes see it as
-    // their whole world, so anything sized to L.W and L.H stays inside it.
-    panelLayout(side) {
-      const { W, H, cw, ch } = this;
-      const g = this.gutter;
-      return { W: g, H, cw, ch, cx: g / 2, cy: H * 0.46, size: Math.min(g * 1.6, H * 0.95), x: side === 'left' ? 0 : W - g };
+    // Where a painting lives: under the eyes on the stage, or behind the text.
+    get artRect() {
+      const { W, H } = this;
+      if (W >= SIDE_MIN_W) {
+        const y = Math.round(H * 0.32);
+        return { x: 0, y, W: this.stageW, H: H - y };
+      }
+      const y = this.bandH;
+      return { x: 0, y, W, H: H - y };
     }
 
-    drawPanel(ctx, entry, side) {
-      const L = this.panelLayout(side);
+    // The eyes' box on screen, at their current place in the layout.
+    get eyeRect() {
+      const L = this.layout;
+      const hw = L.eyeDX + L.eyeW / 2;
+      return { x: L.cx - hw, y: L.cy - L.eyeW * 0.36, W: hw * 2, H: L.eyeW * 0.72 };
+    }
+
+    // The frame a painting gets. Scenes see it as their whole world, so anything
+    // sized to L.W and L.H stays inside it.
+    panelLayout() {
+      const { cw, ch } = this;
+      const r = this.artRect;
+      return { W: r.W, H: r.H, cw, ch, cx: r.W / 2, cy: r.H * 0.5, size: Math.min(r.W * 1.3, r.H * 1.6), x: r.x, y: r.y };
+    }
+
+    drawPanel(ctx, entry) {
+      const L = this.panelLayout();
       ctx.save();
       ctx.beginPath();
-      ctx.rect(L.x, 0, L.W, L.H);
+      ctx.rect(L.x, L.y, L.W, L.H);
       ctx.clip();
-      ctx.translate(L.x, 0);
+      ctx.translate(L.x, L.y);
       SCENES[entry.name].draw(ctx, L, entry.state, this.time - entry.t0, this.params);
       ctx.restore();
-      // Fade the painting into an oval, so full-bleed scenes float in the gutter
+      // Fade the painting into an oval, so full-bleed scenes float on the stage
       // instead of ending in the edges of a rectangle.
       const rx = L.W * 0.52;
-      const ry = Math.min(L.H * 0.4, L.W * 0.86);
+      const ry = L.H * 0.52;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(L.x, 0, L.W, L.H);
+      ctx.rect(L.x, L.y, L.W, L.H);
       ctx.clip();
-      ctx.translate(L.x + L.cx, L.cy);
+      ctx.translate(L.x + L.cx, L.y + L.cy);
       ctx.scale(rx, ry);
-      const gr = ctx.createRadialGradient(0, 0, 0.55, 0, 0, 1);
+      const gr = ctx.createRadialGradient(0, 0, 0.6, 0, 0, 1);
       gr.addColorStop(0, 'rgba(0,0,0,0)');
       gr.addColorStop(1, 'rgba(0,0,0,1)');
       ctx.fillStyle = gr;
       ctx.fillRect(-(L.W / rx) * 2, -(L.H / ry) * 2, (L.W / rx) * 4, (L.H / ry) * 4);
       ctx.restore();
+    }
+
+    // A lightning strike between two points on screen. The bolt is drawn into the
+    // scene, so it turns into letters and picks up the glow like everything else.
+    strike(x0, y0, x1, y1) {
+      const jag = (ax, ay, bx, by, n, spread) => {
+        const pts = [[ax, ay]];
+        for (let i = 1; i < n; i++) {
+          const k = i / n;
+          pts.push([ax + (bx - ax) * k + (Math.random() - 0.5) * spread, ay + (by - ay) * k]);
+        }
+        pts.push([bx, by]);
+        return pts;
+      };
+      const main = jag(x0, y0, x1, y1, 16, Math.abs(y1 - y0) * 0.09);
+      const branches = [];
+      for (let i = 3; i < main.length - 3; i += 3) {
+        const [bx, by] = main[i];
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const len = 60 + Math.random() * 170;
+        branches.push(jag(bx, by, bx + dir * len, by + len * 0.8, 6, 34));
+      }
+      this.bolts.push({ t0: this.time, main, branches });
+    }
+
+    drawBolts(ctx) {
+      this.bolts = this.bolts.filter((b) => this.time - b.t0 < 0.55);
+      for (const b of this.bolts) {
+        const age = this.time - b.t0;
+        // Bright, a quick dip, a second flare, then gone.
+        const v = age < 0.08 ? 1 : age < 0.14 ? 0.35 : age < 0.24 ? 0.95 : Math.max(0, 0.6 * (1 - (age - 0.24) / 0.31));
+        const trace = (pts, w, a) => {
+          ctx.strokeStyle = grey(a);
+          ctx.lineWidth = w;
+          ctx.beginPath();
+          pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+          ctx.stroke();
+        };
+        ctx.lineJoin = 'miter';
+        ctx.globalCompositeOperation = 'lighter';
+        trace(b.main, this.cw * 5, v * 0.3);
+        trace(b.main, this.cw * 1.9, v);
+        for (const br of b.branches) trace(br, this.cw * 1.1, v * 0.7);
+        ctx.globalCompositeOperation = 'source-over';
+      }
     }
 
     setMode(mode, instant = false) {
@@ -1660,7 +1769,7 @@
     }
 
     get dimTarget() {
-      return this.mode !== 'chat' ? 1 : this.sideMode ? 0.96 : 0.36;
+      return 1;
     }
 
     setScene(name, opts = {}, { instant = false, duration = 1.5 } = {}) {
@@ -1675,7 +1784,7 @@
         }
         entry.state = this.eyeState;
       } else {
-        const L = this.sideMode ? this.panelLayout('left') : this.layout;
+        const L = this.mode === 'chat' ? this.panelLayout() : this.layout;
         entry.state = SCENES[def].init ? SCENES[def].init(opts, L, rng(this.seed++)) : {};
       }
       if (!this.eyeState) {
@@ -1693,9 +1802,9 @@
       this.morph = { t0: this.time, dur: this.reduced ? 0.4 : duration };
       // Decode order: mostly noise, partly a ripple out from the art's center.
       const { cols, rows } = this;
-      const origin = this.sideMode ? this.panelLayout('left') : this.layout;
-      const cx = origin.cx / this.cw;
-      const cy = origin.cy / this.ch;
+      const origin = this.mode === 'chat' ? this.panelLayout() : { ...this.layout, x: 0, y: 0 };
+      const cx = (origin.x + origin.cx) / this.cw;
+      const cy = (origin.y + origin.cy) / this.ch;
       const md = Math.hypot(Math.max(cx, cols - cx), Math.max(cy, rows - cy) * 2);
       const salt = Math.floor(Math.random() * 1e6);
       for (let y = 0; y < rows; y++) {
@@ -1722,14 +1831,14 @@
         const eyeT = this.time - this.eyeT0;
         if (entry.name === 'eyes') {
           SCENES.eyes.draw(ctx, this.layout, entry.state, eyeT, this.params);
-        } else if (this.sideMode) {
-          // A painting takes the left gutter while Karyon's eye keeps the right.
-          this.drawPanel(ctx, entry, 'left');
-          SCENES.eyes.update(this.eyeState, eyeT, this.params);
-          SCENES.eyes.drawOne(ctx, this.layout, this.eyeState, eyeT, this.params, 1);
+        } else if (this.mode === 'chat') {
+          // The painting has its own frame and the eyes stay above it.
+          this.drawPanel(ctx, entry);
+          SCENES.eyes.draw(ctx, this.layout, this.eyeState, eyeT, this.params);
         } else {
           SCENES[entry.name].draw(ctx, this.layout, entry.state, this.time - entry.t0, this.params);
         }
+        if (this.bolts.length) this.drawBolts(ctx);
       } catch (err) {
         console.error('scene', entry.name, err);
       }
@@ -1829,18 +1938,28 @@
         }
       }
       const band = 0.22;
-      const dim = this.dim;
       const n = cols * rows;
-      // Hovering a side panel lifts its art; the eye in the right gutter is the
-      // same in both scenes, so it skips the decode glitch.
-      const side = this.sideMode;
-      const gutterCols = side ? Math.floor(this.gutter / cw) : 0;
-      const rightCol = side ? cols - gutterCols : Infinity;
+      // Only the painting decodes when a scene changes. The eyes are the same in
+      // both scenes, so they skip the glitch.
+      const chat = this.mode === 'chat';
+      const art = this.artRect;
+      const ax0 = chat ? Math.floor(art.x / cw) : 0;
+      const ax1 = chat ? Math.ceil((art.x + art.W) / cw) : cols;
+      const ay0 = chat ? Math.floor(art.y / ch) : 0;
+      // Behind the text on narrow screens, the painting stays dim.
+      const artDim = chat && !this.sideMode ? 0.3 : 1.12;
+      const eye = this.eyeRect;
+      const ex0 = eye.x / cw;
+      const ex1 = (eye.x + eye.W) / cw;
+      const ey0 = eye.y / ch;
+      const ey1 = (eye.y + eye.H) / ch;
       this.hoverL += ((this.hover === 'left' ? 1 : 0) - this.hoverL) * 0.2;
       this.hoverR += ((this.hover === 'right' ? 1 : 0) - this.hoverR) * 0.2;
       for (let c = 0; c < n; c++) {
         const x = c % cols;
-        if (p < 0 || x >= rightCol) this.glyph(p < 0 ? this.A : this.B, c);
+        const y = (c / cols) | 0;
+        const inArt = x >= ax0 && x < ax1 && y >= ay0;
+        if (p < 0 || !inArt) this.glyph(this.A, c);
         else {
           const o = this.order[c];
           if (p < o) this.glyph(this.A, c);
@@ -1855,10 +1974,20 @@
         }
         const g = this.gi;
         if (g < 0) continue;
-        const lift = !side ? 1 : x < gutterCols ? 1 + 0.4 * this.hoverL : x >= rightCol ? 1 + 0.4 * this.hoverR : 1;
-        const lv = clamp(Math.round(this.gv * dim * lift * (LEVELS - 1)), 1, LEVELS - 1);
-        const y = (c / cols) | 0;
+        const inEyes = x >= ex0 && x < ex1 && y >= ey0 && y < ey1;
+        // Hovering the art or the eyes lifts them.
+        const lift = inEyes ? 1 + 0.4 * this.hoverR : chat && inArt ? artDim * (1 + 0.4 * this.hoverL) : 1;
+        const lv = clamp(Math.round(this.gv * this.dim * lift * (LEVELS - 1)), 1, LEVELS - 1);
         ctx.drawImage(atlas, g * gw, lv * gh, gw, gh, Math.round(x * cw * dpr), Math.round(y * ch * dpr), gw, gh);
+      }
+      // A golem wakes with the word for truth on its forehead. Karyon's is here,
+      // between the eyes, faint enough that almost nobody will find it.
+      if ((this.params.eyeFade ?? 1) > 0.5 && this.eyeState?.open > 0.5) {
+        const r = Math.round((this.layout.cy - this.layout.eyeW * 0.16) / ch);
+        const c0 = Math.round(this.layout.cx / cw) - 2;
+        [...'emet'].forEach((letter, k) => {
+          ctx.drawImage(atlas, CI[letter] * gw, 1 * gh, gw, gh, Math.round((c0 + k) * cw * dpr), Math.round(r * ch * dpr), gw, gh);
+        });
       }
       if (this.gctx) {
         this.gctx.clearRect(0, 0, this.glowCanvas.width, this.glowCanvas.height);
@@ -1871,7 +2000,7 @@
       this.frame++;
       const target = this.layoutFor(this.mode);
       const k = this.reduced ? 1 : 1 - Math.exp(-dt * 3);
-      for (const key of ['cx', 'cy', 'size', 'eyeDX', 'eyeW', 'wing', 'conv']) this.layout[key] = lerp(this.layout[key], target[key], k);
+      for (const key of ['cx', 'cy', 'size', 'eyeDX', 'eyeW', 'wing', 'lookX']) this.layout[key] = lerp(this.layout[key], target[key], k);
       Object.assign(this.layout, { W: this.W, H: this.H, cw: this.cw, ch: this.ch });
       this.dim = lerp(this.dim, this.dimTarget, k);
       if (this.onStep) this.onStep(this.time, dt);

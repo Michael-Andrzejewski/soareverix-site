@@ -70,7 +70,7 @@ async function chat(message, conversation_id) {
 
 (async () => {
   execFileSync('npx', ['wrangler', 'd1', 'execute', 'karyon', '--local', '--file=schema.sql'], { stdio: 'ignore', env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } });
-  d1(`DELETE FROM daily_spend WHERE day = '${today}'; DELETE FROM spend_holds; DELETE FROM visitor_days;`);
+  d1(`DELETE FROM daily_spend WHERE day = '${today}'; DELETE FROM spend_holds; DELETE FROM visitor_days; DELETE FROM messages WHERE role = 'event' AND content LIKE 'ended:%';`);
   run('node', ['scripts/mock-anthropic.mjs'], { MOCK_LOG: '.wrangler/e2e-mock.jsonl' });
   fs.rmSync('.wrangler/e2e-mock.jsonl', { force: true });
   // The site runs Haiku all day. Pin Opus as primary so the switch and the
@@ -78,45 +78,21 @@ async function chat(message, conversation_id) {
   run('npx', ['wrangler', 'pages', 'dev', 'public', '--port', String(PORT), '--binding', 'KARYON_MODEL=claude-opus-5-5']);
   await waitFor(`${BASE}/api/status`);
 
-  // ---- video: byte ranges, and the real intro clip cutting to the live eyes ----
-  for (const f of ['era-of-intelligence-intro.mp4', 'era-of-intelligence.mp4']) {
-    const r = await fetch(`${BASE}/video/${f}`, { headers: { Range: 'bytes=0-99' } });
-    await r.arrayBuffer();
-    check(r.status === 206 && /^bytes 0-99\//.test(r.headers.get('content-range') || ''), `/video/${f} answers byte ranges`);
-  }
   const browser = await chromium.launch();
-  {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    await page.goto(`${BASE}/`);
-    const h264 = await page.evaluate(() => document.createElement('video').canPlayType('video/mp4; codecs="avc1.640028"'));
-    if (h264) {
-      await page.waitForFunction(() => document.querySelector('#intro-video').classList.contains('playing'), null, { timeout: 10000 });
-      await page.waitForFunction(() => !document.body.classList.contains('intro'), null, { timeout: 10000 });
-      const at = await page.evaluate(() => document.querySelector('#intro-video').currentTime);
-      check(Math.abs(at - 4) < 0.15, 'intro video cuts to the live eyes at 0:04', `${at.toFixed(2)} s`);
-      await page.waitForFunction(() => !document.body.classList.contains('awaiting'), null, { timeout: 15000 });
-      await page.click('#film-open');
-      await page.waitForFunction(() => document.querySelector('#film-video').currentTime > 0.5, null, { timeout: 10000 });
-      await page.keyboard.press('Escape');
-      check(await page.evaluate(() => document.querySelector('#film').hidden), 'full film plays from the footer and closes with Escape');
-    } else {
-      console.log('SKIP  this Chromium build cannot play H.264, so the video intro was not checked');
-    }
-    await page.close();
-  }
 
   // ---- UI: drawn intro, greeting, question, streamed reply, repaint ----
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(`${BASE}/?novideo`);
-  const reached = await page
-    .waitForFunction(() => window.__karyon.engine.sceneName === 'eclipse', null, { timeout: 9000 })
-    .then(() => true, () => false);
-  check(reached, 'drawn intro reaches the eclipse');
-  await page.screenshot({ path: `${SHOTS}/1-eclipse.png` });
+  await page.goto(`${BASE}/`);
+  // The intro: the eyes open, look left, look right, and find the visitor.
+  await page.waitForFunction(() => window.__karyon.engine.params.eyeOpen === 1, null, { timeout: 6000 });
+  await page.waitForFunction(() => window.__karyon.engine.params.gazeX < -0.5, null, { timeout: 6000 });
+  await page.waitForFunction(() => window.__karyon.engine.params.gazeX > 0.5, null, { timeout: 6000 });
+  check(await page.evaluate(() => document.body.classList.contains('intro')), 'the eyes look around during the intro');
+  await page.screenshot({ path: `${SHOTS}/1-intro.png` });
   await page.waitForFunction(() => !document.body.classList.contains('intro'), null, { timeout: 6000 });
-  check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes'), 'cuts back to the eyes after the eclipse');
+  check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes'), 'the intro ends on the eyes');
   await page.waitForFunction(() => !document.body.classList.contains('awaiting'), null, { timeout: 15000 });
   const greeting = await page.textContent('.msg.greeting .body');
   check(greeting.startsWith('My name is Karyon, an agent attempting CEV for Michael Andrzejewski.'), 'greeting typed beneath the eyes');
@@ -141,6 +117,32 @@ async function chat(message, conversation_id) {
   await page.waitForFunction(() => window.__karyon.engine.sceneName === 'custom', null, { timeout: 10000 });
   await page.waitForTimeout(2200);
   await page.screenshot({ path: `${SHOTS}/5-custom-svg.png` });
+  // ---- expressions, lightning, and the static page ----
+  await page.fill('#q', 'Are you suspicious of me?');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__karyon.engine.params.expression === 'suspicious', null, { timeout: 15000 });
+  check(true, 'set_eyes changes the expression');
+  await page.waitForFunction(() => !document.querySelector('.msg.karyon:last-child .body').classList.contains('cursor'), null, { timeout: 15000 });
+
+  await page.fill('#q', 'Send lightning');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.body.classList.contains('struck'), null, { timeout: 15000 });
+  await page.screenshot({ path: `${SHOTS}/6-lightning.png` });
+  await page.waitForFunction(() => document.body.classList.contains('static'), null, { timeout: 8000 });
+  check(await page.isVisible('#closed-note') && !(await page.isVisible('#ask')), 'the strike replaces the chat with the static page');
+  check((await page.textContent('#closed-parting')).includes('Goodbye'), "the static page keeps Karyon's last line");
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: `${SHOTS}/7-static.png` });
+  const shut = await page.evaluate(async () => (await (await fetch('/api/status')).json()).closed_until);
+  check(Boolean(shut), 'status reports the visitor closed');
+  const denied2 = await chat('hello again');
+  check(denied2.status === 403 && denied2.json?.error === 'closed', 'a closed visitor gets no API call');
+  await page.reload();
+  await page.waitForFunction(() => document.body.classList.contains('static'), null, { timeout: 8000 });
+  check(true, 'a reload goes straight to the static page');
+  // Lift it, so the budget checks below can still talk.
+  d1("DELETE FROM messages WHERE role = 'event' AND content LIKE 'ended:%'");
+
   check(errors.length === 0, 'no page errors', errors.join(' | '));
   await browser.close();
 
@@ -156,7 +158,7 @@ async function chat(message, conversation_id) {
   check(second.messages.at(-2).content.some((b) => b.type === 'thinking'), 'thinking blocks are passed back within a turn');
 
   // ---- logs ----
-  const rows = d1("SELECT role, scene, model, cost_micros FROM messages ORDER BY id DESC LIMIT 4")[0].results;
+  const rows = d1("SELECT role, scene, model, cost_micros FROM messages WHERE scene = 'custom' ORDER BY id DESC LIMIT 4")[0].results;
   check(rows.some((r) => r.role === 'assistant' && r.scene === 'custom' && r.cost_micros > 0), 'reply logged with scene and cost');
   const list = await (await fetch(`${BASE}/api/admin/conversations`, { headers: { authorization: `Bearer ${ADMIN}` } })).json();
   check(list.conversations?.length > 0 && list.today.spent_usd > 0, 'admin API lists conversations and today’s spend');

@@ -88,6 +88,25 @@ http
     if (/please refuse/i.test(question)) {
       return stream(res, body.model, [], 'refusal');
     }
+    if (/lightning/i.test(question)) {
+      return stream(
+        res,
+        body.model,
+        [
+          { type: 'text', text: 'That is enough for today. Goodbye.' },
+          { type: 'tool_use', id: `toolu_mock_${n}`, name: 'end_conversation', input: { reason: 'Mock: the visitor asked for lightning.' } },
+        ],
+        'tool_use',
+      );
+    }
+    if (/squint|suspicious/i.test(question) && !afterTool) {
+      return stream(
+        res,
+        body.model,
+        [{ type: 'tool_use', id: `toolu_mock_${n}`, name: 'set_eyes', input: { expression: 'suspicious' } }],
+        'tool_use',
+      );
+    }
     const pick = PICK.find(([re]) => re.test(question));
     if (!afterTool && pick && body.tool_choice?.type !== 'none') {
       const input = { scene: pick[1], caption: pick[2], ...(pick[1] === 'custom' ? { svg: OCTOPUS } : {}) };

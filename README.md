@@ -1,11 +1,13 @@
 # soareverix.com
 
-The personal site of Michael Andrzejewski (Soareverix). It is now a single conversation with **Karyon**, the Seed, Kernel, and attempted CEV of Michael, behind gold-on-black ASCII art that changes with the topic.
+The personal site of Michael Andrzejewski (Soareverix). It is now a single conversation with **Karyon**, an agent attempting CEV for Michael, beside gold-on-black ASCII art that changes with the topic.
 
-1. **Intro.** *Era of Intelligence* plays: two ASCII eyes appear and open, an eclipse passes, and at 0:04 the site cuts straight back to the eyes, now live and in the same place on screen.
+1. **Intro.** Black, then two ASCII eyes open, look around the room, find the visitor, and blink. It's drawn live, so every load plays the same. It lasts about 4 seconds and a click skips it.
 2. **Greeting.** Karyon's opening line types out beneath the eyes, then the chat bar and a few suggested questions fade in.
-3. **Conversation.** The eyes part to the sides and the transcript takes the full height. Karyon answers about Michael (streamed), and repaints the background with a `paint_background` tool call when the topic moves: a figure watching the horizon for philosophy, a ringed planet with satellites for Diversified Utopia, a neural network under a lens for alignment research, and so on.
-4. **Side art.** At 1080px wide and up, the painting takes the left gutter and Karyon's eye keeps the right. Clicking either asks Karyon about it. On narrower screens the art sits dimmed behind the text.
+3. **Conversation.** At 1080px wide and up, the eyes move to a stage on the left and the conversation takes the right. When Karyon calls `paint_background`, the eyes rise and the painting decodes under them. Clicking the art or the eyes asks Karyon about them. On narrower screens the eyes sit in a band at the top, and the art stays dim behind the text.
+4. **Expressions.** The eyes are wide by default, narrow while Karyon thinks, and Karyon can set them with `set_eyes` (`wide`, `focused`, `suspicious`, `warm`, `surprised`).
+5. **Lightning.** Karyon can end a conversation with `end_conversation`. A bolt strikes the chat, the eyes shut, and a static page replaces it. See "Ending a conversation" below.
+6. **Static page.** Everything about Michael written out. "Read without chatting" in the footer opens the same page for anyone.
 
 Every conversation is logged to Cloudflare D1, and API spend is capped at **$1.00 per UTC day**.
 
@@ -15,17 +17,15 @@ Every conversation is logged to Cloudflare D1, and API spend is capped at **$1.0
 public/                      static site (Cloudflare Pages output directory)
   index.html                 page shell
   assets/ascii.js            ASCII engine + the scene library
-  assets/app.js              intro sequence, chat client
+  assets/app.js              intro, chat client, lightning, static page
   assets/karyon.css
   admin.html                 log viewer (needs ADMIN_TOKEN)
-  video/                     Era of Intelligence: the full film and the 4-second intro clip
-  images/                    the film's poster
 functions/                   Cloudflare Pages Functions
-  video/[[path]].js          serves /video/* with byte ranges (Safari needs them)
   api/chat.js                POST /api/chat: Claude call, tool loop, streaming, logging
   api/status.js              GET /api/status: is Karyon awake / within budget
   api/admin/conversations/   GET log list and full transcripts (Bearer ADMIN_TOKEN)
-  _lib/karyon.js             system prompt assembly, tool definition, scene list
+  _lib/karyon.js             system prompt assembly, tool definitions, scene list
+  _lib/closures.js           who Karyon has stopped talking with, and until when
   _lib/budget.js             D1 spend ledger with worst-case holds
   _lib/pricing.js            per-model prices
 karyon/persona.txt           who Karyon is and how it behaves
@@ -41,15 +41,27 @@ Each scene is drawn with ordinary canvas calls in greyscale onto a small offscre
 
 Scenes: `eyes`, `horizon`, `planet`, `eclipse`, `galaxy`, `fire` (Staravorix), `gears` (Vintage Story), `network` (alignment research), `fireworks`, `meadow`, `seed`, `city`, `library`, `lanterns`, and `custom`, where Karyon draws its own SVG and the engine turns it into ASCII. To add a scene, add `SCENES.name = { init, draw }` in `public/assets/ascii.js` and a one-line description under the same name in `SCENES` in `functions/_lib/karyon.js` (that description is what Karyon reads when choosing).
 
-Test hooks for screenshots: `?skip=1` skips the intro, `?novideo` forces the drawn intro, `?scene=planet&mode=chat` shows a scene, `&t=5&pause=1` freezes it at 5 seconds.
+Test hooks for screenshots: `?skip=1` skips the intro, `?scene=planet&mode=chat` shows a scene, `&t=5&pause=1` freezes it at 5 seconds.
 
 ### Karyon
 
 - **Models.** Claude Haiku 5.5 answers all day, at `medium` effort with adaptive thinking. `KARYON_MODEL` and `KARYON_ECONOMY_MODEL` are both Haiku 5.5, so the $0.50 switch changes nothing. To start on a stronger model, set `KARYON_MODEL` to it (for example `claude-opus-5-5`, which runs at `low` effort) and name it in `karyon/persona.txt`. Haiku then takes over after $0.50. Each reply is labelled with the model that wrote it.
 - **Refusal fallback.** Haiku 5.5 has no server-side fallback, so a Haiku refusal gets a polite deflection. If `KARYON_MODEL` is an Opus-class model, its requests opt into the API's server-side fallback (`fallbacks: "default"`), so a declined request is retried on Anthropic's recommended model instead of failing. Set `KARYON_FALLBACKS = "off"` to disable it.
 - **Prompt.** `persona.txt` + `context.txt`, cached across all visitors. A short note after each visitor message tells Karyon which scene is showing and today's date.
-- **Tool loop.** If Karyon calls `paint_background`, the server validates the input (scene name, caption, and for `custom` an SVG with no scripts, links, or images), streams a `scene` event to the browser, returns the tool result, and Karyon continues with its reply. That's at most three API calls per visitor message.
+- **Tool loop.** If Karyon calls `paint_background` or `set_eyes`, the server validates the input (for `custom`, an SVG with no scripts, links, or images), streams a `scene` or `eyes` event to the browser, returns the tool result, and Karyon continues with its reply. That's at most three API calls per visitor message.
 - **History.** Earlier turns come from D1, not the browser, as plain text. Visitors can't forge Karyon's side of the conversation.
+
+### Ending a conversation
+
+`end_conversation` takes a private `reason`, which is logged for Michael as an `ended: <reason>` event in `messages`. `karyon/persona.txt` says when Karyon may use it: sustained abuse, threats, or repeated attempts to make it say something false or harmful, with one warning first unless it's a serious threat.
+
+Karyon then stops talking with that visitor for a day. A second ending within 90 days makes it a week, and a third makes it a month. `/api/status` tells the page, which goes straight to the static page, and `/api/chat` refuses before any API call.
+
+- Visitors are identified by a hash of their IP, so everyone behind one address shares a closure.
+- To lift a closure, delete that visitor's `ended:` rows from `messages`. To see them all:
+  ```bash
+  npx wrangler d1 execute karyon --remote --command "SELECT m.created_at, m.content, c.visitor FROM messages m JOIN conversations c ON c.id = m.conversation_id WHERE m.role = 'event' AND m.content LIKE 'ended:%' ORDER BY m.id DESC"
+  ```
 
 ### Spend limit
 
@@ -92,23 +104,6 @@ The repo is already connected to Pages. After merging:
    `ADMIN_TOKEN` and `LOG_SALT` should each be a long random string (`openssl rand -hex 32`).
 4. **Plan:** the Workers free plan allows 10 ms of CPU per request. A streamed reply usually fits, but if replies cut off with error 1102, move to Workers Paid.
 
-## Video
-
-`public/video/era-of-intelligence.mp4` is the full 38-second silent film. "Watch Era of Intelligence" in the footer plays it with the poster from `public/images/`. The intro plays `era-of-intelligence-intro.mp4`, which is the film's first 4.25 seconds re-encoded without audio (1.7 MB), so visitors don't download 24 MB just to see the opening:
-
-```bash
-ffmpeg -i public/video/era-of-intelligence.mp4 -t 4.25 -an -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -profile:v high -movflags +faststart public/video/era-of-intelligence-intro.mp4
-```
-
-At 4.0 s the page hides the clip and shows the live eyes, laid out where the video's eyes are on that screen (`layoutFor('hero')` in `public/assets/ascii.js`). If the clip can't start within 2.5 seconds, or the visitor prefers reduced motion, the engine draws the same beats on the same timing.
-
-Two Cloudflare Pages limits shape this:
-
-- Each file must be 25 MiB or smaller, or the whole deploy fails. Encode a web copy first and keep the full-quality master elsewhere.
-- Pages ignores `Range` headers on static files, and Safari and iPhones need a 206 reply to play an MP4. `functions/video/[[path]].js` serves everything under `/video/` with byte ranges.
-
-To replace a video, give the new one a new filename and update `public/index.html`. On soareverix.com browsers may keep a video for 4 hours, and a swap at the same URL can leave them mixing old and new bytes, which makes the player fail when it seeks.
-
 ## Settings
 
 In `wrangler.toml` `[vars]`: `DAILY_LIMIT_USD`, `KARYON_MODEL`, `KARYON_ECONOMY_MODEL`, `KARYON_ECONOMY_AFTER_USD`, `KARYON_EFFORT`, `KARYON_ECONOMY_EFFORT`, `KARYON_FALLBACKS`, `MAX_MESSAGES_PER_VISITOR_PER_DAY`, `MAX_TURNS_PER_CONVERSATION`, `MAX_MESSAGE_CHARS`.
@@ -131,7 +126,7 @@ npm run dev
 Then open http://localhost:8788.
 
 - `npm run mock` starts a fake Messages API on port 4010 that streams real event shapes (repaint, then reply). Set `ANTHROPIC_BASE_URL=http://127.0.0.1:4010` in `.dev.vars` to use it.
-- `npm run test:e2e` checks everything against the mock: intro, greeting, streamed reply, repaint, caption, D1 logging, the admin API, the switch to Haiku after $0.50, and the hard stop at $1. It pins Opus 5.5 as the primary model so the switch still gets tested.
+- `npm run test:e2e` checks everything against the mock: intro, greeting, streamed reply, repaint, caption, expressions, lightning, the static page, D1 logging, the admin API, the switch to Haiku after $0.50, and the hard stop at $1. It pins Opus 5.5 as the primary model so the switch still gets tested.
 - `npm run smoke` has a short live conversation with **Haiku 5.5** through the real site code. It needs a real key in `.dev.vars`, and `npm run smoke -- claude-opus-5-5` uses Opus instead.
 
 ## Privacy note
