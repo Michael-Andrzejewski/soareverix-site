@@ -338,6 +338,9 @@
       lids: { [-1]: { u: 1, l: 1, b: 0 }, 1: { u: 1, l: 1, b: 0 } },
     }),
     update(s, t, P) {
+      // A scene change renders two pictures per frame. The eyes only move once.
+      if (t === s.updatedAt) return;
+      s.updatedAt = t;
       const target = P.eyeOpen ?? 1;
       s.open += (target - s.open) * (P.eyeSnap ? 1 : 0.16);
       if (P.blinkNow) {
@@ -1925,10 +1928,10 @@
       ctx.fillStyle = '#040302';
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       if (!this.current) return;
-      this.renderScene(this.current, this.sA, this.xA, this.A);
+      // Finish a scene change before rendering, so its last frame already shows
+      // the new scene instead of one more frame of the old one.
       let p = -1;
       if (this.morph) {
-        this.renderScene(this.next, this.sB, this.xB, this.B);
         p = ((this.time - this.morph.t0) / this.morph.dur) * 1.3;
         if (p >= 1.3) {
           this.current = this.next;
@@ -1937,6 +1940,8 @@
           p = -1;
         }
       }
+      this.renderScene(this.current, this.sA, this.xA, this.A);
+      if (this.morph) this.renderScene(this.next, this.sB, this.xB, this.B);
       const band = 0.22;
       const n = cols * rows;
       // Only the painting decodes when a scene changes. The eyes are the same in
