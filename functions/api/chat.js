@@ -141,7 +141,7 @@ async function reply({ env, db, day, conversationId, text, history, currentScene
   });
   const limitMicros = Math.round(num(env.DAILY_LIMIT_USD, 1) * 1e6);
   const economyAfterMicros = Math.round(num(env.KARYON_ECONOMY_AFTER_USD, 0.5) * 1e6);
-  const primary = env.KARYON_MODEL || 'claude-opus-5-5';
+  const primary = env.KARYON_MODEL || 'claude-haiku-5-5';
   const economy = env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5';
 
   const messages = [

@@ -18,12 +18,16 @@ database_id = "1e5734ca-4b94-4bcf-b4ee-b776aab28d87"
 DAILY_LIMIT_USD = "1.00"
 # Karyon answers with the primary model until this much of today's budget is
 # spent, then switches to the economy model for the rest of the UTC day.
-KARYON_MODEL = "claude-opus-5-5"
+# Both are Haiku 5.5 for now, so Karyon stays on Haiku all day. To start on a
+# stronger model, change KARYON_MODEL and name it in karyon/persona.txt.
+KARYON_MODEL = "claude-haiku-5-5"
 KARYON_ECONOMY_MODEL = "claude-haiku-5-5"
 KARYON_ECONOMY_AFTER_USD = "0.50"
+# KARYON_EFFORT only applies when the primary model isn't the economy model.
 KARYON_EFFORT = "low"
 KARYON_ECONOMY_EFFORT = "medium"
-# Server-side refusal fallback on the primary model ("default" or "off").
+# Server-side refusal fallback ("default" or "off"). Opus-class models only:
+# Haiku 5.5 has no server-side fallback.
 KARYON_FALLBACKS = "default"
 # Abuse limits.
 MAX_MESSAGES_PER_VISITOR_PER_DAY = "60"

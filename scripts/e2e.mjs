@@ -73,7 +73,9 @@ async function chat(message, conversation_id) {
   d1(`DELETE FROM daily_spend WHERE day = '${today}'; DELETE FROM spend_holds; DELETE FROM visitor_days;`);
   run('node', ['scripts/mock-anthropic.mjs'], { MOCK_LOG: '.wrangler/e2e-mock.jsonl' });
   fs.rmSync('.wrangler/e2e-mock.jsonl', { force: true });
-  run('npx', ['wrangler', 'pages', 'dev', 'public', '--port', String(PORT)]);
+  // The site runs Haiku all day. Pin Opus as primary so the switch and the
+  // fallback path below still get tested.
+  run('npx', ['wrangler', 'pages', 'dev', 'public', '--port', String(PORT), '--binding', 'KARYON_MODEL=claude-opus-5-5']);
   await waitFor(`${BASE}/api/status`);
 
   // ---- video: byte ranges, and the real intro clip cutting to the live eyes ----

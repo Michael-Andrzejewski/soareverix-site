@@ -44,8 +44,8 @@ Test hooks for screenshots: `?skip=1` skips the intro, `?novideo` forces the dra
 
 ### Karyon
 
-- **Models.** Claude Opus 5.5 answers until $0.50 of the day's budget is spent, then Claude Haiku 5.5 takes the rest of the UTC day. Each reply is labelled with the model that wrote it. Effort is `low` on Opus and `medium` on Haiku, and both use adaptive thinking.
-- **Refusal fallback.** Opus requests opt into the API's server-side fallback (`fallbacks: "default"`), so a declined request is retried on Anthropic's recommended model instead of failing. Set `KARYON_FALLBACKS = "off"` to disable it. Haiku 5.5 has no server-side fallback, so a Haiku refusal gets a polite deflection.
+- **Models.** Claude Haiku 5.5 answers all day, at `medium` effort with adaptive thinking. `KARYON_MODEL` and `KARYON_ECONOMY_MODEL` are both Haiku 5.5, so the $0.50 switch changes nothing. To start on a stronger model, set `KARYON_MODEL` to it (for example `claude-opus-5-5`, which runs at `low` effort) and name it in `karyon/persona.txt`. Haiku then takes over after $0.50. Each reply is labelled with the model that wrote it.
+- **Refusal fallback.** Haiku 5.5 has no server-side fallback, so a Haiku refusal gets a polite deflection. If `KARYON_MODEL` is an Opus-class model, its requests opt into the API's server-side fallback (`fallbacks: "default"`), so a declined request is retried on Anthropic's recommended model instead of failing. Set `KARYON_FALLBACKS = "off"` to disable it.
 - **Prompt.** `persona.txt` + `context.txt`, cached across all visitors. A short note after each visitor message tells Karyon which scene is showing and today's date.
 - **Tool loop.** If Karyon calls `paint_background`, the server validates the input (scene name, caption, and for `custom` an SVG with no scripts, links, or images), streams a `scene` event to the browser, returns the tool result, and Karyon continues with its reply. That's at most three API calls per visitor message.
 - **History.** Earlier turns come from D1, not the browser, as plain text. Visitors can't forge Karyon's side of the conversation.
@@ -54,7 +54,7 @@ Test hooks for screenshots: `?skip=1` skips the intro, `?novideo` forces the dra
 
 `functions/_lib/budget.js` keeps a ledger in D1. Before each API call it places a hold for that call's worst case (every prompt token billed as a fresh cache write, the reply running to `max_tokens`). The insert and the limit check are one SQL statement, so concurrent visitors can't overshoot the day. After the call it books the real cost from the response's `usage` and releases the hold. Holds expire after 10 minutes, so a crashed request can't lock the budget. When the day is spent, Karyon says it's resting until midnight UTC and makes no API call.
 
-Rough costs, with the ~8–9K-token cached prompt: an Opus 5.5 reply is about $0.01–0.02 (plus about $0.04 when the cache is cold), and a Haiku 5.5 reply is about $0.001. At these rates $1 is roughly 25–40 Opus replies, then several hundred Haiku replies. Per-visitor limits (60 messages a day, 40 per conversation, 1,500 characters per message) keep one visitor from spending it all.
+Rough costs, with the ~8–9K-token cached prompt: a Haiku 5.5 reply is about $0.001, so $1 covers several hundred replies or more. For comparison, an Opus 5.5 reply is about $0.01–0.02 (plus about $0.04 when the cache is cold). Per-visitor limits (60 messages a day, 40 per conversation, 1,500 characters per message) keep one visitor from spending it all.
 
 **Also set a spend limit on the API key's workspace in the [Anthropic Console](https://console.anthropic.com/)** (for example $35 a month) as a second backstop.
 
@@ -130,7 +130,7 @@ npm run dev
 Then open http://localhost:8788.
 
 - `npm run mock` starts a fake Messages API on port 4010 that streams real event shapes (repaint, then reply). Set `ANTHROPIC_BASE_URL=http://127.0.0.1:4010` in `.dev.vars` to use it.
-- `npm run test:e2e` checks everything against the mock: intro, greeting, streamed reply, repaint, caption, D1 logging, the admin API, the switch to Haiku after $0.50, and the hard stop at $1.
+- `npm run test:e2e` checks everything against the mock: intro, greeting, streamed reply, repaint, caption, D1 logging, the admin API, the switch to Haiku after $0.50, and the hard stop at $1. It pins Opus 5.5 as the primary model so the switch still gets tested.
 - `npm run smoke` has a short live conversation with **Haiku 5.5** through the real site code. It needs a real key in `.dev.vars`, and `npm run smoke -- claude-opus-5-5` uses Opus instead.
 
 ## Privacy note

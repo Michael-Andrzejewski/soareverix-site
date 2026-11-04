@@ -11,6 +11,6 @@ export async function onRequestGet({ env }) {
   const economyAfter = num(env.KARYON_ECONOMY_AFTER_USD, 0.5) * 1e6;
   // "Open" if at least a cheap reply still fits under today's limit.
   const open = spent + held + 20_000 <= limit;
-  const model = spent >= economyAfter ? env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5' : env.KARYON_MODEL || 'claude-opus-5-5';
+  const model = spent >= economyAfter ? env.KARYON_ECONOMY_MODEL || 'claude-haiku-5-5' : env.KARYON_MODEL || 'claude-haiku-5-5';
   return json({ configured, open, model });
 }
