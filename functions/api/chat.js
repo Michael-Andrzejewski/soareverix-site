@@ -188,9 +188,15 @@ async function reply({ env, db, day, conversationId, visitor, text, history, cur
     let failure = null;
     const stream = client.beta.messages.stream(params);
     setActive(stream);
+    // Text from a later API call starts a new paragraph, not the same sentence.
+    let joined = call === 0;
     stream.on('text', (delta) => {
-      replyText += delta;
-      send('text', { delta });
+      const text = !joined && replyText.trim() ? `
+
+${delta}` : delta;
+      joined = true;
+      replyText += text;
+      send('text', { delta: text });
     });
     stream.on('contentBlock', (block) => {
       // Act as soon as a tool call is complete, before the reply text.
