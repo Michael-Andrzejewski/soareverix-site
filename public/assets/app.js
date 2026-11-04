@@ -35,7 +35,7 @@
   let glance = { at: 0, x: 0, y: 0 };
   let speakTarget = 0;
 
-  // ---------- frame hook: intro timeline, thinking glow, idle gaze ----------
+  // ---------- frame hook: waking up, thinking glow, idle gaze ----------
   engine.onStep = (time, dt) => {
     if (introTick) introTick(time);
     P.thinking += (thinkTarget - P.thinking) * Math.min(1, dt * 5);
@@ -44,7 +44,7 @@
     // Thinking narrows the eyes. Otherwise they hold whatever Karyon last chose.
     if (!introTick && !closed) P.expression = thinkTarget > 0 ? 'focused' : modelExpression || 'wide';
     // Left alone, the eyes look around: they hold a spot, then move to a new one.
-    if (!introTick && !closed && performance.now() - lastPointer > 4000 && document.activeElement !== input && time > glance.at) {
+    if (!introTick && !closed && performance.now() - lastPointer > 4000 && !input.value && time > glance.at) {
       glance = { at: time + 1.1 + Math.random() * 2.6, x: (Math.random() - 0.5) * 1.5, y: (Math.random() - 0.5) * 0.9 };
       P.gazeX = glance.x;
       P.gazeY = glance.y;
@@ -88,34 +88,35 @@
     vv.addEventListener('scroll', fit);
   }
 
-  // ---------- intro ----------
-  // One intro for everyone: black, the eyes open, look around the room, find the
-  // visitor, and blink. It's drawn live, so it plays the same on every load.
+  // ---------- waking up ----------
+  // The eyes open from closed on the first frames, and the chat is ready at once.
+  // They look around afterward, and nothing waits for that.
   function startIntro() {
-    body.classList.add('intro');
     caption.classList.remove('on');
     setPainted(null);
     engine.setMode('hero', true);
     engine.setScene('eyes', {}, { instant: true });
+    P.eyeFade = 1;
     P.eyeOpen = 0;
-    P.eyeFade = 0;
     P.expression = 'wide';
     P.gazeX = 0;
     P.gazeY = 0;
+    reveal();
     if (reduced || qs.has('skip')) {
-      endIntro(true);
+      P.eyeSnap = true;
+      setTimeout(() => (P.eyeSnap = false), 120);
+      endIntro();
       return;
     }
     const t0 = engine.time;
     const beats = [
-      [0.55, () => (P.eyeFade = 1)],
-      [0.75, () => (P.eyeOpen = 1)],
-      [1.45, () => { P.gazeX = -0.95; P.gazeY = -0.15; }],
-      [2.15, () => { P.gazeX = 0.95; P.gazeY = 0.2; }],
-      [2.85, () => { P.gazeX = 0.1; P.gazeY = -0.55; P.expression = 'focused'; }],
-      [3.4, () => { P.gazeX = 0; P.gazeY = 0.35; P.expression = 'wide'; }],
-      [3.75, () => (P.blinkNow = true)],
-      [4.05, () => endIntro(false)],
+      [0.12, () => (P.eyeOpen = 1)],
+      [1.1, () => { P.gazeX = -0.95; P.gazeY = -0.15; }],
+      [1.8, () => { P.gazeX = 0.95; P.gazeY = 0.2; }],
+      [2.5, () => { P.gazeX = 0.1; P.gazeY = -0.55; P.expression = 'focused'; }],
+      [3.05, () => { P.gazeX = 0; P.gazeY = 0.35; P.expression = 'wide'; }],
+      [3.4, () => (P.blinkNow = true)],
+      [3.7, endIntro],
     ];
     let next = 0;
     introTick = (time) => {
@@ -123,36 +124,26 @@
     };
   }
 
-  function endIntro(skipped) {
+  function endIntro() {
     introTick = null;
     P.eyeFade = 1;
     P.eyeOpen = 1;
     P.expression = 'wide';
-    if (skipped) {
-      P.eyeSnap = true;
-      setTimeout(() => (P.eyeSnap = false), 120);
-    }
     lastPointer = performance.now() - 2500; // a moment's rest before they wander
-    reveal();
   }
 
   function reveal() {
-    body.classList.remove('intro');
     if (started) {
       engine.setMode('chat');
       return;
     }
-    body.classList.add('awaiting');
     if (!greetingEl) {
       greetingEl = addMessage('karyon', GREETING);
       greetingEl.el.classList.add('greeting');
     }
     placeUI();
-    typeOut(greetingEl, GREETING, () => {
-      body.classList.remove('awaiting');
-      placeUI();
-      if (matchMedia('(pointer: fine)').matches) input.focus({ preventScroll: true });
-    });
+    if (matchMedia('(pointer: fine)').matches) input.focus({ preventScroll: true });
+    typeOut(greetingEl, GREETING, placeUI);
   }
 
   function typeOut(msg, text, then) {
@@ -183,24 +174,9 @@
     typing = { finish };
   }
 
-  const skipIntro = (e) => {
-    if (body.classList.contains('intro')) {
-      e.preventDefault();
-      endIntro(true);
-    } else if (typing && !started) {
-      typing.finish();
-    }
-  };
+  // A click finishes the greeting right away.
   addEventListener('pointerdown', (e) => {
-    if (e.target.closest('#dock')) return;
-    skipIntro(e);
-  });
-  addEventListener('keydown', (e) => {
-    if (body.classList.contains('intro') && ['Enter', ' ', 'Escape'].includes(e.key)) skipIntro(e);
-  });
-  $('#replay').addEventListener('click', (e) => {
-    e.stopPropagation();
-    startIntro();
+    if (!e.target.closest('#dock') && typing && !started) typing.finish();
   });
 
   // ---------- the page without the chat ----------
@@ -208,7 +184,6 @@
   function showStatic() {
     staticPage.hidden = false;
     body.classList.add('static', 'chatting');
-    body.classList.remove('intro', 'awaiting');
     if (engine.mode !== 'chat') engine.setMode('chat');
     placeUI();
     staticPage.scrollTop = 0;
@@ -372,11 +347,12 @@
   function setPainted(scene) {
     painted = scene && scene.scene !== 'eyes' ? scene : null;
     body.classList.toggle('painted', Boolean(painted));
-    artRight.querySelector('.hint').textContent = painted ? 'Back to the eyes' : '';
     artRight.setAttribute('aria-label', painted ? 'Clear the painting and bring back the eyes' : 'Blink');
-    artLeft.querySelector('.hint').textContent = 'Draw on this';
     artLeft.setAttribute('aria-label', 'Draw on the painting');
     clearDrawing();
+    // Some paintings send the eyes away, and they take the whole stage.
+    body.classList.toggle('no-eyes', engine.eyesGone);
+    placeUI();
   }
 
   // Drawing on the painting. The ink is part of the scene, so it becomes letters.
@@ -455,6 +431,7 @@
   }
 
   async function ask(text, drawing) {
+    if (introTick) endIntro();
     text = text.trim();
     if (!text || busy || closed) return;
     busy = true;
@@ -463,7 +440,6 @@
     if (!started) {
       started = true;
       body.classList.add('chatting');
-      body.classList.remove('awaiting');
       engine.setMode('chat');
       placeUI();
     }
@@ -580,16 +556,7 @@
     if (!s.configured) note.textContent = 'Karyon is not connected yet.';
     else if (!s.open) note.textContent = 'Karyon has talked as much as it can today. Its budget resets at midnight UTC.';
   });
-  const boot = async () => {
-    const s = await Promise.race([status, new Promise((r) => setTimeout(r, 700))]);
-    if (s?.closed_until) {
-      engine.setMode('chat', true);
-      engine.setScene('eyes', {}, { instant: true });
-      P.eyeFade = 1;
-      P.eyeOpen = 0;
-      settleClosed(s.closed_until);
-      return;
-    }
+  const boot = () => {
     status.then((late) => late?.closed_until && !closed && settleClosed(late.closed_until));
     startIntro();
     placeUI();
@@ -619,12 +586,23 @@
       }, 30);
     }
   };
-  if (document.fonts && document.fonts.load) {
-    Promise.race([document.fonts.load('16px "JetBrains Mono"'), new Promise((r) => setTimeout(r, 1200))]).then(() => {
+  boot();
+
+  // The page never waits for the web font. It draws with a fallback, then swaps
+  // the letters in when the font arrives (at once, for a returning visitor).
+  const fontLink = $('#font');
+  const useFont = () => {
+    fontLink.media = 'all';
+    document.fonts?.load('16px "JetBrains Mono"').then(() => {
       engine.resize();
-      boot();
-    });
-  } else boot();
+      placeUI();
+    }).catch(() => {});
+  };
+  if (fontLink.sheet) useFont();
+  else fontLink.addEventListener('load', useFont);
+
+  // Warm up the paintings while the visitor reads, so the first one arrives smoothly.
+  setTimeout(() => engine.warm(), 1500);
 
   window.__karyon = { engine, ask, paint, startIntro, strike, showStatic, setExpression: (x) => (modelExpression = x) };
 })();

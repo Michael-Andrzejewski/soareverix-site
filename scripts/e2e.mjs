@@ -85,15 +85,14 @@ async function chat(message, conversation_id) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto(`${BASE}/`);
-  // The intro: the eyes open, look left, look right, and find the visitor.
+  // The eyes open, and the chat is ready while they look left and right.
   await page.waitForFunction(() => window.__karyon.engine.params.eyeOpen === 1, null, { timeout: 6000 });
   await page.waitForFunction(() => window.__karyon.engine.params.gazeX < -0.5, null, { timeout: 6000 });
   await page.waitForFunction(() => window.__karyon.engine.params.gazeX > 0.5, null, { timeout: 6000 });
-  check(await page.evaluate(() => document.body.classList.contains('intro')), 'the eyes look around during the intro');
+  check(await page.isVisible('#ask'), 'the chat is ready while the eyes look around');
   await page.screenshot({ path: `${SHOTS}/1-intro.png` });
-  await page.waitForFunction(() => !document.body.classList.contains('intro'), null, { timeout: 6000 });
-  check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes'), 'the intro ends on the eyes');
-  await page.waitForFunction(() => !document.body.classList.contains('awaiting'), null, { timeout: 15000 });
+  check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes'), 'the page starts on the eyes');
+  await page.waitForFunction(() => !document.querySelector('.msg.greeting .caret'), null, { timeout: 15000 });
   const greeting = await page.textContent('.msg.greeting .body');
   check(greeting.startsWith('My name is Karyon, an agent attempting CEV for Michael Andrzejewski.'), 'greeting typed beneath the eyes');
   check(await page.isVisible('#ask'), 'chat bar visible');

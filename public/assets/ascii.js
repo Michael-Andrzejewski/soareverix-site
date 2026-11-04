@@ -1959,8 +1959,8 @@
   SCENES.mrfish = {
     tint: 'grey',
     draw(g, L, s, t) {
-      const S = Math.min(L.size * 0.56, L.H * 0.72);
-      const x = L.W * 0.5;
+      const S = Math.min(L.size * 0.5, L.H * 0.62);
+      const x = L.W * 0.53;
       const y = L.H * 0.84;
       const u = S / 100;
       // The ground rushes past underneath.
@@ -1986,7 +1986,7 @@
   SCENES.littleclaw = {
     tint: 'violet',
     draw(g, L, s, t) {
-      const S = Math.min(L.size * 0.5, L.H * 0.64);
+      const S = Math.min(L.size * 0.42, L.H * 0.56);
       const x = L.W * 0.46;
       const y = L.H * 0.86;
       // Light coming down through the water.
@@ -2023,7 +2023,7 @@
       const u = S / 100;
       const ground = L.H * 0.88;
       starfield(g, L, s, t, 55, 0.55);
-      const x = L.W * 0.7;
+      const x = L.W * 0.72;
       // The stack sways, and sways more the higher it goes.
       const sway = Math.sin(t * 0.9);
       const clawS = S * 0.56;
@@ -2033,10 +2033,13 @@
       drawLittleX(g, x, ground, S, t);
       drawLittleClaw(g, x + sway * 2.5 * u, clawY, clawS, t);
       drawMrFish(g, x + Math.sin(t * 0.9 - 0.5) * 6 * u, fishY, fishS, t, false, false);
-      drawLittleM(g, L.W * 0.22, ground, S * 0.78, t);
-      drawLittleL(g, L.W * 0.43, ground - S * 0.3, S * 0.62, t);
+      drawLittleM(g, L.W * 0.17, ground, S * 0.78, t);
+      drawLittleL(g, L.W * 0.36, ground - S * 0.3, S * 0.62, t);
     },
   };
+
+  // The Little Ones have the whole stage: the eyes go away while they're showing.
+  for (const name of ['littleones', 'littlem', 'littlex', 'littlel', 'mrfish', 'littleclaw']) SCENES[name].noEyes = true;
 
   SCENES.custom = {
     init(opts) {
@@ -2245,15 +2248,22 @@
       return { W, H, cw, ch, cx: W / 2, cy: H * 0.34, size: vw * 0.815, eyeDX: vw * 0.2247, eyeW: vw * 0.3531, wing: 1, lookX: 0 };
     }
 
-    // Where a painting lives: under the eyes on the stage, or behind the text.
-    get artRect() {
+    // True while a scene that sends the eyes away is showing or arriving.
+    get eyesGone() {
+      return this.mode === 'chat' && Boolean(SCENES[this.sceneName]?.noEyes);
+    }
+
+    // Where a painting lives: under the eyes on the stage, or behind the text. A
+    // scene without the eyes gets the full height.
+    rectFor(name) {
       const { W, H } = this;
-      if (W >= SIDE_MIN_W) {
-        const y = Math.round(H * 0.32);
-        return { x: 0, y, W: this.stageW, H: H - y };
-      }
-      const y = this.bandH;
-      return { x: 0, y, W, H: H - y };
+      const side = W >= SIDE_MIN_W;
+      const y = SCENES[name]?.noEyes ? 0 : side ? Math.round(H * 0.32) : this.bandH;
+      return { x: 0, y, W: side ? this.stageW : W, H: H - y };
+    }
+
+    get artRect() {
+      return this.rectFor(this.sceneName);
     }
 
     // The eyes' box on screen, at their current place in the layout.
@@ -2265,14 +2275,14 @@
 
     // The frame a painting gets. Scenes see it as their whole world, so anything
     // sized to L.W and L.H stays inside it.
-    panelLayout() {
+    panelLayout(name = this.sceneName) {
       const { cw, ch } = this;
-      const r = this.artRect;
+      const r = this.rectFor(name);
       return { W: r.W, H: r.H, cw, ch, cx: r.W / 2, cy: r.H * 0.5, size: Math.min(r.W * 1.3, r.H * 1.6), x: r.x, y: r.y };
     }
 
     drawPanel(ctx, entry) {
-      const L = this.panelLayout();
+      const L = this.panelLayout(entry.name);
       ctx.save();
       ctx.beginPath();
       ctx.rect(L.x, L.y, L.W, L.H);
@@ -2444,7 +2454,7 @@
         }
         entry.state = this.eyeState;
       } else {
-        const L = this.mode === 'chat' ? this.panelLayout() : this.layout;
+        const L = this.mode === 'chat' ? this.panelLayout(def) : this.layout;
         entry.state = SCENES[def].init ? SCENES[def].init(opts, L, rng(this.seed++)) : {};
       }
       if (!this.eyeState) {
@@ -2495,7 +2505,7 @@
         } else if (this.mode === 'chat') {
           // The painting has its own frame and the eyes stay above it.
           this.drawPanel(ctx, entry);
-          SCENES.eyes.draw(ctx, this.layout, this.eyeState, eyeT, this.params);
+          if (!SCENES[entry.name].noEyes) SCENES.eyes.draw(ctx, this.layout, this.eyeState, eyeT, this.params);
         } else {
           SCENES[entry.name].draw(ctx, this.layout, entry.state, this.time - entry.t0, this.params);
         }
@@ -2635,7 +2645,8 @@
       const art = this.artRect;
       const ax0 = chat ? Math.floor(art.x / cw) : 0;
       const ax1 = chat ? Math.ceil((art.x + art.W) / cw) : cols;
-      const ay0 = chat ? Math.floor(art.y / ch) : 0;
+      const ay0 = chat ? Math.floor(Math.min(art.y, this.rectFor(this.current.name).y) / ch) : 0;
+      const noEyes = chat && SCENES[this.current.name]?.noEyes;
       // Behind the text on narrow screens, the painting stays dim.
       const artDim = chat && !this.sideMode ? 0.3 : 1.12;
       const eye = this.eyeRect;
@@ -2668,21 +2679,12 @@
         }
         const g = this.gi;
         if (g < 0) continue;
-        const inEyes = x >= ex0 && x < ex1 && y >= ey0 && y < ey1;
+        const inEyes = !noEyes && x >= ex0 && x < ex1 && y >= ey0 && y < ey1;
         // Hovering the art or the eyes lifts them.
         const lift = inEyes ? 1 + 0.4 * this.hoverR : chat && inArt ? artDim * (1 + 0.4 * this.hoverL) : 1;
         const lv = clamp(Math.round(this.gv * this.dim * lift * (LEVELS - 1)), 1, LEVELS - 1);
         const pal = inArt ? from.T[c] : 0;
         ctx.drawImage(pal ? this.atlasFor(pal) : atlas, g * gw, lv * gh, gw, gh, Math.round(x * cw * dpr), Math.round(y * ch * dpr), gw, gh);
-      }
-      // A golem wakes with the word for truth on its forehead. Karyon's is here,
-      // between the eyes, faint enough that almost nobody will find it.
-      if ((this.params.eyeFade ?? 1) > 0.5 && this.eyeState?.open > 0.5) {
-        const r = Math.round((this.layout.cy - this.layout.eyeW * 0.16) / ch);
-        const c0 = Math.round(this.layout.cx / cw) - 2;
-        [...'emet'].forEach((letter, k) => {
-          ctx.drawImage(atlas, CI[letter] * gw, 1 * gh, gw, gh, Math.round((c0 + k) * cw * dpr), Math.round(r * ch * dpr), gw, gh);
-        });
       }
       if (this.gctx) {
         this.gctx.clearRect(0, 0, this.glowCanvas.width, this.glowCanvas.height);
@@ -2700,6 +2702,30 @@
       this.dim = lerp(this.dim, this.dimTarget, k);
       if (this.onStep) this.onStep(this.time, dt);
       this.draw();
+    }
+
+    // Draws each painting once, a little at a time when the page is idle, so the
+    // browser has already compiled them when one is first asked for.
+    warm() {
+      const c = document.createElement('canvas');
+      c.width = 160;
+      c.height = 90;
+      const g = c.getContext('2d');
+      const L = { W: 160, H: 90, cw: this.cw, ch: this.ch, cx: 80, cy: 45, size: 160, x: 0, y: 0 };
+      const names = Object.keys(SCENES).filter((n) => n !== 'eyes' && n !== 'custom');
+      const idle = window.requestIdleCallback || ((f) => setTimeout(f, 80));
+      const next = () => {
+        const name = names.shift();
+        if (!name) return;
+        try {
+          const S = SCENES[name];
+          S.draw(g, L, S.init ? S.init({}, L, rng(1)) : {}, 2, this.params);
+        } catch {
+          // A scene that can't warm up still draws when it's asked for.
+        }
+        idle(next, { timeout: 500 });
+      };
+      idle(next, { timeout: 500 });
     }
 
     start() {

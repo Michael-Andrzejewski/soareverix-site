@@ -2,8 +2,8 @@
 
 The personal site of Michael Andrzejewski (Soareverix). It is now a single conversation with **Karyon**, an agent attempting CEV for Michael, beside gold-on-black ASCII art that changes with the topic.
 
-1. **Intro.** Black, then two ASCII eyes open, look around the room, find the visitor, and blink. It's drawn live, so every load plays the same. It lasts about 4 seconds and a click skips it.
-2. **Greeting.** Karyon's opening line types out beneath the eyes, then the chat bar and a few suggested questions fade in.
+1. **Waking up.** The eyes open from closed on the first frames, and they look around afterward. Nothing waits for the web font, the status check, or the look around, so the chat bar is ready at once. The font swaps in when it arrives, and the paintings warm up while the page is idle.
+2. **Greeting.** Karyon's opening line types out beneath the eyes.
 3. **Conversation.** At 1080px wide and up, the eyes move to a stage on the left and the conversation takes the right. When Karyon calls `paint_background`, the eyes rise and the painting decodes under them. Clicking the painting lets the visitor draw on it, and "Show Karyon" sends the drawing as a small block of text. Clicking the eyes clears the painting and brings them back. On narrower screens the eyes sit in a band at the top, and the art stays dim behind the text.
 4. **Expressions.** The eyes are wide by default, narrow while Karyon thinks, and Karyon can set them with `set_eyes` (`wide`, `focused`, `suspicious`, `warm`, `surprised`).
 5. **Lightning.** Karyon can end a conversation with `end_conversation`. A bolt strikes the chat, the eyes shut, and a static page replaces it. See "Ending a conversation" below.
@@ -41,7 +41,7 @@ Each scene is drawn with ordinary canvas calls in greyscale onto a small offscre
 
 Scenes: `eyes`, `horizon`, `planet`, `eclipse`, `galaxy`, `fire` (Staravorix), `gears` (Vintage Story), `network` (alignment research), `fireworks`, `meadow`, `seed`, `city`, `library`, `lanterns`, and `custom`, where Karyon draws its own SVG and the engine turns it into ASCII. To add a scene, add `SCENES.name = { init, draw }` in `public/assets/ascii.js` and a one-line description under the same name in `SCENES` in `functions/_lib/karyon.js` (that description is what Karyon reads when choosing).
 
-Test hooks for screenshots: `?skip=1` skips the intro, `?scene=planet&mode=chat` shows a scene, `&t=5&pause=1` freezes it at 5 seconds.
+Test hooks for screenshots: `?skip=1` opens the eyes at once, `?scene=planet&mode=chat` shows a scene, `&t=5&pause=1` freezes it at 5 seconds.
 
 ### Karyon
 
@@ -135,4 +135,4 @@ Then open http://localhost:8788.
 
 ## The Little Ones
 
-An Easter egg. Their notes are in `karyon/littles.txt`, and their paintings are in `public/assets/ascii.js`. `functions/api/chat.js` gives Karyon the notes and paintings only after a visitor has typed one of their names in that conversation. The system prompt and static page don't mention them.
+An Easter egg. Their notes are in `karyon/littles.txt`, and their paintings are in `public/assets/ascii.js`. `functions/api/chat.js` gives Karyon the notes and paintings only after a visitor has typed one of their names in that conversation. The system prompt and static page don't mention them. While one of their paintings shows, the eyes go away and the painting takes the whole stage. The eyes come back when Karyon paints something else.

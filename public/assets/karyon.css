@@ -67,28 +67,13 @@ html, body {
   cursor: pointer;
   z-index: 1;
 }
-body.sides:not(.intro):not(.static) .art { display: block; }
+body.sides:not(.static) .art { display: block; }
 /* The eyes can be clicked on narrow screens too. */
-body.chatting:not(.intro):not(.static) #art-right { display: block; }
+body.chatting:not(.static) #art-right { display: block; }
 #art-left { left: 0; top: var(--art-y); bottom: 0; width: var(--stage); cursor: crosshair; touch-action: none; }
 body:not(.painted) #art-left { display: none !important; }
 .art:focus-visible { outline-offset: -10px; }
-.art .hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 12px;
-  font: inherit;
-  font-size: 10.5px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--gold-faint);
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-#art-right .hint { bottom: -18px; }
-.art:hover .hint, .art:focus-visible .hint { opacity: 1; transform: none; }
+body.no-eyes.chatting:not(.static) #art-right { display: none; }
 
 #flash {
   position: fixed;
@@ -376,28 +361,6 @@ button:focus-visible, a:focus-visible {
   outline-offset: 2px;
 }
 
-#skip {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 22px;
-  margin: 0;
-  text-align: center;
-  font-size: 10.5px;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: rgba(240, 180, 80, 0.35);
-  z-index: 7;
-  pointer-events: none;
-  transition: opacity 0.4s;
-}
-
-/* ---------- intro state ---------- */
-#top, #log, #dock { transition: opacity 0.9s ease; }
-body.intro #top, body.intro #log, body.intro #dock { opacity: 0; pointer-events: none; }
-body:not(.intro) #skip { opacity: 0; }
-#dock { opacity: 1; }
-body.awaiting #dock { opacity: 0; pointer-events: none; }
 
 /* ---------- drawing on the painting ---------- */
 #ink-tools {
