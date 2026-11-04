@@ -11,7 +11,7 @@ compatibility_date = "2026-10-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "karyon"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "1e5734ca-4b94-4bcf-b4ee-b776aab28d87"
 
 [vars]
 # Hard ceiling on Anthropic API spend per UTC day, in US dollars.
