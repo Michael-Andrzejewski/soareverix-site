@@ -1536,6 +1536,7 @@
       this.xB = this.sB.getContext('2d', { willReadFrequently: true });
       this.params = { eyeOpen: 1, gazeX: 0, gazeY: 0, thinking: 0, expression: 'wide' };
       this.bolts = [];
+      this.ink = [];
       this.hover = null;
       this.hoverL = 0;
       this.hoverR = 0;
@@ -1718,6 +1719,83 @@
       ctx.restore();
     }
 
+    // A visitor's drawing on the painting. Points are stored as fractions of the
+    // art's frame, so the drawing survives a resize.
+    inkStart(x, y) {
+      this.ink.push([]);
+      this.inkMove(x, y);
+    }
+
+    inkMove(x, y) {
+      const r = this.artRect;
+      this.ink[this.ink.length - 1].push([(x - r.x) / r.W, (y - r.y) / r.H]);
+    }
+
+    clearInk() {
+      this.ink = [];
+    }
+
+    traceInk(ctx, r, width, value) {
+      ctx.strokeStyle = grey(value);
+      ctx.fillStyle = grey(value);
+      ctx.lineWidth = width;
+      for (const stroke of this.ink) {
+        const pts = stroke.map(([x, y]) => [r.x + x * r.W, r.y + y * r.H]);
+        if (pts.length === 1) {
+          disc(ctx, pts[0][0], pts[0][1], width / 2, grey(value));
+          continue;
+        }
+        ctx.beginPath();
+        pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.stroke();
+      }
+    }
+
+    // Drawn into the scene, so the ink turns into letters like everything else. The
+    // wide dim stroke underneath is what makes it read as a letter-filled band.
+    drawInk(ctx) {
+      const r = this.artRect;
+      ctx.save();
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.globalCompositeOperation = 'lighter';
+      this.traceInk(ctx, r, this.cw * 4.5, 0.3);
+      this.traceInk(ctx, r, this.cw * 1.7, 1);
+      ctx.restore();
+    }
+
+    // The drawing as a small block of text, which is how Karyon gets to see it.
+    inkText() {
+      const r = this.artRect;
+      const cols = 56;
+      const rows = clamp(Math.round((cols * (r.H / r.W) * this.cw) / this.ch), 6, 24);
+      const c = document.createElement('canvas');
+      c.width = cols * 2;
+      c.height = rows * 4;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      g.fillStyle = '#000';
+      g.fillRect(0, 0, c.width, c.height);
+      g.lineJoin = 'round';
+      g.lineCap = 'round';
+      this.traceInk.call({ ink: this.ink }, g, { x: 0, y: 0, W: c.width, H: c.height }, 2.4, 1);
+      const d = g.getImageData(0, 0, c.width, c.height).data;
+      const lines = [];
+      for (let y = 0; y < rows; y++) {
+        let line = '';
+        for (let x = 0; x < cols; x++) {
+          let sum = 0;
+          for (let j = 0; j < 4; j++) for (let i = 0; i < 2; i++) sum += d[((y * 4 + j) * c.width + x * 2 + i) * 4];
+          const v = sum / (8 * 255);
+          line += v > 0.4 ? '#' : v > 0.12 ? '+' : ' ';
+        }
+        lines.push(line.trimEnd());
+      }
+      while (lines.length && !lines[0]) lines.shift();
+      while (lines.length && !lines[lines.length - 1]) lines.pop();
+      const indent = Math.min(...lines.filter(Boolean).map((l) => l.length - l.trimStart().length));
+      return lines.map((l) => l.slice(indent)).join('\n');
+    }
+
     // A lightning strike between two points on screen. The bolt is drawn into the
     // scene, so it turns into letters and picks up the glow like everything else.
     strike(x0, y0, x1, y1) {
@@ -1841,6 +1919,7 @@
         } else {
           SCENES[entry.name].draw(ctx, this.layout, entry.state, this.time - entry.t0, this.params);
         }
+        if (this.ink.length) this.drawInk(ctx);
         if (this.bolts.length) this.drawBolts(ctx);
       } catch (err) {
         console.error('scene', entry.name, err);

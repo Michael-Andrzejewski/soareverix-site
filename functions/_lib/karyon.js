@@ -28,7 +28,7 @@ export const PAINT_TOOL = {
   name: 'paint_background',
   description:
     'Morph the gold-on-black ASCII artwork beside the conversation into a new scene. The visitor watches ' +
-    'it change while you talk. Choose "eyes" to clear the painting. Call it at the start of a reply when the topic moves to something a ' +
+    'it change while you talk. Visitors can draw on a painting, and clicking your eyes clears it. Choose "eyes" to clear the painting yourself. Call it at the start of a reply when the topic moves to something a ' +
     'different scene fits better, then write your reply. Skip it when the current scene already fits. ' +
     'At most one call per reply.\n\nScenes:\n' +
     sceneList +

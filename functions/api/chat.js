@@ -1,4 +1,4 @@
-// POST /api/chat  { conversation_id?: string, message: string }
+// POST /api/chat  { conversation_id?: string, message: string, drawing?: string, scene?: string }
 // Streams Karyon's reply as server-sent events:
 //   meta  { conversation_id, model }    once per API call (model can change mid-reply)
 //   scene { scene, caption?, svg? }     when Karyon repaints the art
@@ -49,6 +49,11 @@ export async function onRequestPost(context) {
     return json({ error: 'too_long', message: `Keep it under ${maxChars} characters.` }, 400);
   }
 
+  // A drawing arrives as a small block of text, limited to the characters the page
+  // uses for ink. It can't carry words, links, or images.
+  const drawing = typeof body?.drawing === 'string' && body.drawing.length <= 2000 && /^[ #+\n]+$/.test(body.drawing) ? body.drawing : '';
+  const said = drawing ? `${text}\n\n[The visitor drew this on your painting, shown here as text:]\n${drawing}` : text;
+
   const db = env.DB;
   const day = utcDay();
   const visitor = await visitorId(request, env);
@@ -82,7 +87,7 @@ export async function onRequestPost(context) {
   }
 
   const turn = convo.turns + 1;
-  await logMessage(db, conversationId, { role: 'user', content: text });
+  await logMessage(db, conversationId, { role: 'user', content: said });
 
   const refuseEarly = async (code, status) => {
     await logMessage(db, conversationId, { role: 'event', content: code });
@@ -93,9 +98,10 @@ export async function onRequestPost(context) {
   const visitorCount = await countVisitorMessage(db, visitor, day);
   if (visitorCount > num(env.MAX_MESSAGES_PER_VISITOR_PER_DAY, 60)) return refuseEarly('visitor_limit', 429);
 
+  // The page says what's showing, because a visitor can clear the painting.
   const [history, currentScene] = await Promise.all([
     loadHistory(db, conversationId),
-    lastScene(db, conversationId),
+    SCENE_NAMES.includes(body.scene) ? body.scene : lastScene(db, conversationId),
   ]);
 
   const { readable, writable } = new TransformStream();
@@ -115,7 +121,7 @@ export async function onRequestPost(context) {
   const run = async () => {
     try {
       await reply({
-        env, db, day, conversationId, visitor, text, history, currentScene, turn, maxTurns, send,
+        env, db, day, conversationId, visitor, text: said, history, currentScene, turn, maxTurns, send,
         setActive: (s) => (activeStream = s),
         isGone: () => clientGone,
       });

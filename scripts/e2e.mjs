@@ -117,6 +117,25 @@ async function chat(message, conversation_id) {
   await page.waitForFunction(() => window.__karyon.engine.sceneName === 'custom', null, { timeout: 10000 });
   await page.waitForTimeout(2200);
   await page.screenshot({ path: `${SHOTS}/5-custom-svg.png` });
+  // ---- drawing on the painting, and clearing it with the eyes ----
+  await page.mouse.move(250, 560);
+  await page.mouse.down();
+  await page.mouse.move(420, 640, { steps: 8 });
+  await page.mouse.move(520, 520, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  check(await page.isVisible('#ink-send'), 'drawing on the painting offers to show Karyon');
+  await page.screenshot({ path: `${SHOTS}/5b-drawing.png` });
+  await page.click('#ink-send');
+  await page.waitForFunction(() => document.querySelector('.msg.you:last-of-type pre.drawing, pre.drawing'), null, { timeout: 5000 });
+  await page.waitForFunction(() => !document.querySelector('.msg.karyon:last-child .body').classList.contains('cursor'), null, { timeout: 15000 });
+  const drawn = d1("SELECT content FROM messages WHERE role = 'user' ORDER BY id DESC LIMIT 1")[0].results[0].content;
+  check(drawn.includes('drew this on your painting') && drawn.includes('#'), 'the drawing reaches Karyon as text');
+  await page.evaluate(() => document.querySelector('#art-right').click());
+  check(await page.evaluate(() => window.__karyon.engine.sceneName === 'eyes' && !document.body.classList.contains('painted')), 'clicking the eyes clears the painting');
+  const forged = await chat('hello', undefined);
+  check(forged.status === 200, 'chat still answers after clearing');
+
   // ---- expressions, lightning, and the static page ----
   await page.fill('#q', 'Are you suspicious of me?');
   await page.keyboard.press('Enter');

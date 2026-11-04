@@ -68,7 +68,9 @@ html, body {
   z-index: 1;
 }
 body.sides:not(.intro):not(.static) .art { display: block; }
-#art-left { left: 0; top: var(--art-y); bottom: 0; width: var(--stage); }
+/* The eyes can be clicked on narrow screens too. */
+body.chatting:not(.intro):not(.static) #art-right { display: block; }
+#art-left { left: 0; top: var(--art-y); bottom: 0; width: var(--stage); cursor: crosshair; touch-action: none; }
 body:not(.painted) #art-left { display: none !important; }
 .art:focus-visible { outline-offset: -10px; }
 .art .hint {
@@ -128,7 +130,7 @@ body:not(.painted) #art-left { display: none !important; }
   color: var(--gold-faint);
   letter-spacing: 0.22em;
   opacity: 0;
-  transition: opacity 0.8s ease;
+  transition: opacity 0.25s ease;
 }
 #caption.on { opacity: 1; }
 /* On narrow screens the eyes take the top of the page, with no room for labels. */
@@ -396,6 +398,42 @@ body.intro #top, body.intro #log, body.intro #dock { opacity: 0; pointer-events:
 body:not(.intro) #skip { opacity: 0; }
 #dock { opacity: 1; }
 body.awaiting #dock { opacity: 0; pointer-events: none; }
+
+/* ---------- drawing on the painting ---------- */
+#ink-tools {
+  position: fixed;
+  left: 0;
+  bottom: 40px;
+  width: var(--stage);
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 2;
+  animation: rise 0.25s ease both;
+}
+#ink-tools[hidden] { display: none; }
+#ink-tools button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--gold-soft);
+  background: rgba(8, 6, 3, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+#ink-tools button:hover { border-color: rgba(240, 180, 80, 0.7); background: rgba(240, 180, 80, 0.1); }
+#ink-send { border-color: rgba(240, 180, 80, 0.6) !important; }
+.msg pre.drawing {
+  margin: 8px 0 0;
+  font: inherit;
+  font-size: 7px;
+  line-height: 1.05;
+  letter-spacing: 0;
+  color: var(--gold-dim);
+  overflow: hidden;
+}
 
 /* ---------- the page without the chat ---------- */
 #static {

@@ -369,34 +369,53 @@
   const artLeft = $('#art-left');
   const artRight = $('#art-right');
   let painted = null;
-  const leftAsk = () => (painted?.caption ? `Tell me more about ${painted.caption}.` : 'What are you showing me?');
-  const rightAsk = 'What does CEV mean?';
   function setPainted(scene) {
     painted = scene && scene.scene !== 'eyes' ? scene : null;
     body.classList.toggle('painted', Boolean(painted));
-    const label = painted?.caption ? `Ask about ${painted.caption}` : 'Ask about this';
-    artLeft.querySelector('.hint').textContent = label;
-    artLeft.setAttribute('aria-label', label);
+    artRight.querySelector('.hint').textContent = painted ? 'Back to the eyes' : '';
+    artRight.setAttribute('aria-label', painted ? 'Clear the painting and bring back the eyes' : 'Blink');
+    artLeft.querySelector('.hint').textContent = 'Draw on this';
+    artLeft.setAttribute('aria-label', 'Draw on the painting');
+    clearDrawing();
   }
-  artRight.querySelector('.hint').textContent = 'Ask what CEV means';
-  artRight.setAttribute('aria-label', 'Ask what CEV means');
-  const wireArt = (button, side, question) => {
-    const on = () => (engine.hover = side);
-    const off = () => {
-      if (engine.hover === side) engine.hover = null;
-    };
-    button.addEventListener('pointerenter', on);
-    button.addEventListener('pointerleave', off);
-    button.addEventListener('focus', on);
-    button.addEventListener('blur', off);
-    button.addEventListener('click', () => {
-      P.blinkNow = true;
-      ask(question());
-      button.blur();
-    });
-  };
-  wireArt(artLeft, 'left', leftAsk);
-  wireArt(artRight, 'right', () => rightAsk);
+
+  // Drawing on the painting. The ink is part of the scene, so it becomes letters.
+  const inkTools = $('#ink-tools');
+  function clearDrawing() {
+    engine.clearInk();
+    inkTools.hidden = true;
+  }
+  artLeft.addEventListener('pointerdown', (e) => {
+    if (closed) return;
+    e.preventDefault();
+    artLeft.setPointerCapture(e.pointerId);
+    engine.inkStart(e.clientX, e.clientY);
+    inkTools.hidden = false;
+  });
+  artLeft.addEventListener('pointermove', (e) => {
+    if (artLeft.hasPointerCapture(e.pointerId)) engine.inkMove(e.clientX, e.clientY);
+  });
+  artLeft.addEventListener('pointerenter', () => (engine.hover = 'left'));
+  artLeft.addEventListener('pointerleave', () => engine.hover === 'left' && (engine.hover = null));
+  $('#ink-clear').addEventListener('click', clearDrawing);
+  $('#ink-send').addEventListener('click', () => {
+    const drawing = engine.inkText();
+    inkTools.hidden = true;
+    ask(input.value.trim() || 'I drew on your painting.', drawing);
+  });
+
+  // Clicking the eyes clears the painting and brings them back to the middle.
+  artRight.addEventListener('pointerenter', () => (engine.hover = 'right'));
+  artRight.addEventListener('pointerleave', () => engine.hover === 'right' && (engine.hover = null));
+  artRight.addEventListener('click', () => {
+    P.blinkNow = true;
+    if (painted) {
+      engine.setScene('eyes', {});
+      setPainted(null);
+      caption.classList.remove('on');
+    }
+    artRight.blur();
+  });
 
   function paint(scene) {
     engine.setScene(scene.scene, scene);
@@ -435,7 +454,7 @@
     }
   }
 
-  async function ask(text) {
+  async function ask(text, drawing) {
     text = text.trim();
     if (!text || busy || closed) return;
     busy = true;
@@ -449,7 +468,14 @@
       placeUI();
     }
     modelExpression = null;
-    anchor = addMessage('you', text).el;
+    const mine = addMessage('you', text);
+    if (drawing) {
+      const pre = document.createElement('pre');
+      pre.className = 'drawing';
+      pre.textContent = drawing;
+      mine.body.append(pre);
+    }
+    anchor = mine.el;
     followReply = true;
     input.value = '';
     grow();
@@ -464,7 +490,7 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ conversation_id: conversationId, message: text }),
+        body: JSON.stringify({ conversation_id: conversationId, message: text, drawing: drawing || undefined, scene: engine.sceneName }),
       });
       if (!(res.headers.get('content-type') || '').includes('text/event-stream')) {
         let data = {};
