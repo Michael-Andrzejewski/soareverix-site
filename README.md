@@ -131,7 +131,7 @@ Then open http://localhost:8788.
 
 ## Privacy note
 
-`karyon/context.txt` is everything Karyon knows about Michael. This repository is public, and a visitor can ask Karyon to repeat what it knows, so treat that file as published. It was assembled from the old site's copy, the resume, the Making Beautiful Things talk, and the Diversified Utopia and Code documents. Phone, email, family, relationships, and health were deliberately left out. Edit it freely: Karyon picks up changes on the next deploy.
+`karyon/context.txt` is everything Karyon knows about Michael. This repository is public, and a visitor can ask Karyon to repeat what it knows, so treat that file as published. It was assembled from the old site's copy, the resume, the Making Beautiful Things talk, and the Diversified Utopia and Code documents. Phone, email, family, and health were deliberately left out. The only note on his relationships is the short one on Xael, which Michael wrote for the site. Edit it freely: Karyon picks up changes on the next deploy.
 
 ## The Little Ones
 
