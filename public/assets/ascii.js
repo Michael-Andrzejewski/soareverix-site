@@ -2230,22 +2230,22 @@
         if (W >= SIDE_MIN_W) {
           // Both eyes on the stage. With a painting they rise to make room for it.
           const S = this.stageW;
-          const eyeW = this.hasArt ? Math.min(S * 0.27, H * 0.36) : Math.min(S * 0.36, H * 0.6);
+          const eyeW = this.hasArt ? Math.min(S * 0.21, H * 0.28) : Math.min(S * 0.27, H * 0.45);
           return { W, H, cw, ch, cx: S / 2, cy: this.hasArt ? H * 0.17 : H * 0.46, size: Math.min(S, H), eyeDX: eyeW * 0.62, eyeW, wing: this.hasArt ? 0.3 : 0.38, lookX: 0.45 };
         }
         const band = this.bandH;
-        const eyeW = Math.min(W * 0.36, band * 1.15);
+        const eyeW = Math.min(W * 0.28, band * 0.9);
         return { W, H, cw, ch, cx: W / 2, cy: band * 0.5, size: Math.min(W, H * 0.5), eyeDX: eyeW * 0.62, eyeW, wing: 0.15, lookX: 0 };
       }
       if (W < SIDE_MIN_W && W < H) {
         // Portrait phones: the eyes fill the width.
-        return { W, H, cw, ch, cx: W / 2, cy: H * 0.24, size: W, eyeDX: W * 0.25, eyeW: W * 0.46, wing: 0.25, lookX: 0 };
+        return { W, H, cw, ch, cx: W / 2, cy: H * 0.24, size: W * 0.78, eyeDX: W * 0.195, eyeW: W * 0.36, wing: 0.25, lookX: 0 };
       }
-      // Hero: the eyes at the proportions they have in Era of Intelligence (eye
-      // centers 22.5% of a 16:9 frame off center, each eye 35.3% wide), above the
-      // middle of the window so they clear the greeting.
+      // Hero: the proportions the eyes have in Era of Intelligence (eye centers
+      // 22.5% of a 16:9 frame off center, each eye 35.3% wide), scaled to about three
+      // quarters of that, above the middle of the window to clear the greeting.
       const vw = Math.min(W, (H * 16) / 9);
-      return { W, H, cw, ch, cx: W / 2, cy: H * 0.34, size: vw * 0.815, eyeDX: vw * 0.2247, eyeW: vw * 0.3531, wing: 1, lookX: 0 };
+      return { W, H, cw, ch, cx: W / 2, cy: H * 0.34, size: vw * 0.611, eyeDX: vw * 0.1685, eyeW: vw * 0.2648, wing: 1, lookX: 0 };
     }
 
     // True while a scene that sends the eyes away is showing or arriving.
