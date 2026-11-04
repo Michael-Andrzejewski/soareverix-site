@@ -13,13 +13,16 @@ import Anthropic from '@anthropic-ai/sdk';
 import { SYSTEM, PAINT_TOOL, PAINT_TOOL_LITTLES, EYES_TOOL, END_TOOL, EXTEND_TOOL, ALL_SCENE_NAMES, namesALittle, validatePaint, validateEyes, validateEnd, harnessNote } from '../_lib/karyon.js';
 import { closedUntil, closeConversation } from '../_lib/closures.js';
 import { responseMicros, worstCaseMicros } from '../_lib/pricing.js';
-import { reserve, settle, spentToday, countVisitorMessage, extensionState, grantExtension, useExtension } from '../_lib/budget.js';
+import { reserve, settle, spentToday, countVisitorMessage, extensionState, grantExtension, useExtension, resetVisitor } from '../_lib/budget.js';
 import { utcDay, nowIso, num, json, isUuid, visitorId } from '../_lib/util.js';
 
 const HISTORY_MESSAGES = 24; // earlier turns sent back to the model (12 exchanges)
 const MAX_API_CALLS = 3; // per visitor message: paint, reply, and one spare
 const MAX_TOKENS = 3072; // thinking + reply; also bounds the worst-case cost hold
 const BUDGET_WARN_SHARE = 0.85; // warn once this share of the daily budget is spent
+// Michael's reset word, as a salted hash because this repo is public.
+const RESET_SALT = 'karyon-reset:';
+const RESET_HASH = 'c0baa25a11a799b1107aaf92b273b396bb566fba49ba917ce0321aaa8069945d';
 
 const MESSAGES_FOR = {
   budget:
@@ -62,6 +65,16 @@ export async function onRequestPost(context) {
   const closed = await closedUntil(db, visitor);
   if (closed) return json({ error: 'closed', message: MESSAGES_FOR.closed, closed_until: closed }, 403);
   const maxTurns = num(env.MAX_TURNS_PER_CONVERSATION, 40);
+
+  // The reset word clears this visitor's message limit. It stops here, so it never
+  // reaches Karyon or the logs. The daily budget and Karyon's endings still hold.
+  if (await isResetWord(text)) {
+    await resetVisitor(db, visitor, day, isUuid(body.conversation_id) ? body.conversation_id : null);
+    const event = (name, data) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+    return new Response(event('limits', { note: '' }) + event('text', { delta: 'Your limit is reset.' }) + event('done', { stop_reason: 'reset' }), {
+      headers: { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store' },
+    });
+  }
 
   // Find or start the conversation. Ids are random UUIDs made by this server.
   let conversationId = isUuid(body.conversation_id) ? body.conversation_id : null;
@@ -371,6 +384,13 @@ ${delta}` : delta;
     .prepare('UPDATE conversations SET turns = turns + 1, cost_micros = cost_micros + ?1, updated_at = ?2 WHERE id = ?3')
     .bind(totalMicros, nowIso(), conversationId)
     .run();
+}
+
+async function isResetWord(text) {
+  if (text.length > 40) return false;
+  const bytes = new TextEncoder().encode(RESET_SALT + text.trim().toLowerCase());
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('') === RESET_HASH;
 }
 
 function buildParams(env, model, messages, lastCall, littles, canExtend) {

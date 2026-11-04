@@ -227,6 +227,16 @@ async function chat(message, conversation_id) {
   d1(`UPDATE visitor_extensions SET over_micros = bonus_micros`);
   const spentOut = await chat('And now?');
   check(spentOut.status === 429 && spentOut.json?.error === 'visitor_limit', 'the limit returns when the extra time is used up');
+  // The reset word isn't in this public repo, so this runs only when it's provided.
+  if (process.env.KARYON_RESET_WORD) {
+    const callsBefore = fs.readFileSync('.wrangler/e2e-mock.jsonl', 'utf8').trim().split('\n').length;
+    const reset = await chat(process.env.KARYON_RESET_WORD);
+    check(reset.events.some((e) => e.ev === 'text' && /limit is reset/.test(e.data.delta)), 'the reset word answers without Karyon');
+    check(fs.readFileSync('.wrangler/e2e-mock.jsonl', 'utf8').trim().split('\n').length === callsBefore, 'the reset word makes no API call');
+    d1('DELETE FROM visitor_extensions');
+    const after = await chat('Back again?');
+    check(after.status === 200 && after.events.some((e) => e.ev === 'text'), 'the visitor can talk again after a reset');
+  }
   d1('DELETE FROM visitor_extensions');
   d1(`UPDATE visitor_days SET messages = 0 WHERE day = '${today}'`);
   d1(`DELETE FROM daily_spend WHERE day = '${today}'`);

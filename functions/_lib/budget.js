@@ -119,3 +119,9 @@ export async function useExtension(db, visitor, day, micros) {
     .bind(visitor, day, Math.max(0, Math.ceil(micros)))
     .run();
 }
+
+// Clears a visitor's messages for today and the length of their conversation.
+export async function resetVisitor(db, visitor, day, conversationId) {
+  await db.prepare('UPDATE visitor_days SET messages = 0 WHERE visitor = ?1 AND day = ?2').bind(visitor, day).run();
+  if (conversationId) await db.prepare('UPDATE conversations SET turns = 0 WHERE id = ?1 AND visitor = ?2').bind(conversationId, visitor).run();
+}
