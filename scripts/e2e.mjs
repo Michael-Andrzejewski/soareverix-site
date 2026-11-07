@@ -78,6 +78,9 @@ async function chat(message, conversation_id) {
   run('npx', ['wrangler', 'pages', 'dev', 'public', '--port', String(PORT), '--binding', 'KARYON_MODEL=claude-opus-5-5']);
   await waitFor(`${BASE}/api/status`);
 
+  const missing = await fetch(`${BASE}/no-such-page`);
+  check(missing.status === 404, 'an unknown address returns 404', String(missing.status));
+
   const browser = await chromium.launch();
 
   // ---- UI: drawn intro, greeting, question, streamed reply, repaint ----

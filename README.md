@@ -20,6 +20,7 @@ public/                      static site (Cloudflare Pages output directory)
   assets/app.js              intro, chat client, lightning, static page
   assets/karyon.css
   admin.html                 log viewer (needs ADMIN_TOKEN)
+  404.html                   unknown addresses (without it, Pages answers them with the home page and a 200)
 functions/                   Cloudflare Pages Functions
   api/chat.js                POST /api/chat: Claude call, tool loop, streaming, logging
   api/status.js              GET /api/status: is Karyon awake / within budget
